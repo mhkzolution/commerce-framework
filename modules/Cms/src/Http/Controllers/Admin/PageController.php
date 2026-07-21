@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace Commerce\Cms\Http\Controllers\Admin;
 
 use Commerce\Cms\Models\Page;
+use Commerce\Cms\Services\PageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 final class PageController extends Controller
 {
+    public function __construct(private readonly PageService $pages) {}
+
     public function index(): View
     {
         return view('cms::admin.pages.index', [
@@ -30,8 +32,7 @@ final class PageController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $this->validated($request);
-        $item = Page::query()->create($data);
+        $item = $this->pages->create($this->validated($request));
 
         return redirect()->route('admin.cms.pages.edit', $item)->with('status', 'Page created.');
     }
@@ -46,14 +47,14 @@ final class PageController extends Controller
 
     public function update(Request $request, Page $page): RedirectResponse
     {
-        $page->update($this->validated($request, $page->uuid));
+        $this->pages->update($page, $this->validated($request, $page->uuid));
 
         return redirect()->route('admin.cms.pages.edit', $page)->with('status', 'Page saved.');
     }
 
     public function destroy(Page $page): RedirectResponse
     {
-        $page->delete();
+        $this->pages->delete($page);
 
         return redirect()->route('admin.cms.pages.index')->with('status', 'Page deleted.');
     }
@@ -63,17 +64,11 @@ final class PageController extends Controller
      */
     private function validated(Request $request, ?string $uuid = null): array
     {
-        $data = $request->validate([
+        return $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('cms_pages', 'slug')->ignore($uuid, 'uuid')],
             'content' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::in(array_keys(config('cms.statuses', [])))],
         ]);
-
-        $data['slug'] = filled($data['slug'] ?? null)
-            ? Str::slug($data['slug'])
-            : Str::slug($data['title']);
-
-        return $data;
     }
 }

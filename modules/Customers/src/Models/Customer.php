@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Commerce\Customers\Models;
 
 use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Tenant\BelongsToTenant;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -13,6 +14,7 @@ use Illuminate\Notifications\Notifiable;
 class Customer extends Authenticatable
 {
     use HasUuid;
+    use BelongsToTenant;
     use Notifiable;
     use SoftDeletes;
 

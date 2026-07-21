@@ -22,7 +22,8 @@
         "iam.role.create",
         "iam.role.update",
         "iam.role.delete",
-        "iam.permission.view"
+        "iam.permission.view",
+        "iam.audit.view"
     ],
     "settings": [],
     "admin_navigation": [
@@ -48,6 +49,15 @@
                     "label": "Permissions",
                     "route": "admin.iam.permissions.index",
                     "permission": "iam.permission.view"
+                },
+                {
+                    "label": "Audit log",
+                    "route": "admin.iam.audit-logs.index",
+                    "permission": "iam.audit.view"
+                },
+                {
+                    "label": "My security",
+                    "route": "admin.iam.security.show"
                 }
             ]
         }

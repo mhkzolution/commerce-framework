@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace Commerce\Cms\Http\Controllers\Admin;
 
 use Commerce\Cms\Models\Post;
+use Commerce\Cms\Services\PostService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 final class PostController extends Controller
 {
+    public function __construct(private readonly PostService $posts) {}
+
     public function index(): View
     {
         return view('cms::admin.posts.index', [
@@ -30,7 +32,7 @@ final class PostController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $item = Post::query()->create($this->validated($request));
+        $item = $this->posts->create($this->validated($request));
 
         return redirect()->route('admin.cms.posts.edit', $item)->with('status', 'Post created.');
     }
@@ -45,14 +47,14 @@ final class PostController extends Controller
 
     public function update(Request $request, Post $post): RedirectResponse
     {
-        $post->update($this->validated($request, $post->uuid));
+        $this->posts->update($post, $this->validated($request, $post->uuid));
 
         return redirect()->route('admin.cms.posts.edit', $post)->with('status', 'Post saved.');
     }
 
     public function destroy(Post $post): RedirectResponse
     {
-        $post->delete();
+        $this->posts->delete($post);
 
         return redirect()->route('admin.cms.posts.index')->with('status', 'Post deleted.');
     }
@@ -62,7 +64,7 @@ final class PostController extends Controller
      */
     private function validated(Request $request, ?string $uuid = null): array
     {
-        $data = $request->validate([
+        return $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('cms_posts', 'slug')->ignore($uuid, 'uuid')],
             'excerpt' => ['nullable', 'string', 'max:500'],
@@ -70,15 +72,5 @@ final class PostController extends Controller
             'status' => ['required', 'string', Rule::in(array_keys(config('cms.statuses', [])))],
             'published_at' => ['nullable', 'date'],
         ]);
-
-        $data['slug'] = filled($data['slug'] ?? null)
-            ? Str::slug($data['slug'])
-            : Str::slug($data['title']);
-
-        if (($data['status'] ?? '') === 'published' && empty($data['published_at'])) {
-            $data['published_at'] = now();
-        }
-
-        return $data;
     }
 }

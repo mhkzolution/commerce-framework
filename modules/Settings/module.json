@@ -18,6 +18,22 @@
         "settings.setting.update"
     ],
     "settings": [],
+    "admin_navigation": [
+        {
+            "type": "group",
+            "label": "Platform",
+            "icon": "server",
+            "order": 4,
+            "permission": "platform.tenant.view",
+            "children": [
+                {
+                    "label": "Tenants",
+                    "route": "admin.platform.tenants.index",
+                    "permission": "platform.tenant.view"
+                }
+            ]
+        }
+    ],
     "admin_menu": {
         "label": "Settings",
         "icon": "cog",

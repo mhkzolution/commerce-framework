@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use Commerce\Iam\Http\Controllers\Admin\AuditLogController;
 use Commerce\Iam\Http\Controllers\Admin\PermissionController;
 use Commerce\Iam\Http\Controllers\Admin\RoleController;
+use Commerce\Iam\Http\Controllers\Admin\SecurityController;
 use Commerce\Iam\Http\Controllers\Admin\UserController;
 use Commerce\Iam\Http\Controllers\Auth\LoginController;
 use Commerce\Iam\Http\Controllers\Auth\TwoFactorChallengeController;
@@ -62,6 +64,20 @@ Route::middleware('web')->group(function (): void {
             Route::get('/permissions', [PermissionController::class, 'index'])
                 ->middleware('permission:iam.permission.view')
                 ->name('permissions.index');
+
+            Route::get('/audit-logs', [AuditLogController::class, 'index'])
+                ->middleware('permission:iam.audit.view')
+                ->name('audit-logs.index');
+
+            Route::prefix('security')->name('security.')->group(function (): void {
+                Route::get('/', [SecurityController::class, 'show'])->name('show');
+                Route::post('/two-factor/enable', [SecurityController::class, 'enableTwoFactor'])->name('two-factor.enable');
+                Route::post('/two-factor/confirm', [SecurityController::class, 'confirmTwoFactor'])->name('two-factor.confirm');
+                Route::post('/two-factor/disable', [SecurityController::class, 'disableTwoFactor'])->name('two-factor.disable');
+                Route::post('/tokens', [SecurityController::class, 'storeToken'])->name('tokens.store');
+                Route::delete('/tokens/{tokenUuid}', [SecurityController::class, 'destroyToken'])->name('tokens.destroy');
+                Route::delete('/sessions/{sessionId}', [SecurityController::class, 'destroySession'])->name('sessions.destroy');
+            });
         });
     });
 });

@@ -8,6 +8,8 @@ interface EventBusInterface
 {
     public function dispatch(object $event): void;
 
+    public function dispatchReliable(object $event): void;
+
     public function dispatchAsync(object $event): void;
 
     /**

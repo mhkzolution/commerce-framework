@@ -111,6 +111,7 @@ final class IamSeeder extends Seeder
             'iam.role.update' => 'Update roles',
             'iam.role.delete' => 'Delete roles',
             'iam.permission.view' => 'View permissions',
+            'iam.audit.view' => 'View audit log',
         ];
 
         foreach ($permissions as $name => $label) {

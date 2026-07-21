@@ -76,3 +76,13 @@ curl -X POST http://localhost:1234/api/v1/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"superadmin@example.com","password":"password","device_name":"CLI"}'
 ```
+
+## Phase E (Production & Domain Maturity)
+
+| Capability | Highlights |
+|---|---|
+| **Tenant scoping** | `BelongsToTenant` on Product, Order, Customer, User, CMS |
+| **Outbox** | `dispatchReliable()` + `php artisan commerce:outbox:publish` |
+| **IAM admin** | `/admin/iam/security`, `/admin/iam/audit-logs` |
+| **Tenant admin** | `/admin/platform/tenants` |
+| **CMS services** | `PageService` / `PostService` with slug + URL redirects |

@@ -6,6 +6,7 @@ namespace Commerce\Orders\Models;
 
 use Commerce\Contracts\Order\OrderStatus;
 use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Tenant\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Order extends Model
 {
     use HasUuid;
+    use BelongsToTenant;
     use SoftDeletes;
 
     public const REFERENCE_TYPE = 'order';

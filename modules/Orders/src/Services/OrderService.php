@@ -84,7 +84,7 @@ final class OrderService extends BaseService implements OrderServiceInterface
 
             $order = $order->fresh(['lineItems']);
 
-            $this->eventBus->dispatch(new OrderCreated(
+            $this->eventBus->dispatchReliable(new OrderCreated(
                 orderUuid: $order->uuid,
                 orderNumber: $order->order_number,
                 tenantId: $order->tenant_id,

@@ -13,6 +13,8 @@ final class CmsServiceProvider extends BaseModuleServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom($this->modulePath('config/cms.php'), 'cms');
+        $this->app->singleton(Services\PageService::class);
+        $this->app->singleton(Services\PostService::class);
     }
 
     public function boot(): void

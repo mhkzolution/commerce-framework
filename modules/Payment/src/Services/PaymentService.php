@@ -57,7 +57,7 @@ final class PaymentService extends BaseService implements PaymentServiceInterfac
                 $this->confirmOrderIfPending($payment->order_uuid);
             }
 
-            $this->eventBus->dispatch(new PaymentPaid(
+            $this->eventBus->dispatchReliable(new PaymentPaid(
                 paymentUuid: $payment->uuid,
                 orderUuid: $payment->order_uuid,
                 amount: (int) $payment->amount,

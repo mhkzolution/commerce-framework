@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Commerce\Iam\Models;
 
 use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Tenant\BelongsToTenant;
 use Commerce\Contracts\Identifiable\IdentifiableInterface;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,6 +17,7 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable implements IdentifiableInterface
 {
     use HasUuid;
+    use BelongsToTenant;
     use Notifiable;
     use SoftDeletes;
 

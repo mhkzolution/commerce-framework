@@ -12,8 +12,12 @@ use Commerce\Contracts\Search\SearchQueryInterface;
 use Commerce\Contracts\Seo\SeoServiceInterface;
 use Commerce\Contracts\Seo\SlugServiceInterface;
 use Commerce\Contracts\Seo\UrlRedirectServiceInterface;
+use Commerce\Contracts\Authorization\PermissionRegistryInterface;
+use Commerce\Core\Console\PublishOutboxCommand;
 use Commerce\Core\Events\EventBus;
 use Commerce\Core\Hooks\HookRegistry;
+use Commerce\Core\Outbox\OutboxPublisher;
+use Commerce\Core\Outbox\OutboxRecorder;
 use Commerce\Core\Http\Middleware\ResolveTenant;
 use Commerce\Core\Http\Middleware\ResolveUrlRedirect;
 use Commerce\Core\Tenant\TenantContext;
@@ -49,6 +53,8 @@ class CommerceServiceProvider extends ServiceProvider
         $this->app->bind(PriceResolverInterface::class, CompositePriceResolver::class);
         $this->app->singleton(TenantContext::class);
         $this->app->singleton(TenantService::class);
+        $this->app->singleton(OutboxRecorder::class);
+        $this->app->singleton(OutboxPublisher::class);
     }
 
     public function boot(): void
@@ -62,9 +68,33 @@ class CommerceServiceProvider extends ServiceProvider
         $kernel->prependMiddlewareToGroup('api', ResolveTenant::class);
 
         $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
+        $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'commerce');
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([PublishOutboxCommand::class]);
+        }
+
+        $this->registerPlatformPermissions();
 
         $this->publishes([
             __DIR__ . '/../config/commerce.php' => config_path('commerce.php'),
         ], 'commerce-config');
+    }
+
+    private function registerPlatformPermissions(): void
+    {
+        if (! $this->app->bound(PermissionRegistryInterface::class)) {
+            return;
+        }
+
+        $registry = $this->app->make(PermissionRegistryInterface::class);
+
+        foreach (config('commerce.permissions', []) as $permission => $label) {
+            $registry->register($permission, [
+                'module' => 'platform',
+                'label' => $label,
+            ]);
+        }
     }
 }

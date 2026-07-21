@@ -40,6 +40,11 @@ return [
         'header' => 'X-Tenant',
     ],
 
+    'permissions' => [
+        'platform.tenant.view' => 'View tenants',
+        'platform.tenant.manage' => 'Manage tenants',
+    ],
+
     'api' => [
         'version' => 'v1',
         'prefix' => 'api',

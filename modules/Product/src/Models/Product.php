@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Commerce\Product\Models;
 
 use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Tenant\BelongsToTenant;
 use Commerce\Catalog\Models\AttributeSet;
 use Commerce\Catalog\Models\Category;
 use Commerce\Catalog\Models\Tag;
@@ -19,6 +20,7 @@ class Product extends Model
     public const SEO_ENTITY_TYPE = 'product';
 
     use HasUuid;
+    use BelongsToTenant;
     use SoftDeletes;
 
     protected $fillable = [
