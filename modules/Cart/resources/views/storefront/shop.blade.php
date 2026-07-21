@@ -18,6 +18,9 @@
             @php $variant = $product->defaultVariant(); @endphp
             @if ($variant)
                 <article class="rounded-lg border border-border bg-surface p-4 shadow-sm">
+                    <div class="mb-2">
+                        {!! app(\Commerce\Contracts\Hook\HookRegistryInterface::class)->filter('storefront.product.card', '', ['product' => $product, 'variant' => $variant]) !!}
+                    </div>
                     <h2 class="font-medium text-text">
                         <a href="{{ route('storefront.products.show', $product->slug) }}" class="hover:text-primary">
                             {{ $product->name }}

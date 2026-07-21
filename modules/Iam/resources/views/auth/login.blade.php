@@ -49,6 +49,20 @@
                 Sign in
             </button>
         </form>
+
+        @if (! empty($oauthProviders))
+            <div class="mt-6 border-t border-gray-200 pt-6">
+                <p class="text-center text-sm text-gray-500">Or continue with</p>
+                <div class="mt-4 flex flex-col gap-2">
+                    @foreach ($oauthProviders as $provider)
+                        <a href="{{ route('admin.login.oauth.redirect', $provider) }}"
+                           class="block rounded-md border border-gray-300 px-4 py-2 text-center text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            {{ ucfirst($provider) }}
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+        @endif
     </div>
 </body>
 </html>

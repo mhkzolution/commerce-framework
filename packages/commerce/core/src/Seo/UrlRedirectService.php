@@ -6,6 +6,7 @@ namespace Commerce\Core\Seo;
 
 use Commerce\Contracts\Seo\UrlRedirectServiceInterface;
 use Commerce\Core\Models\UrlRedirect;
+use Illuminate\Support\Facades\Schema;
 
 final class UrlRedirectService implements UrlRedirectServiceInterface
 {
@@ -22,6 +23,10 @@ final class UrlRedirectService implements UrlRedirectServiceInterface
 
     public function resolve(string $path): ?string
     {
+        if (! Schema::hasTable('url_redirects')) {
+            return null;
+        }
+
         $path = $this->normalizePath($path);
 
         $redirect = UrlRedirect::query()

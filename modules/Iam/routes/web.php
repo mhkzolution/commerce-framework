@@ -6,12 +6,17 @@ use Commerce\Iam\Http\Controllers\Admin\PermissionController;
 use Commerce\Iam\Http\Controllers\Admin\RoleController;
 use Commerce\Iam\Http\Controllers\Admin\UserController;
 use Commerce\Iam\Http\Controllers\Auth\LoginController;
+use Commerce\Iam\Http\Controllers\Auth\TwoFactorChallengeController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('web')->group(function (): void {
     Route::middleware('guest')->group(function (): void {
         Route::get('/admin/login', [LoginController::class, 'create'])->name('admin.login');
         Route::post('/admin/login', [LoginController::class, 'store'])->name('admin.login.submit');
+        Route::get('/admin/login/two-factor', [TwoFactorChallengeController::class, 'create'])->name('admin.login.two-factor');
+        Route::post('/admin/login/two-factor', [TwoFactorChallengeController::class, 'store'])->name('admin.login.two-factor.submit');
+        Route::get('/admin/login/oauth/{provider}', [LoginController::class, 'oauthRedirect'])->name('admin.login.oauth.redirect');
+        Route::get('/admin/login/oauth/{provider}/callback', [LoginController::class, 'oauthCallback'])->name('admin.login.oauth.callback');
     });
 
     Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): void {

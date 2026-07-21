@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Commerce\Payment\Http\Controllers\Admin\PaymentController;
+use Commerce\Payment\Http\Controllers\PaymentWebhookController;
 use Commerce\Payment\Http\Controllers\StorefrontPaymentController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,4 +19,5 @@ Route::middleware('web')->group(function (): void {
     Route::get('/payment/{payment}', [StorefrontPaymentController::class, 'show'])->name('storefront.payment.show');
     Route::post('/payment/{payment}/pay', [StorefrontPaymentController::class, 'pay'])->name('storefront.payment.pay');
     Route::post('/payment/{payment}/fail', [StorefrontPaymentController::class, 'fail'])->name('storefront.payment.fail');
+    Route::post('/webhooks/payment/{gateway}', [PaymentWebhookController::class, 'handle'])->name('storefront.payment.webhook');
 });

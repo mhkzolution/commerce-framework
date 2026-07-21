@@ -30,10 +30,14 @@ return [
         'marketplace' => true,
     ],
 
-    'plugins' => [],
+    'plugins' => [
+        'hello-world' => true,
+        'product-badge' => true,
+    ],
 
     'tenant' => [
-        'enabled' => false,
+        'enabled' => env('COMMERCE_TENANT_ENABLED', false),
+        'header' => 'X-Tenant',
     ],
 
     'api' => [

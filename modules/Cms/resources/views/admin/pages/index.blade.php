@@ -16,7 +16,9 @@
             @empty
                 <tr><td colspan="3" class="px-4 py-8 text-center text-muted">No records.</td></tr>
             @endforelse
-            @if ($items->hasPages())<x-slot:pagination>{{ $items->links() }}</x-slot:pagination>@endif
+            @if ($items->hasPages())
+                <x-slot:pagination>{{ $items->links() }}</x-slot:pagination>
+            @endif
         </x-admin.table.shell>
     </x-admin.page>
 @endsection

@@ -1,0 +1,13 @@
+{
+    "name": "Product Badge",
+    "alias": "product-badge",
+    "version": "1.0.0",
+    "description": "Adds promotional badges to storefront product cards via hooks.",
+    "providers": [
+        "Plugins\\ProductBadge\\ProductBadgeServiceProvider"
+    ],
+    "bindings": {},
+    "hooks": [
+        "storefront.product.card"
+    ]
+}

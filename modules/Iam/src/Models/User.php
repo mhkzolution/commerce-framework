@@ -7,6 +7,7 @@ namespace Commerce\Iam\Models;
 use Commerce\Core\Concerns\HasUuid;
 use Commerce\Contracts\Identifiable\IdentifiableInterface;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -28,6 +29,9 @@ class User extends Authenticatable implements IdentifiableInterface
         'email_verified_at',
         'last_login_at',
         'meta',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'two_factor_confirmed_at',
     ];
 
     protected $hidden = [
@@ -40,6 +44,7 @@ class User extends Authenticatable implements IdentifiableInterface
         return [
             'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'two_factor_confirmed_at' => 'datetime',
             'password' => 'hashed',
             'meta' => 'array',
         ];
@@ -53,6 +58,21 @@ class User extends Authenticatable implements IdentifiableInterface
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'user_roles');
+    }
+
+    public function apiTokens(): HasMany
+    {
+        return $this->hasMany(ApiToken::class);
+    }
+
+    public function oauthAccounts(): HasMany
+    {
+        return $this->hasMany(OAuthAccount::class);
+    }
+
+    public function hasTwoFactorEnabled(): bool
+    {
+        return $this->two_factor_confirmed_at !== null;
     }
 
     public function getUuid(): string

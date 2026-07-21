@@ -1,0 +1,16 @@
+{
+    "name": "Hello World",
+    "alias": "hello-world",
+    "version": "1.0.0",
+    "description": "Sample plugin demonstrating plugin discovery and container bindings.",
+    "providers": [
+        "Plugins\\HelloWorld\\HelloWorldServiceProvider"
+    ],
+    "bindings": {
+        "Plugins\\HelloWorld\\Contracts\\GreetingServiceInterface": "Plugins\\HelloWorld\\Services\\GreetingService"
+    },
+    "hooks": [
+        "admin.dashboard.widgets",
+        "storefront.home.banner"
+    ]
+}

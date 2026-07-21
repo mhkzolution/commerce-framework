@@ -51,3 +51,28 @@ npm start
 ## Architecture
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) and [FRAMEWORK.md](FRAMEWORK.md).
+
+## Phase 3+ (IAM, Payment, Tenancy, Plugins)
+
+| Capability | Highlights |
+|---|---|
+| **IAM** | API tokens (`/api/v1/auth/*`), TOTP 2FA, Google/GitHub OAuth, audit log |
+| **Payment** | Stripe PaymentIntent + webhooks (`POST /webhooks/payment/stripe`) |
+| **Multi-tenant** | `COMMERCE_TENANT_ENABLED=true`, header `X-Tenant` |
+| **Plugins** | `plugins/hello-world`, `plugins/product-badge` (hook: `storefront.product.card`) |
+
+```env
+IAM_TWO_FACTOR_ENABLED=false
+PAYMENT_GATEWAY=simulated          # or stripe
+STRIPE_SECRET_KEY=sk_...
+STRIPE_PUBLISHABLE_KEY=pk_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+COMMERCE_TENANT_ENABLED=false
+```
+
+```bash
+# API login
+curl -X POST http://localhost:1234/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"superadmin@example.com","password":"password","device_name":"CLI"}'
+```

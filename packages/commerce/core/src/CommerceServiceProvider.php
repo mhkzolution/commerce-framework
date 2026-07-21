@@ -14,14 +14,17 @@ use Commerce\Contracts\Seo\SlugServiceInterface;
 use Commerce\Contracts\Seo\UrlRedirectServiceInterface;
 use Commerce\Core\Events\EventBus;
 use Commerce\Core\Hooks\HookRegistry;
+use Commerce\Core\Http\Middleware\ResolveTenant;
 use Commerce\Core\Http\Middleware\ResolveUrlRedirect;
+use Commerce\Core\Tenant\TenantContext;
+use Commerce\Core\Tenant\TenantService;
 use Commerce\Core\Pricing\CompositePriceResolver;
 use Commerce\Core\Search\DatabaseSearchIndex;
 use Commerce\Core\Search\DatabaseSearchQuery;
 use Commerce\Core\Seo\SeoService;
 use Commerce\Core\Seo\SlugService;
 use Commerce\Core\Seo\UrlRedirectService;
-use Illuminate\Routing\Router;
+use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Support\ServiceProvider;
 
 class CommerceServiceProvider extends ServiceProvider
@@ -44,15 +47,21 @@ class CommerceServiceProvider extends ServiceProvider
         $this->app->bind(SearchQueryInterface::class, DatabaseSearchQuery::class);
         $this->app->singleton(CompositePriceResolver::class);
         $this->app->bind(PriceResolverInterface::class, CompositePriceResolver::class);
+        $this->app->singleton(TenantContext::class);
+        $this->app->singleton(TenantService::class);
     }
 
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 
-        /** @var Router $router */
-        $router = $this->app->make(Router::class);
-        $router->prependMiddlewareToGroup('web', ResolveUrlRedirect::class);
+        /** @var HttpKernel $kernel */
+        $kernel = $this->app->make(HttpKernel::class);
+        $kernel->prependMiddlewareToGroup('web', ResolveUrlRedirect::class);
+        $kernel->prependMiddlewareToGroup('web', ResolveTenant::class);
+        $kernel->prependMiddlewareToGroup('api', ResolveTenant::class);
+
+        $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
 
         $this->publishes([
             __DIR__ . '/../config/commerce.php' => config_path('commerce.php'),
