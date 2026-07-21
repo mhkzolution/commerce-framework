@@ -1,0 +1,27 @@
+{
+    "name": "commerce/orders",
+    "description": "Order management and placement",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "commerce/api": "*",
+        "commerce/contracts": "*",
+        "commerce/core": "*",
+        "commerce/customers": "*",
+        "commerce/inventory": "*",
+        "commerce/module-manager": "*",
+        "commerce/product": "*",
+        "commerce/support": "*",
+        "illuminate/support": "^13.0",
+        "illuminate/http": "^13.0",
+        "illuminate/database": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Commerce\\Orders\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

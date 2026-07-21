@@ -1,0 +1,21 @@
+{
+    "name": "Cart",
+    "alias": "cart",
+    "description": "Session-based shopping cart and checkout",
+    "version": "1.0.0",
+    "priority": 28,
+    "providers": [
+        "Commerce\\Cart\\CartServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "product",
+            "inventory",
+            "orders",
+            "customers"
+        ]
+    },
+    "permissions": [],
+    "settings": []
+}

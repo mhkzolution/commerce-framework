@@ -1,0 +1,29 @@
+{
+    "name": "Payment",
+    "alias": "payment",
+    "description": "Order payments and transaction records",
+    "version": "1.0.0",
+    "priority": 30,
+    "providers": [
+        "Commerce\\Payment\\PaymentServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "iam",
+            "orders"
+        ]
+    },
+    "permissions": [
+        "payment.payment.view",
+        "payment.payment.manage"
+    ],
+    "settings": [],
+    "admin_menu": {
+        "label": "Payments",
+        "icon": "credit-card",
+        "route": "admin.payments.index",
+        "order": 36,
+        "permission": "payment.payment.view"
+    }
+}

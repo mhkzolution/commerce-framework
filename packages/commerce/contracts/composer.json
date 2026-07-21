@@ -1,0 +1,16 @@
+{
+    "name": "commerce/contracts",
+    "description": "Shared contracts and interfaces for Commerce Framework",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Commerce\\Contracts\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

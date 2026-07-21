@@ -1,0 +1,21 @@
+{
+    "name": "commerce/catalog",
+    "description": "Catalog taxonomy and attribute infrastructure",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "commerce/core": "*",
+        "commerce/contracts": "*",
+        "commerce/module-manager": "*",
+        "illuminate/support": "^13.0",
+        "illuminate/http": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Commerce\\Catalog\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

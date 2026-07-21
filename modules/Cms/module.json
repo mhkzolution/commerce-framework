@@ -1,0 +1,22 @@
+{
+    "name": "Cms",
+    "alias": "cms",
+    "description": "Content management — pages and posts",
+    "version": "1.0.0",
+    "priority": 30,
+    "providers": ["Commerce\\Cms\\CmsServiceProvider"],
+    "dependencies": {"hard": [], "soft": ["iam"]},
+    "permissions": [
+    "cms.page.view",
+    "cms.page.manage",
+    "cms.post.view",
+    "cms.post.manage"
+],
+    "admin_menu": {
+    "label": "CMS",
+    "icon": "document-text",
+    "route": "admin.cms.pages.index",
+    "permission": "cms.page.view",
+    "order": 35
+}
+}

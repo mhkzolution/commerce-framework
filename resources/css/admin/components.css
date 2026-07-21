@@ -1,0 +1,442 @@
+/* Button variants — stateful semantic tokens */
+.cf-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-md);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+}
+
+.cf-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-ring);
+}
+
+.cf-btn:disabled,
+.cf-btn[aria-disabled='true'] {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.cf-btn--primary {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+}
+
+.cf-btn--primary:hover {
+    background: var(--color-primary-hover);
+}
+
+.cf-btn--primary:active {
+    background: var(--color-primary-active);
+}
+
+.cf-btn--secondary {
+    background: var(--color-secondary);
+    color: var(--color-secondary-foreground);
+    border: 1px solid var(--color-secondary-border);
+}
+
+.cf-btn--secondary:hover {
+    background: var(--color-secondary-hover);
+}
+
+.cf-btn--secondary:active {
+    background: var(--color-secondary-active);
+}
+
+.cf-btn--ghost {
+    background: transparent;
+    color: var(--color-text-secondary);
+}
+
+.cf-btn--ghost:hover {
+    background: var(--color-sidebar-hover);
+    color: var(--color-text);
+}
+
+.cf-btn--ghost:active {
+    background: var(--color-sidebar-active);
+}
+
+.cf-btn--outline {
+    background: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+}
+
+.cf-btn--outline:hover {
+    background: var(--color-primary-subtle);
+}
+
+.cf-btn--outline:active {
+    background: color-mix(in srgb, var(--color-primary-subtle) 70%, var(--color-primary) 30%);
+}
+
+.cf-btn--success {
+    background: var(--color-success);
+    color: var(--color-on-success);
+}
+
+.cf-btn--success:hover {
+    background: var(--color-success-hover);
+}
+
+.cf-btn--success:active {
+    background: var(--color-success-active);
+}
+
+.cf-btn--danger {
+    background: var(--color-danger);
+    color: var(--color-on-danger);
+}
+
+.cf-btn--danger:hover {
+    background: var(--color-danger-hover);
+}
+
+.cf-btn--danger:active {
+    background: var(--color-danger-active);
+}
+
+.cf-btn--warning {
+    background: var(--color-warning);
+    color: var(--color-on-warning);
+}
+
+.cf-btn--warning:hover {
+    background: var(--color-warning-hover);
+}
+
+.cf-btn--warning:active {
+    background: var(--color-warning-active);
+}
+
+.cf-btn--link {
+    background: transparent;
+    color: var(--color-link);
+    padding-inline: 0.25rem;
+}
+
+.cf-btn--link:hover {
+    color: var(--color-link-hover);
+    text-decoration: underline;
+}
+
+/* Badges */
+.cf-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1rem;
+}
+
+.cf-badge--default {
+    background: var(--color-status-draft-subtle);
+    color: var(--color-status-draft-foreground);
+}
+
+.cf-badge--success {
+    background: var(--color-success-subtle);
+    color: var(--color-success-subtle-foreground);
+}
+
+.cf-badge--danger {
+    background: var(--color-danger-subtle);
+    color: var(--color-danger-subtle-foreground);
+}
+
+.cf-badge--warning {
+    background: var(--color-warning-subtle);
+    color: var(--color-warning-subtle-foreground);
+}
+
+.cf-badge--info {
+    background: var(--color-info-subtle);
+    color: var(--color-info-subtle-foreground);
+}
+
+.cf-badge--draft {
+    background: var(--color-status-draft-subtle);
+    color: var(--color-status-draft-foreground);
+}
+
+.cf-badge--pending {
+    background: var(--color-status-pending-subtle);
+    color: var(--color-status-pending-foreground);
+}
+
+.cf-badge--published {
+    background: var(--color-status-published-subtle);
+    color: var(--color-status-published-foreground);
+}
+
+.cf-badge--archived {
+    background: var(--color-status-archived-subtle);
+    color: var(--color-status-archived-foreground);
+}
+
+/* Design system swatches */
+.cf-swatch {
+    height: 3rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+}
+
+.cf-token-row {
+    display: grid;
+    grid-template-columns: 8rem 1fr 6rem;
+    gap: 0.75rem;
+    align-items: center;
+    font-size: 0.8125rem;
+}
+
+/* Form controls */
+.cf-input {
+    width: 100%;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--color-text);
+}
+
+.cf-input::placeholder {
+    color: var(--color-muted);
+}
+
+.cf-input:focus {
+    outline: none;
+    border-color: var(--color-ring);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ring) 30%, transparent);
+}
+
+.cf-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+select.cf-input,
+textarea.cf-input {
+    display: block;
+}
+
+/* Sub-navigation (module sections) */
+.cf-subnav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0;
+}
+
+.cf-subnav-link {
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-muted);
+    transition: color 120ms ease, background-color 120ms ease;
+}
+
+.cf-subnav-link:hover {
+    color: var(--color-text);
+    background: var(--color-sidebar-hover);
+}
+
+.cf-subnav-link.is-active {
+    color: var(--color-text);
+    background: var(--color-surface);
+    box-shadow: inset 0 -2px 0 0 var(--color-primary);
+}
+
+/* Tabs */
+.cf-tab {
+    color: var(--color-muted);
+}
+
+.cf-tab:hover {
+    color: var(--color-text);
+}
+
+.cf-tab.is-active {
+    background: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: inset 0 -2px 0 0 var(--color-primary);
+}
+
+/* Flash messages */
+.cf-flash {
+    border-radius: var(--radius-lg);
+    border: 1px solid transparent;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+}
+
+.cf-flash--success {
+    border-color: color-mix(in srgb, var(--color-success) 25%, transparent);
+    background: var(--color-success-subtle);
+    color: var(--color-success-subtle-foreground);
+}
+
+.cf-flash--danger {
+    border-color: color-mix(in srgb, var(--color-danger) 25%, transparent);
+    background: var(--color-danger-subtle);
+    color: var(--color-danger-subtle-foreground);
+}
+
+.cf-flash--warning {
+    border-color: color-mix(in srgb, var(--color-warning) 25%, transparent);
+    background: var(--color-warning-subtle);
+    color: var(--color-warning-subtle-foreground);
+}
+
+.cf-flash--info {
+    border-color: color-mix(in srgb, var(--color-info) 25%, transparent);
+    background: var(--color-info-subtle);
+    color: var(--color-info-subtle-foreground);
+}
+
+/* Charts */
+.cf-chart-bar {
+    background: color-mix(in srgb, var(--color-primary) 80%, transparent);
+}
+
+.cf-chart-bar:hover {
+    background: var(--color-primary);
+}
+
+/* Command palette items */
+.cf-command-item:hover {
+    background: var(--color-primary-subtle);
+}
+
+/* Interactive surface (topbar / sidebar controls) */
+.cf-surface-interactive {
+    border-radius: var(--radius-md);
+    transition: background-color 120ms ease;
+}
+
+.cf-surface-interactive:hover {
+    background: var(--color-sidebar-hover);
+}
+
+/* Brand mark — identity only, not UI primary */
+.admin-brand-mark {
+    display: flex;
+    height: 2rem;
+    width: 2rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--color-brand-red) 0%, var(--color-brand-green) 100%);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+/* Media gallery */
+.cf-gallery-thumb {
+    border: 1px solid var(--color-border);
+    background: var(--color-sidebar);
+}
+
+.cf-gallery-remove {
+    background: var(--color-danger);
+    color: var(--color-on-danger);
+}
+
+.cf-gallery-overlay {
+    background: var(--color-overlay);
+}
+
+.cf-gallery-panel {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+}
+
+.cf-gallery-picker-item {
+    border: 1px solid var(--color-border);
+}
+
+.cf-gallery-picker-item:hover {
+    border-color: var(--color-primary);
+}
+
+.cf-gallery-picker-preview {
+    background: var(--color-sidebar);
+}
+
+/* Media library */
+.cf-folder-link {
+    display: block;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border-radius: var(--radius-md);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+.cf-folder-link:hover {
+    background: var(--color-sidebar-hover);
+    color: var(--color-text);
+}
+
+.cf-folder-link.is-active {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+}
+
+.cf-file-input {
+    display: block;
+    width: 100%;
+    font-size: 0.875rem;
+    color: var(--color-muted);
+}
+
+.cf-file-input::file-selector-button {
+    margin-right: 0.75rem;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-primary);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-on-primary);
+    cursor: pointer;
+}
+
+.cf-file-input::file-selector-button:hover {
+    background: var(--color-primary-hover);
+}
+
+.cf-code-block {
+    overflow-x: auto;
+    border-radius: var(--radius-md);
+    background: var(--color-sidebar);
+    padding: 1rem;
+    font-size: 0.75rem;
+    line-height: 1.25rem;
+    color: var(--color-text-secondary);
+}
+
+.cf-delivery-error {
+    background: var(--color-danger-subtle);
+    color: var(--color-danger-subtle-foreground);
+}

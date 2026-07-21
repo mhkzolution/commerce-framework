@@ -1,0 +1,28 @@
+{
+    "name": "Settings",
+    "alias": "settings",
+    "description": "System and tenant settings",
+    "version": "1.0.0",
+    "priority": 10,
+    "providers": [
+        "Commerce\\Settings\\SettingsServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "iam"
+        ]
+    },
+    "permissions": [
+        "settings.setting.view",
+        "settings.setting.update"
+    ],
+    "settings": [],
+    "admin_menu": {
+        "label": "Settings",
+        "icon": "cog",
+        "route": "admin.settings.index",
+        "order": 90,
+        "permission": "settings.setting.view"
+    }
+}

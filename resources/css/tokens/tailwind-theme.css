@@ -1,0 +1,43 @@
+/**
+ * Map semantic CSS variables to Tailwind v4 theme — utilities reference tokens, not palette names.
+ */
+@theme inline {
+    --color-background: var(--color-background);
+    --color-surface: var(--color-surface);
+    --color-surface-muted: var(--color-surface-muted);
+    --color-card: var(--color-card);
+    --color-sidebar: var(--color-sidebar);
+    --color-sidebar-hover: var(--color-sidebar-hover);
+    --color-sidebar-active: var(--color-sidebar-active);
+    --color-border: var(--color-border);
+    --color-divider: var(--color-divider);
+    --color-text: var(--color-text);
+    --color-text-secondary: var(--color-text-secondary);
+    --color-muted: var(--color-muted);
+    --color-disabled: var(--color-disabled);
+    --color-primary: var(--color-primary);
+    --color-primary-hover: var(--color-primary-hover);
+    --color-primary-active: var(--color-primary-active);
+    --color-primary-subtle: var(--color-primary-subtle);
+    --color-primary-subtle-foreground: var(--color-primary-subtle-foreground);
+    --color-secondary: var(--color-secondary);
+    --color-secondary-hover: var(--color-secondary-hover);
+    --color-secondary-foreground: var(--color-secondary-foreground);
+    --color-accent: var(--color-accent);
+    --color-success: var(--color-success);
+    --color-success-subtle: var(--color-success-subtle);
+    --color-success-subtle-foreground: var(--color-success-subtle-foreground);
+    --color-danger: var(--color-danger);
+    --color-danger-subtle: var(--color-danger-subtle);
+    --color-danger-subtle-foreground: var(--color-danger-subtle-foreground);
+    --color-warning: var(--color-warning);
+    --color-warning-subtle: var(--color-warning-subtle);
+    --color-warning-subtle-foreground: var(--color-warning-subtle-foreground);
+    --color-info: var(--color-info);
+    --color-info-subtle: var(--color-info-subtle);
+    --color-info-subtle-foreground: var(--color-info-subtle-foreground);
+    --color-ring: var(--color-ring);
+    --color-link: var(--color-link);
+    --color-brand-red: var(--color-brand-red);
+    --color-brand-green: var(--color-brand-green);
+}

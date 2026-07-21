@@ -1,0 +1,32 @@
+{
+    "name": "commerce/cart",
+    "description": "Shopping cart and checkout",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "commerce/api": "*",
+        "commerce/contracts": "*",
+        "commerce/core": "*",
+        "commerce/customers": "*",
+        "commerce/inventory": "*",
+        "commerce/orders": "*",
+        "commerce/payment": "*",
+        "commerce/promotion": "*",
+        "commerce/shipping": "*",
+        "commerce/tax": "*",
+        "commerce/module-manager": "*",
+        "commerce/product": "*",
+        "commerce/support": "*",
+        "illuminate/support": "^13.0",
+        "illuminate/http": "^13.0",
+        "illuminate/session": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Commerce\\Cart\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

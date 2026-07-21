@@ -1,0 +1,55 @@
+{
+    "name": "IAM",
+    "alias": "iam",
+    "description": "Identity & Access Management",
+    "version": "1.0.0",
+    "priority": 10,
+    "providers": [
+        "Commerce\\Iam\\IamServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "settings"
+        ]
+    },
+    "permissions": [
+        "iam.user.view",
+        "iam.user.create",
+        "iam.user.update",
+        "iam.user.delete",
+        "iam.role.view",
+        "iam.role.create",
+        "iam.role.update",
+        "iam.role.delete",
+        "iam.permission.view"
+    ],
+    "settings": [],
+    "admin_navigation": [
+        {
+            "type": "group",
+            "label": "Users & Access",
+            "icon": "shield",
+            "order": 5,
+            "permission": "iam.user.view",
+            "default_open": true,
+            "children": [
+                {
+                    "label": "Users",
+                    "route": "admin.iam.users.index",
+                    "permission": "iam.user.view"
+                },
+                {
+                    "label": "Roles",
+                    "route": "admin.iam.roles.index",
+                    "permission": "iam.role.view"
+                },
+                {
+                    "label": "Permissions",
+                    "route": "admin.iam.permissions.index",
+                    "permission": "iam.permission.view"
+                }
+            ]
+        }
+    ]
+}

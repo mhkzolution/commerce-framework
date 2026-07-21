@@ -1,0 +1,28 @@
+{
+    "name": "Currency",
+    "alias": "currency",
+    "description": "Multi-currency support with exchange rates",
+    "version": "1.0.0",
+    "priority": 15,
+    "providers": [
+        "Commerce\\Currency\\CurrencyServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "iam"
+        ]
+    },
+    "permissions": [
+        "currency.currency.view",
+        "currency.currency.manage"
+    ],
+    "settings": [],
+    "admin_menu": {
+        "label": "Currencies",
+        "icon": "currency",
+        "route": "admin.currencies.index",
+        "order": 18,
+        "permission": "currency.currency.view"
+    }
+}

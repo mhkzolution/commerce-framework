@@ -1,0 +1,29 @@
+{
+    "name": "Webhooks",
+    "alias": "webhooks",
+    "description": "Outbound webhook delivery for domain events",
+    "version": "1.0.0",
+    "priority": 31,
+    "providers": [
+        "Commerce\\Webhooks\\WebhooksServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "iam",
+            "orders"
+        ]
+    },
+    "permissions": [
+        "webhooks.webhook.view",
+        "webhooks.webhook.manage"
+    ],
+    "settings": [],
+    "admin_menu": {
+        "label": "Webhooks",
+        "icon": "webhook",
+        "route": "admin.webhooks.index",
+        "order": 42,
+        "permission": "webhooks.webhook.view"
+    }
+}

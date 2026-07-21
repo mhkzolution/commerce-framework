@@ -1,0 +1,10 @@
+/**
+ * Brand colors — identity only.
+ * Use for logo, marketing, splash, landing pages — NOT for admin UI actions.
+ */
+:root {
+    --color-brand-red: #d72638;
+    --color-brand-red-hover: #b81f2f;
+    --color-brand-green: #2d9f4f;
+    --color-brand-green-hover: #248a43;
+}

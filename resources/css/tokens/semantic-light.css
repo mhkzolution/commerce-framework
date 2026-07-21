@@ -1,0 +1,109 @@
+/**
+ * Commerce Framework — Light theme semantic tokens.
+ * Source of truth for admin UI. Do not reference Tailwind palette names in components.
+ */
+:root {
+    color-scheme: light;
+
+    /* Surfaces */
+    --color-background: #f4f6f8;
+    --color-surface: #ffffff;
+    --color-surface-muted: #f8fafb;
+    --color-card: #ffffff;
+    --color-sidebar: #f8fafb;
+    --color-sidebar-hover: #eef2f6;
+    --color-sidebar-active: #e8eef8;
+    --color-overlay: rgb(15 23 42 / 0.45);
+
+    /* Borders */
+    --color-border: #d8dee6;
+    --color-divider: #e5eaf0;
+
+    /* Text */
+    --color-text: #0f172a;
+    --color-text-secondary: #334155;
+    --color-muted: #64748b;
+    --color-disabled: #94a3b8;
+    --color-on-primary: #ffffff;
+    --color-on-danger: #ffffff;
+    --color-on-success: #ffffff;
+    --color-on-warning: #1f2937;
+
+    /**
+     * Primary — Enterprise blue.
+     * Chosen for trust, positive action, and low fatigue over 8h sessions.
+     * Not brand red/green; works across ecommerce, POS, inventory, CMS, CRM.
+     */
+    --color-primary: #2563eb;
+    --color-primary-hover: #1d4ed8;
+    --color-primary-active: #1e40af;
+    --color-primary-subtle: #eff6ff;
+    --color-primary-subtle-foreground: #1d4ed8;
+
+    --color-secondary: #ffffff;
+    --color-secondary-hover: #f1f5f9;
+    --color-secondary-active: #e2e8f0;
+    --color-secondary-foreground: #0f172a;
+    --color-secondary-border: #d8dee6;
+
+    --color-accent: #2563eb;
+    --color-accent-subtle: #eff6ff;
+
+    /* Semantic feedback */
+    --color-success: #15803d;
+    --color-success-hover: #166534;
+    --color-success-active: #14532d;
+    --color-success-subtle: #ecfdf3;
+    --color-success-subtle-foreground: #166534;
+
+    --color-danger: #dc2626;
+    --color-danger-hover: #b91c1c;
+    --color-danger-active: #991b1b;
+    --color-danger-subtle: #fef2f2;
+    --color-danger-subtle-foreground: #b91c1c;
+
+    --color-warning: #d97706;
+    --color-warning-hover: #b45309;
+    --color-warning-active: #92400e;
+    --color-warning-subtle: #fffbeb;
+    --color-warning-subtle-foreground: #b45309;
+
+    --color-info: #0284c7;
+    --color-info-hover: #0369a1;
+    --color-info-active: #075985;
+    --color-info-subtle: #f0f9ff;
+    --color-info-subtle-foreground: #0369a1;
+
+    /* Workflow / entity status */
+    --color-status-draft-subtle: #f1f5f9;
+    --color-status-draft-foreground: #475569;
+    --color-status-pending-subtle: #fff7ed;
+    --color-status-pending-foreground: #c2410c;
+    --color-status-published-subtle: #ecfdf3;
+    --color-status-published-foreground: #166534;
+    --color-status-archived-subtle: #f8fafc;
+    --color-status-archived-foreground: #64748b;
+
+    /* Focus & interaction */
+    --color-ring: #2563eb;
+    --color-focus: #2563eb;
+    --color-link: #2563eb;
+    --color-link-hover: #1d4ed8;
+
+    /* Charts & data viz (neutral + semantic, not brand) */
+    --color-chart-1: #2563eb;
+    --color-chart-2: #0891b2;
+    --color-chart-3: #7c3aed;
+    --color-chart-4: #d97706;
+    --color-chart-5: #64748b;
+
+    /* Layout */
+    --sidebar-width: 16rem;
+    --sidebar-collapsed-width: 4.5rem;
+    --topbar-height: 3.5rem;
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05);
+    --shadow-md: 0 4px 12px rgb(15 23 42 / 0.08);
+}

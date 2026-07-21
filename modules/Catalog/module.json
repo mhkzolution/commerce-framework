@@ -1,0 +1,47 @@
+{
+    "name": "Catalog",
+    "alias": "catalog",
+    "description": "Categories, brands, tags, attributes and attribute sets",
+    "version": "1.0.0",
+    "priority": 20,
+    "providers": [
+        "Commerce\\Catalog\\CatalogServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "iam",
+            "media"
+        ]
+    },
+    "permissions": [
+        "catalog.category.view",
+        "catalog.category.create",
+        "catalog.category.update",
+        "catalog.category.delete",
+        "catalog.brand.view",
+        "catalog.brand.create",
+        "catalog.brand.update",
+        "catalog.brand.delete",
+        "catalog.tag.view",
+        "catalog.tag.create",
+        "catalog.tag.update",
+        "catalog.tag.delete",
+        "catalog.attribute.view",
+        "catalog.attribute.create",
+        "catalog.attribute.update",
+        "catalog.attribute.delete",
+        "catalog.attribute_set.view",
+        "catalog.attribute_set.create",
+        "catalog.attribute_set.update",
+        "catalog.attribute_set.delete"
+    ],
+    "settings": [],
+    "admin_menu": {
+        "label": "Catalog",
+        "icon": "collection",
+        "route": "admin.catalog.index",
+        "order": 20,
+        "permission": "catalog.category.view"
+    }
+}

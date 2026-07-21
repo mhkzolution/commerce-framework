@@ -1,0 +1,34 @@
+{
+    "name": "Media",
+    "alias": "media",
+    "description": "Shared media library and file storage",
+    "version": "1.0.0",
+    "priority": 20,
+    "providers": [
+        "Commerce\\Media\\MediaServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "iam"
+        ]
+    },
+    "permissions": [
+        "media.media.view",
+        "media.media.upload",
+        "media.media.update",
+        "media.media.delete",
+        "media.folder.view",
+        "media.folder.create",
+        "media.folder.update",
+        "media.folder.delete"
+    ],
+    "settings": [],
+    "admin_menu": {
+        "label": "Media Library",
+        "icon": "photo",
+        "route": "admin.media.index",
+        "order": 15,
+        "permission": "media.media.view"
+    }
+}

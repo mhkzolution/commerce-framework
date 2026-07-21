@@ -1,0 +1,17 @@
+{
+    "name": "Reports",
+    "alias": "reports",
+    "description": "Admin dashboard and sales reports",
+    "version": "1.0.0",
+    "priority": 5,
+    "providers": ["Commerce\\Reports\\ReportsServiceProvider"],
+    "dependencies": {"hard": [], "soft": ["iam", "orders"]},
+    "permissions": ["reports.dashboard.view"],
+    "admin_menu": {
+        "label": "Dashboard",
+        "icon": "chart-bar",
+        "route": "admin.dashboard",
+        "order": 1,
+        "permission": "reports.dashboard.view"
+    }
+}

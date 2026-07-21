@@ -1,0 +1,22 @@
+{
+    "name": "Crm",
+    "alias": "crm",
+    "description": "Customer relationship management — leads and deals",
+    "version": "1.0.0",
+    "priority": 30,
+    "providers": ["Commerce\\Crm\\CrmServiceProvider"],
+    "dependencies": {"hard": [], "soft": ["iam"]},
+    "permissions": [
+    "crm.lead.view",
+    "crm.lead.manage",
+    "crm.deal.view",
+    "crm.deal.manage"
+],
+    "admin_menu": {
+    "label": "CRM",
+    "icon": "users",
+    "route": "admin.crm.leads.index",
+    "permission": "crm.lead.view",
+    "order": 40
+}
+}

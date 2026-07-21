@@ -1,0 +1,157 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "commerce/framework",
+    "type": "project",
+    "description": "Commerce Framework \u2014 modular commerce platform kernel",
+    "keywords": [
+        "commerce",
+        "ecommerce",
+        "framework",
+        "laravel"
+    ],
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "commerce/api": "@dev",
+        "commerce/cart": "@dev",
+        "commerce/catalog": "@dev",
+        "commerce/contracts": "@dev",
+        "commerce/core": "@dev",
+        "commerce/customers": "@dev",
+        "commerce/iam": "@dev",
+        "commerce/inventory": "@dev",
+        "commerce/media": "@dev",
+        "commerce/module-manager": "@dev",
+        "commerce/orders": "@dev",
+        "commerce/payment": "@dev",
+        "commerce/promotion": "@dev",
+        "commerce/reports": "@dev",
+        "commerce/webhooks": "@dev",
+        "commerce/currency": "@dev",
+        "commerce/notification": "@dev",
+        "commerce/plugin-manager": "@dev",
+        "commerce/product": "@dev",
+        "commerce/settings": "@dev",
+        "commerce/shipping": "@dev",
+        "commerce/support": "@dev",
+        "commerce/tax": "@dev",
+        "laravel/framework": "^13.8",
+        "laravel/tinker": "^3.0",
+        "commerce/cms": "@dev",
+        "commerce/pos": "@dev",
+        "commerce/crm": "@dev",
+        "commerce/marketplace": "@dev"
+    },
+    "require-dev": {
+        "fakerphp/faker": "^1.23",
+        "laravel/pail": "^1.2.5",
+        "laravel/pao": "^1.0.6",
+        "laravel/pint": "^1.27",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.6",
+        "phpunit/phpunit": "^12.5.12"
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "packages/commerce/*"
+        },
+        {
+            "type": "path",
+            "url": "modules/*"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/",
+            "Commerce\\Cart\\": "modules/Cart/src/",
+            "Commerce\\Catalog\\": "modules/Catalog/src/",
+            "Commerce\\Customers\\": "modules/Customers/src/",
+            "Commerce\\Iam\\": "modules/Iam/src/",
+            "Commerce\\Inventory\\": "modules/Inventory/src/",
+            "Commerce\\Media\\": "modules/Media/src/",
+            "Commerce\\Notification\\": "modules/Notification/src/",
+            "Commerce\\Orders\\": "modules/Orders/src/",
+            "Commerce\\Payment\\": "modules/Payment/src/",
+            "Commerce\\Promotion\\": "modules/Promotion/src/",
+            "Commerce\\Reports\\": "modules/Reports/src/",
+            "Commerce\\Product\\": "modules/Product/src/",
+            "Commerce\\Settings\\": "modules/Settings/src/",
+            "Commerce\\Shipping\\": "modules/Shipping/src/",
+            "Commerce\\Tax\\": "modules/Tax/src/",
+            "Commerce\\Webhooks\\": "modules/Webhooks/src/",
+            "Commerce\\Currency\\": "modules/Currency/src/",
+            "Commerce\\Cms\\": "modules/Cms/src/",
+            "Commerce\\Pos\\": "modules/Pos/src/",
+            "Commerce\\Crm\\": "modules/Crm/src/",
+            "Commerce\\Marketplace\\": "modules/Marketplace/src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "setup": [
+            "composer install",
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php artisan key:generate --force",
+            "@php artisan migrate --force",
+            "@php artisan db:seed --force",
+            "npm install",
+            "npm run build"
+        ],
+        "start": [
+            "Composer\\Config::disableProcessTimeout",
+            "bash bin/start.sh"
+        ],
+        "dev": [
+            "Composer\\Config::disableProcessTimeout",
+            "bash bin/start.sh"
+        ],
+        "serve": [
+            "@php artisan serve --port=1234"
+        ],
+        "test": [
+            "@php artisan config:clear --ansi @no_additional_args",
+            "@php artisan test"
+        ],
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
+            "@php artisan migrate --graceful --ansi"
+        ],
+        "pre-package-uninstall": [
+            "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

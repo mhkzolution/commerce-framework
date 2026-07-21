@@ -1,0 +1,34 @@
+{
+    "name": "Product",
+    "alias": "product",
+    "description": "Products, variants, media associations and publish lifecycle",
+    "version": "1.0.0",
+    "priority": 20,
+    "providers": [
+        "Commerce\\Product\\ProductServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "iam",
+            "catalog",
+            "media",
+            "settings"
+        ]
+    },
+    "permissions": [
+        "product.product.view",
+        "product.product.create",
+        "product.product.update",
+        "product.product.delete",
+        "product.product.publish"
+    ],
+    "settings": [],
+    "admin_menu": {
+        "label": "Products",
+        "icon": "cube",
+        "route": "admin.products.index",
+        "order": 25,
+        "permission": "product.product.view"
+    }
+}

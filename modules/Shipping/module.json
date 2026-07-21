@@ -1,0 +1,28 @@
+{
+    "name": "Shipping",
+    "alias": "shipping",
+    "description": "Shipping methods and delivery rate quotes",
+    "version": "1.0.0",
+    "priority": 28,
+    "providers": [
+        "Commerce\\Shipping\\ShippingServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "iam"
+        ]
+    },
+    "permissions": [
+        "shipping.method.view",
+        "shipping.method.manage"
+    ],
+    "settings": [],
+    "admin_menu": {
+        "label": "Shipping",
+        "icon": "truck",
+        "route": "admin.shipping.index",
+        "order": 35,
+        "permission": "shipping.method.view"
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "name": "Inventory",
+    "alias": "inventory",
+    "description": "Stock levels, movements and availability per purchasable variant",
+    "version": "1.0.0",
+    "priority": 30,
+    "providers": [
+        "Commerce\\Inventory\\InventoryServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "iam",
+            "product"
+        ]
+    },
+    "permissions": [
+        "inventory.stock.view",
+        "inventory.stock.adjust"
+    ],
+    "settings": [],
+    "admin_menu": {
+        "label": "Inventory",
+        "icon": "archive-box",
+        "route": "admin.inventory.index",
+        "order": 30,
+        "permission": "inventory.stock.view"
+    }
+}

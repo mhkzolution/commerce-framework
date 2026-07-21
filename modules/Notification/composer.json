@@ -1,0 +1,19 @@
+{
+    "name": "commerce/notification",
+    "description": "Transactional notifications",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "commerce/contracts": "*",
+        "commerce/core": "*",
+        "commerce/module-manager": "*",
+        "commerce/orders": "*",
+        "commerce/support": "*",
+        "illuminate/support": "^13.0",
+        "illuminate/mail": "^13.0"
+    },
+    "autoload": {"psr-4": {"Commerce\\Notification\\": "src/"}},
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

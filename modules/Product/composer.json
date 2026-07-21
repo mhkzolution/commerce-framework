@@ -1,0 +1,23 @@
+{
+    "name": "commerce/product",
+    "description": "Sellable products and variants",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "commerce/catalog": "*",
+        "commerce/contracts": "*",
+        "commerce/core": "*",
+        "commerce/media": "*",
+        "commerce/module-manager": "*",
+        "illuminate/support": "^13.0",
+        "illuminate/http": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Commerce\\Product\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

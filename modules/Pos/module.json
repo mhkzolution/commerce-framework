@@ -1,0 +1,21 @@
+{
+    "name": "Pos",
+    "alias": "pos",
+    "description": "Point of sale registers and sessions",
+    "version": "1.0.0",
+    "priority": 25,
+    "providers": ["Commerce\\Pos\\PosServiceProvider"],
+    "dependencies": {"hard": [], "soft": ["iam"]},
+    "permissions": [
+    "pos.register.view",
+    "pos.register.manage",
+    "pos.session.view"
+],
+    "admin_menu": {
+    "label": "POS",
+    "icon": "device-tablet",
+    "route": "admin.pos.registers.index",
+    "permission": "pos.register.view",
+    "order": 15
+}
+}

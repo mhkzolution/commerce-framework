@@ -1,0 +1,20 @@
+{
+    "name": "Marketplace",
+    "alias": "marketplace",
+    "description": "Multi-vendor marketplace sellers and commissions",
+    "version": "1.0.0",
+    "priority": 30,
+    "providers": ["Commerce\\Marketplace\\MarketplaceServiceProvider"],
+    "dependencies": {"hard": [], "soft": ["iam"]},
+    "permissions": [
+    "marketplace.seller.view",
+    "marketplace.seller.manage"
+],
+    "admin_menu": {
+    "label": "Marketplace",
+    "icon": "building-storefront",
+    "route": "admin.marketplace.sellers.index",
+    "permission": "marketplace.seller.view",
+    "order": 45
+}
+}

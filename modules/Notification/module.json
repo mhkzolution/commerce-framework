@@ -1,0 +1,11 @@
+{
+    "name": "Notification",
+    "alias": "notification",
+    "description": "Email and transactional notifications",
+    "version": "1.0.0",
+    "priority": 15,
+    "providers": ["Commerce\\Notification\\NotificationServiceProvider"],
+    "dependencies": {"hard": [], "soft": ["orders"]},
+    "permissions": [],
+    "settings": []
+}

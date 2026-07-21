@@ -1,0 +1,23 @@
+{
+    "name": "commerce/inventory",
+    "description": "Stock levels and movement ledger",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "commerce/contracts": "*",
+        "commerce/core": "*",
+        "commerce/module-manager": "*",
+        "commerce/product": "*",
+        "illuminate/support": "^13.0",
+        "illuminate/http": "^13.0",
+        "illuminate/database": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Commerce\\Inventory\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

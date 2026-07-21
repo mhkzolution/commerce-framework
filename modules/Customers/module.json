@@ -1,0 +1,31 @@
+{
+    "name": "Customers",
+    "alias": "customers",
+    "description": "Commerce customers and buyer profiles",
+    "version": "1.0.0",
+    "priority": 30,
+    "providers": [
+        "Commerce\\Customers\\CustomersServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "iam",
+            "orders"
+        ]
+    },
+    "permissions": [
+        "customers.customer.view",
+        "customers.customer.create",
+        "customers.customer.update",
+        "customers.customer.delete"
+    ],
+    "settings": [],
+    "admin_menu": {
+        "label": "Customers",
+        "icon": "users",
+        "route": "admin.customers.index",
+        "order": 32,
+        "permission": "customers.customer.view"
+    }
+}

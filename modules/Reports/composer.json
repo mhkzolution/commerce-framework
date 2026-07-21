@@ -1,0 +1,18 @@
+{
+    "name": "commerce/reports",
+    "description": "Admin dashboard and commerce reports",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "commerce/contracts": "*",
+        "commerce/core": "*",
+        "commerce/module-manager": "*",
+        "commerce/support": "*",
+        "illuminate/support": "^13.0",
+        "illuminate/database": "^13.0"
+    },
+    "autoload": {"psr-4": {"Commerce\\Reports\\": "src/"}},
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

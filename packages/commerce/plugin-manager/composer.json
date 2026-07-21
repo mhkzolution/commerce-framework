@@ -1,0 +1,27 @@
+{
+    "name": "commerce/plugin-manager",
+    "description": "Plugin discovery, hooks, and binding overrides",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "commerce/core": "*",
+        "commerce/contracts": "*",
+        "illuminate/support": "^13.0",
+        "illuminate/filesystem": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Commerce\\PluginManager\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Commerce\\PluginManager\\PluginManagerServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

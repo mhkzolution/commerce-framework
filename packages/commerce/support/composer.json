@@ -1,0 +1,17 @@
+{
+    "name": "commerce/support",
+    "description": "Shared support utilities for Commerce Framework",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "commerce/contracts": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Commerce\\Support\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

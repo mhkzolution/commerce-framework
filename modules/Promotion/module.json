@@ -1,0 +1,17 @@
+{
+    "name": "Promotion",
+    "alias": "promotion",
+    "description": "Coupon codes and cart discounts",
+    "version": "1.0.0",
+    "priority": 26,
+    "providers": ["Commerce\\Promotion\\PromotionServiceProvider"],
+    "dependencies": {"hard": [], "soft": ["iam"]},
+    "permissions": ["promotion.promotion.view", "promotion.promotion.manage"],
+    "admin_menu": {
+        "label": "Promotions",
+        "icon": "tag",
+        "route": "admin.promotions.index",
+        "order": 33,
+        "permission": "promotion.promotion.view"
+    }
+}

@@ -1,0 +1,35 @@
+{
+    "name": "Orders",
+    "alias": "orders",
+    "description": "Order placement, line items and fulfillment workflow",
+    "version": "1.0.0",
+    "priority": 30,
+    "providers": [
+        "Commerce\\Orders\\OrdersServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "iam",
+            "product",
+            "inventory",
+            "customers"
+        ]
+    },
+    "permissions": [
+        "orders.order.view",
+        "orders.order.create",
+        "orders.order.update",
+        "orders.order.confirm",
+        "orders.order.cancel",
+        "orders.order.complete"
+    ],
+    "settings": [],
+    "admin_menu": {
+        "label": "Orders",
+        "icon": "shopping-cart",
+        "route": "admin.orders.index",
+        "order": 35,
+        "permission": "orders.order.view"
+    }
+}

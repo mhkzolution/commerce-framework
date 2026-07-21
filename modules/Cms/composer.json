@@ -1,0 +1,22 @@
+{
+    "name": "commerce/cms",
+    "description": "Content management \u2014 pages and posts",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "commerce/contracts": "*",
+        "commerce/core": "*",
+        "commerce/module-manager": "*",
+        "commerce/support": "*",
+        "illuminate/support": "^13.0",
+        "illuminate/database": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Commerce\\Cms\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
