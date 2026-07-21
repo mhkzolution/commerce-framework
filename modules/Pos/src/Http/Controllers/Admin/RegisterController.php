@@ -8,6 +8,7 @@ use Commerce\Pos\Models\Register;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 final class RegisterController extends Controller
@@ -21,51 +22,51 @@ final class RegisterController extends Controller
 
     public function create(): View
     {
-        return view('pos::admin.registers.create', [
-            'statuses' => config('pos.statuses', []),
-        ]);
+        return view('pos::admin.registers.create');
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $item = Register::query()->create($request->validate([
-            'title' => ['nullable', 'string', 'max:255'],
-            'name' => ['nullable', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'status' => ['nullable', 'string', 'max:30'],
-            'content' => ['nullable', 'string'],
-        ]));
+        $item = Register::query()->create($this->validated($request));
 
-        return redirect()->route('admin.pos.registers.edit', $item)->with('status', 'Created.');
+        return redirect()->route('admin.pos.registers.edit', $item)->with('status', 'Register created.');
     }
 
     public function edit(Register $register): View
     {
         return view('pos::admin.registers.edit', [
             'item' => $register,
-            'statuses' => config('pos.statuses', []),
         ]);
     }
 
     public function update(Request $request, Register $register): RedirectResponse
     {
-        $register->update($request->validate([
-            'title' => ['nullable', 'string', 'max:255'],
-            'name' => ['nullable', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'status' => ['nullable', 'string', 'max:30'],
-            'content' => ['nullable', 'string'],
-        ]));
+        $register->update($this->validated($request, $register->uuid));
 
-        return redirect()->route('admin.pos.registers.edit', $register)->with('status', 'Saved.');
+        return redirect()->route('admin.pos.registers.edit', $register)->with('status', 'Register saved.');
     }
 
     public function destroy(Register $register): RedirectResponse
     {
         $register->delete();
 
-        return redirect()->route('admin.pos.registers.index')->with('status', 'Deleted.');
+        return redirect()->route('admin.pos.registers.index')->with('status', 'Register deleted.');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validated(Request $request, ?string $uuid = null): array
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:50', Rule::unique('pos_registers', 'code')->ignore($uuid, 'uuid')],
+            'location' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
+
+        $data['is_active'] = $request->boolean('is_active');
+
+        return $data;
     }
 }

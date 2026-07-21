@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('web')->group(function (): void {
     Route::get('/shop', [ShopController::class, 'index'])->name('storefront.shop.index');
+    Route::get('/products/{slug}', [ShopController::class, 'show'])->name('storefront.products.show');
 
     Route::get('/cart', [StorefrontCartController::class, 'index'])->name('storefront.cart.index');
     Route::post('/cart/items', [StorefrontCartController::class, 'store'])->name('storefront.cart.items.store');

@@ -1,16 +1,19 @@
 @extends('layouts.admin')
 @section('title', 'New Register')
 @section('page')
-    <x-admin.form.shell action="{{ route('admin.pos.registers.store') }}" method="POST" class="max-w-2xl">
+    <x-admin.form.shell action="{{ route('admin.pos.registers.store') }}" method="POST" class="max-w-xl">
         @csrf
-        <x-admin.form.section title="Details">
-            <input name="name" class="cf-input" placeholder="Name">
-            <input name="title" class="cf-input mt-2" placeholder="Title">
-            <input name="slug" class="cf-input mt-2" placeholder="Slug">
-            <input name="email" type="email" class="cf-input mt-2" placeholder="Email">
-            <textarea name="content" class="cf-input mt-2" rows="4" placeholder="Content"></textarea>
-            <select name="status" class="cf-input mt-2">@foreach($statuses as $k=>$v)<option value="{{ $k }}">{{ $v }}</option>@endforeach</select>
+        <x-admin.form.section title="Register details">
+            <label class="block text-sm font-medium text-text">Name</label>
+            <input name="name" value="{{ old('name') }}" class="cf-input mt-1" required>
+            <label class="mt-4 block text-sm font-medium text-text">Code</label>
+            <input name="code" value="{{ old('code') }}" class="cf-input mt-1" required>
+            <label class="mt-4 block text-sm font-medium text-text">Location</label>
+            <input name="location" value="{{ old('location') }}" class="cf-input mt-1">
+            <label class="mt-4 flex items-center gap-2 text-sm text-text">
+                <input type="checkbox" name="is_active" value="1" @checked(old('is_active', true))> Active
+            </label>
         </x-admin.form.section>
-        <x-slot:actions><x-admin.button variant="primary" type="submit">Create</x-admin.button></x-slot:actions>
+        <x-slot:actions><x-admin.button variant="primary" type="submit">Create register</x-admin.button></x-slot:actions>
     </x-admin.form.shell>
 @endsection

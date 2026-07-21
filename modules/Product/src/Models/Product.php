@@ -31,6 +31,7 @@ class Product extends Model
         'status',
         'visibility',
         'brand_uuid',
+        'seller_uuid',
         'attribute_set_id',
         'published_at',
         'publish_at',

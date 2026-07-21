@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Commerce\ModuleManager;
 
 use Commerce\Contracts\Admin\AdminBreadcrumbRegistryInterface;
+use Commerce\Contracts\Admin\AdminGlobalSearchServiceInterface;
 use Commerce\Contracts\Admin\AdminNavigationBuilderInterface;
 use Commerce\Contracts\Admin\AdminWidgetRegistryInterface;
 use Commerce\ModuleManager\Admin\AdminBreadcrumbRegistry;
+use Commerce\ModuleManager\Admin\AdminGlobalSearchService;
 use Commerce\ModuleManager\Admin\AdminNavigationBuilder;
 use Commerce\ModuleManager\Admin\AdminWidgetRegistry;
 use Illuminate\Support\Facades\View;
@@ -23,10 +25,12 @@ class ModuleManagerServiceProvider extends ServiceProvider
         $this->app->singleton(ModuleActivator::class);
 
         $this->app->singleton(AdminNavigationBuilder::class);
+        $this->app->singleton(AdminGlobalSearchService::class);
         $this->app->singleton(AdminBreadcrumbRegistry::class);
         $this->app->singleton(AdminWidgetRegistry::class);
 
         $this->app->bind(AdminNavigationBuilderInterface::class, AdminNavigationBuilder::class);
+        $this->app->bind(AdminGlobalSearchServiceInterface::class, AdminGlobalSearchService::class);
         $this->app->bind(AdminBreadcrumbRegistryInterface::class, AdminBreadcrumbRegistry::class);
         $this->app->bind(AdminWidgetRegistryInterface::class, AdminWidgetRegistry::class);
     }

@@ -6,6 +6,8 @@ namespace Commerce\Product\Services;
 
 use Commerce\Contracts\Event\EventBusInterface;
 use Commerce\Contracts\Seo\SeoServiceInterface;
+use Commerce\Contracts\Seo\SlugServiceInterface;
+use Commerce\Contracts\Seo\UrlRedirectServiceInterface;
 use Commerce\Core\Base\BaseService;
 use Commerce\Core\Exceptions\DomainException;
 use Commerce\Core\Exceptions\EntityNotFoundException;
@@ -19,21 +21,24 @@ use Commerce\Product\Models\Product;
 use Commerce\Product\Models\ProductAttributeValue;
 use Commerce\Product\Models\ProductMedia;
 use Commerce\Product\Models\ProductVariant;
-use Commerce\Product\Support\SlugGenerator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 final class ProductService extends BaseService implements ProductServiceInterface
 {
     public function __construct(
         private readonly EventBusInterface $eventBus,
         private readonly SeoServiceInterface $seoService,
+        private readonly SlugServiceInterface $slugService,
+        private readonly UrlRedirectServiceInterface $urlRedirectService,
+        private readonly ProductSearchIndexer $searchIndexer,
     ) {}
 
     public function create(CreateProductData $data): Product
     {
         return DB::transaction(function () use ($data): Product {
-            $slug = $data->slug ?? SlugGenerator::unique($data->name, Product::query());
+            $slug = $this->resolveSlug($data->slug, $data->name);
             $schedule = $this->resolveSchedule($data->status, $data->publishAt);
 
             $product = Product::query()->create([
@@ -44,6 +49,7 @@ final class ProductService extends BaseService implements ProductServiceInterfac
                 'status' => $schedule['status'],
                 'visibility' => $data->visibility,
                 'brand_uuid' => $data->brandUuid,
+                'seller_uuid' => $data->sellerUuid,
                 'attribute_set_id' => $data->attributeSetId,
                 'publish_at' => $schedule['publish_at'],
                 'published_at' => $schedule['published_at'],
@@ -63,6 +69,9 @@ final class ProductService extends BaseService implements ProductServiceInterfac
                 $this->eventBus->dispatch(new ProductPublished(productUuid: $product->uuid));
             }
 
+            $this->slugService->register($slug, Product::SEO_ENTITY_TYPE, $product->uuid, $product->tenant_id);
+            $this->searchIndexer->index($product->fresh(['variants', 'categories']));
+
             return $product->fresh(['variants', 'media', 'categories', 'tags', 'attributeValues.attribute']);
         });
     }
@@ -72,7 +81,8 @@ final class ProductService extends BaseService implements ProductServiceInterfac
         return DB::transaction(function () use ($uuid, $data): Product {
             $product = $this->findOrFail($uuid);
             $wasPublished = $product->isPublished();
-            $slug = $data->slug ?? SlugGenerator::unique($data->name, Product::query(), $product->id);
+            $oldSlug = $product->slug;
+            $slug = $this->resolveSlug($data->slug ?? null, $data->name, $product->slug);
             $schedule = $this->resolveSchedule($data->status, $data->publishAt, $product);
 
             $product->update([
@@ -83,6 +93,7 @@ final class ProductService extends BaseService implements ProductServiceInterfac
                 'status' => $schedule['status'],
                 'visibility' => $data->visibility,
                 'brand_uuid' => $data->brandUuid,
+                'seller_uuid' => $data->sellerUuid,
                 'attribute_set_id' => $data->attributeSetId,
                 'publish_at' => $schedule['publish_at'],
                 'published_at' => $schedule['published_at'],
@@ -108,6 +119,16 @@ final class ProductService extends BaseService implements ProductServiceInterfac
                 $this->eventBus->dispatch(new ProductPublished(productUuid: $product->uuid));
             }
 
+            if ($oldSlug !== $slug) {
+                $this->urlRedirectService->createRedirect(
+                    $this->productPath($oldSlug),
+                    $this->productPath($slug),
+                );
+            }
+
+            $this->slugService->register($slug, Product::SEO_ENTITY_TYPE, $product->uuid, $product->tenant_id);
+            $this->searchIndexer->index($product->fresh(['variants', 'categories']));
+
             return $product->fresh(['variants', 'media', 'categories', 'tags', 'attributeValues.attribute']);
         });
     }
@@ -116,6 +137,8 @@ final class ProductService extends BaseService implements ProductServiceInterfac
     {
         $product = $this->findOrFail($uuid);
         $this->seoService->deleteForEntity(Product::SEO_ENTITY_TYPE, $product->uuid);
+        $this->slugService->unregister(Product::SEO_ENTITY_TYPE, $product->uuid);
+        $this->searchIndexer->delete($product->uuid);
         $product->delete();
     }
 
@@ -134,6 +157,8 @@ final class ProductService extends BaseService implements ProductServiceInterfac
         ]);
 
         $this->eventBus->dispatch(new ProductPublished(productUuid: $product->uuid));
+
+        $this->searchIndexer->index($product->fresh(['variants', 'categories']));
 
         return $product->fresh();
     }
@@ -333,5 +358,23 @@ final class ProductService extends BaseService implements ProductServiceInterfac
             'publish_at' => null,
             'published_at' => null,
         ];
+    }
+
+    private function resolveSlug(?string $requested, string $name, ?string $current = null): string
+    {
+        if ($requested !== null && $requested !== '') {
+            $slug = Str::slug($requested);
+        } elseif ($current !== null && $current !== '') {
+            $slug = $current;
+        } else {
+            $slug = $this->slugService->generate($name, Product::SEO_ENTITY_TYPE);
+        }
+
+        return $slug;
+    }
+
+    private function productPath(string $slug): string
+    {
+        return '/products/' . ltrim($slug, '/');
     }
 }

@@ -61,6 +61,17 @@
             @endforeach
         </select>
     </div>
+    @if (($sellers ?? collect())->isNotEmpty())
+        <div>
+            <label class="block text-sm font-medium text-text" for="seller_uuid">Seller</label>
+            <select id="seller_uuid" name="seller_uuid" class="cf-input mt-1">
+                <option value="">— None —</option>
+                @foreach ($sellers as $seller)
+                    <option value="{{ $seller->uuid }}" @selected(old('seller_uuid', $product?->seller_uuid) === $seller->uuid)>{{ $seller->name }}</option>
+                @endforeach
+            </select>
+        </div>
+    @endif
     <div>
         <label class="block text-sm font-medium text-text" for="attribute_set_id">Attribute set</label>
         <select id="attribute_set_id" name="attribute_set_id" class="cf-input mt-1">

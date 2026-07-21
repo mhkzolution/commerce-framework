@@ -24,4 +24,17 @@ class Session extends Model
         'closed_at',
         'status',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'opened_at' => 'datetime',
+            'closed_at' => 'datetime',
+        ];
+    }
+
+    public function register(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Register::class);
+    }
 }

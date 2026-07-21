@@ -8,6 +8,8 @@ use Commerce\Marketplace\Models\Seller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 final class SellerController extends Controller
@@ -28,16 +30,9 @@ final class SellerController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $item = Seller::query()->create($request->validate([
-            'title' => ['nullable', 'string', 'max:255'],
-            'name' => ['nullable', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'status' => ['nullable', 'string', 'max:30'],
-            'content' => ['nullable', 'string'],
-        ]));
+        $item = Seller::query()->create($this->validated($request));
 
-        return redirect()->route('admin.marketplace.sellers.edit', $item)->with('status', 'Created.');
+        return redirect()->route('admin.marketplace.sellers.edit', $item)->with('status', 'Seller created.');
     }
 
     public function edit(Seller $seller): View
@@ -50,22 +45,35 @@ final class SellerController extends Controller
 
     public function update(Request $request, Seller $seller): RedirectResponse
     {
-        $seller->update($request->validate([
-            'title' => ['nullable', 'string', 'max:255'],
-            'name' => ['nullable', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'status' => ['nullable', 'string', 'max:30'],
-            'content' => ['nullable', 'string'],
-        ]));
+        $seller->update($this->validated($request, $seller->uuid));
 
-        return redirect()->route('admin.marketplace.sellers.edit', $seller)->with('status', 'Saved.');
+        return redirect()->route('admin.marketplace.sellers.edit', $seller)->with('status', 'Seller saved.');
     }
 
     public function destroy(Seller $seller): RedirectResponse
     {
         $seller->delete();
 
-        return redirect()->route('admin.marketplace.sellers.index')->with('status', 'Deleted.');
+        return redirect()->route('admin.marketplace.sellers.index')->with('status', 'Seller deleted.');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validated(Request $request, ?string $uuid = null): array
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255', Rule::unique('marketplace_sellers', 'slug')->ignore($uuid, 'uuid')],
+            'email' => ['nullable', 'email', 'max:255'],
+            'commission_rate' => ['required', 'integer', 'min:0', 'max:10000'],
+            'status' => ['required', 'string', Rule::in(array_keys(config('marketplace.statuses', [])))],
+        ]);
+
+        $data['slug'] = filled($data['slug'] ?? null)
+            ? Str::slug($data['slug'])
+            : Str::slug($data['name']);
+
+        return $data;
     }
 }

@@ -7,9 +7,10 @@
     "providers": ["Commerce\\Marketplace\\MarketplaceServiceProvider"],
     "dependencies": {"hard": [], "soft": ["iam"]},
     "permissions": [
-    "marketplace.seller.view",
-    "marketplace.seller.manage"
-],
+        "marketplace.seller.view",
+        "marketplace.seller.manage",
+        "marketplace.commission.view"
+    ],
     "admin_menu": {
     "label": "Marketplace",
     "icon": "building-storefront",

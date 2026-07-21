@@ -6,6 +6,16 @@
     "priority": 15,
     "providers": ["Commerce\\Notification\\NotificationServiceProvider"],
     "dependencies": {"hard": [], "soft": ["orders"]},
-    "permissions": [],
-    "settings": []
+    "permissions": [
+        "notification.template.view",
+        "notification.template.update"
+    ],
+    "settings": [],
+    "admin_menu": {
+        "label": "Notifications",
+        "icon": "envelope",
+        "route": "admin.notification.templates.index",
+        "order": 12,
+        "permission": "notification.template.view"
+    }
 }

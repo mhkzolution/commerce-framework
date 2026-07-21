@@ -181,6 +181,7 @@ final class ProductController extends Controller
             'statuses' => config('product.statuses', []),
             'visibilities' => config('product.visibilities', []),
             'brands' => Brand::query()->orderBy('name')->get(),
+            'sellers' => $this->activeSellers(),
             'categories' => Category::query()->orderBy('name')->get(),
             'tags' => Tag::query()->orderBy('name')->get(),
             'attributeSets' => AttributeSet::query()->orderBy('name')->get(),
@@ -202,6 +203,7 @@ final class ProductController extends Controller
             'status' => $request->validated('status'),
             'visibility' => $request->validated('visibility'),
             'brandUuid' => $request->validated('brand_uuid'),
+            'sellerUuid' => $request->validated('seller_uuid'),
             'attributeSetId' => $request->validated('attribute_set_id'),
             'sku' => $request->validated('sku'),
             'price' => $this->toCents($request->input('price', 0)),
@@ -226,5 +228,20 @@ final class ProductController extends Controller
     private function toCents(mixed $amount): int
     {
         return (int) round(((float) $amount) * 100);
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, object>
+     */
+    private function activeSellers(): \Illuminate\Support\Collection
+    {
+        if (! class_exists(\Commerce\Marketplace\Models\Seller::class)) {
+            return collect();
+        }
+
+        return \Commerce\Marketplace\Models\Seller::query()
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get();
     }
 }

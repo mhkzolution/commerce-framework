@@ -24,6 +24,7 @@ final class StoreProductRequest extends FormRequest
             'status' => ['required', 'string', Rule::in(array_keys(config('product.statuses', [])))],
             'visibility' => ['required', 'string', Rule::in(array_keys(config('product.visibilities', [])))],
             'brand_uuid' => ['nullable', 'uuid'],
+            'seller_uuid' => ['nullable', 'uuid', 'exists:marketplace_sellers,uuid'],
             'attribute_set_id' => ['nullable', 'integer', 'exists:attribute_sets,id'],
             'sku' => ['nullable', 'string', 'max:100'],
             'price' => ['nullable', 'numeric', 'min:0'],

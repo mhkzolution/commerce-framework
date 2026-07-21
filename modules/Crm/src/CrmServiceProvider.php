@@ -10,6 +10,11 @@ final class CrmServiceProvider extends BaseModuleServiceProvider
 {
     public function getModuleAlias(): string { return 'crm'; }
 
+    public function register(): void
+    {
+        $this->mergeConfigFrom($this->modulePath('config/crm.php'), 'crm');
+    }
+
     public function boot(): void
     {
         $this->loadMigrationsFrom($this->modulePath('database/migrations'));

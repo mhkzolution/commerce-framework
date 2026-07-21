@@ -8,6 +8,8 @@ use Commerce\Cms\Models\Page;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 final class PageController extends Controller
@@ -28,18 +30,10 @@ final class PageController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate([
-            'title' => ['nullable', 'string', 'max:255'],
-            'name' => ['nullable', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'status' => ['nullable', 'string', 'max:30'],
-            'content' => ['nullable', 'string'],
-        ]);
+        $data = $this->validated($request);
+        $item = Page::query()->create($data);
 
-        $item = Page::query()->create(array_filter($data));
-
-        return redirect()->route('admin.cms.pages.edit', $item)->with('status', 'Created.');
+        return redirect()->route('admin.cms.pages.edit', $item)->with('status', 'Page created.');
     }
 
     public function edit(Page $page): View
@@ -52,22 +46,34 @@ final class PageController extends Controller
 
     public function update(Request $request, Page $page): RedirectResponse
     {
-        $page->update($request->validate([
-            'title' => ['nullable', 'string', 'max:255'],
-            'name' => ['nullable', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'status' => ['nullable', 'string', 'max:30'],
-            'content' => ['nullable', 'string'],
-        ]));
+        $page->update($this->validated($request, $page->uuid));
 
-        return redirect()->route('admin.cms.pages.edit', $page)->with('status', 'Saved.');
+        return redirect()->route('admin.cms.pages.edit', $page)->with('status', 'Page saved.');
     }
 
     public function destroy(Page $page): RedirectResponse
     {
         $page->delete();
 
-        return redirect()->route('admin.cms.pages.index')->with('status', 'Deleted.');
+        return redirect()->route('admin.cms.pages.index')->with('status', 'Page deleted.');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validated(Request $request, ?string $uuid = null): array
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255', Rule::unique('cms_pages', 'slug')->ignore($uuid, 'uuid')],
+            'content' => ['nullable', 'string'],
+            'status' => ['required', 'string', Rule::in(array_keys(config('cms.statuses', [])))],
+        ]);
+
+        $data['slug'] = filled($data['slug'] ?? null)
+            ? Str::slug($data['slug'])
+            : Str::slug($data['title']);
+
+        return $data;
     }
 }

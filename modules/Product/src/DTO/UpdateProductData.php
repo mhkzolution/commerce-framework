@@ -22,6 +22,7 @@ final readonly class UpdateProductData extends DataTransferObject
         public string $status = 'draft',
         public string $visibility = 'public',
         public ?string $brandUuid = null,
+        public ?string $sellerUuid = null,
         public ?int $attributeSetId = null,
         public ?string $sku = null,
         public int $price = 0,

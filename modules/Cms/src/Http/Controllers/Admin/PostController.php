@@ -8,6 +8,8 @@ use Commerce\Cms\Models\Post;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 final class PostController extends Controller
@@ -28,16 +30,9 @@ final class PostController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $item = Post::query()->create($request->validate([
-            'title' => ['nullable', 'string', 'max:255'],
-            'name' => ['nullable', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'status' => ['nullable', 'string', 'max:30'],
-            'content' => ['nullable', 'string'],
-        ]));
+        $item = Post::query()->create($this->validated($request));
 
-        return redirect()->route('admin.cms.posts.edit', $item)->with('status', 'Created.');
+        return redirect()->route('admin.cms.posts.edit', $item)->with('status', 'Post created.');
     }
 
     public function edit(Post $post): View
@@ -50,22 +45,40 @@ final class PostController extends Controller
 
     public function update(Request $request, Post $post): RedirectResponse
     {
-        $post->update($request->validate([
-            'title' => ['nullable', 'string', 'max:255'],
-            'name' => ['nullable', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'status' => ['nullable', 'string', 'max:30'],
-            'content' => ['nullable', 'string'],
-        ]));
+        $post->update($this->validated($request, $post->uuid));
 
-        return redirect()->route('admin.cms.posts.edit', $post)->with('status', 'Saved.');
+        return redirect()->route('admin.cms.posts.edit', $post)->with('status', 'Post saved.');
     }
 
     public function destroy(Post $post): RedirectResponse
     {
         $post->delete();
 
-        return redirect()->route('admin.cms.posts.index')->with('status', 'Deleted.');
+        return redirect()->route('admin.cms.posts.index')->with('status', 'Post deleted.');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validated(Request $request, ?string $uuid = null): array
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255', Rule::unique('cms_posts', 'slug')->ignore($uuid, 'uuid')],
+            'excerpt' => ['nullable', 'string', 'max:500'],
+            'content' => ['nullable', 'string'],
+            'status' => ['required', 'string', Rule::in(array_keys(config('cms.statuses', [])))],
+            'published_at' => ['nullable', 'date'],
+        ]);
+
+        $data['slug'] = filled($data['slug'] ?? null)
+            ? Str::slug($data['slug'])
+            : Str::slug($data['title']);
+
+        if (($data['status'] ?? '') === 'published' && empty($data['published_at'])) {
+            $data['published_at'] = now();
+        }
+
+        return $data;
     }
 }

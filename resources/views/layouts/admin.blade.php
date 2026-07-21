@@ -48,7 +48,13 @@
                         </button>
 
                         <div class="hidden min-w-0 flex-1 md:block">
-                            <x-admin.search-input placeholder="Global search (coming soon)" name="global_search" class="max-w-md" disabled />
+                            <x-admin.search-input
+                                id="admin-global-search"
+                                placeholder="Search products, orders, customers..."
+                                name="global_search"
+                                class="max-w-md"
+                                data-search-url="{{ route('admin.search') }}"
+                            />
                         </div>
                     </div>
 

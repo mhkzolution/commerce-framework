@@ -23,4 +23,11 @@ class Register extends Model
         'location',
         'is_active',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
 }

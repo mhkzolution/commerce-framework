@@ -23,6 +23,29 @@
     @endif
 
     <section class="mt-8 rounded-lg border border-border bg-surface p-6 shadow-sm">
+        <h2 class="text-lg font-medium text-text">Profile</h2>
+        <form method="POST" action="{{ route('storefront.account.profile.update') }}" class="mt-4 grid gap-4 md:grid-cols-2">
+            @csrf
+            @method('PUT')
+            <div>
+                <label class="block text-sm font-medium text-text">Name</label>
+                <input name="name" value="{{ old('name', $customer->name) }}" class="cf-input mt-1" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-text">Email</label>
+                <input name="email" type="email" value="{{ old('email', $customer->email) }}" class="cf-input mt-1" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-text">Phone</label>
+                <input name="phone" value="{{ old('phone', $customer->phone) }}" class="cf-input mt-1">
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="cf-btn cf-btn--primary">Update profile</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="mt-8 rounded-lg border border-border bg-surface p-6 shadow-sm">
         <h2 class="text-lg font-medium text-text">Addresses</h2>
 
         @if ($addresses->isNotEmpty())
@@ -80,7 +103,9 @@
                 <tbody class="divide-y divide-border">
                     @forelse ($orders as $order)
                         <tr>
-                            <td class="px-4 py-3 font-medium text-text">{{ $order->order_number }}</td>
+                            <td class="px-4 py-3 font-medium text-text">
+                                <a href="{{ route('storefront.account.orders.show', $order) }}" class="hover:underline">{{ $order->order_number }}</a>
+                            </td>
                             <td class="px-4 py-3 text-muted">{{ $order->created_at?->format('Y-m-d') }}</td>
                             <td class="px-4 py-3">{{ number_format($order->grand_total / 100, 2) }} {{ $order->currency }}</td>
                             <td class="px-4 py-3">{{ $orderStatuses[$order->status] ?? $order->status }}</td>

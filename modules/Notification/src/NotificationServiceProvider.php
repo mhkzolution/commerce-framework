@@ -30,6 +30,7 @@ final class NotificationServiceProvider extends BaseModuleServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom($this->modulePath('database/migrations'));
+        $this->loadRoutesFrom($this->modulePath('routes/web.php'));
         $this->loadViewsFrom($this->modulePath('resources/views'), 'notification');
         Event::listen(OrderConfirmed::class, SendOrderConfirmationEmail::class);
         Event::listen(PaymentPaid::class, [SendPaymentNotifications::class, 'handlePaid']);

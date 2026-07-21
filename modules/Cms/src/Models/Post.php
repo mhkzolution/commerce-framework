@@ -25,4 +25,11 @@ class Post extends Model
         'status',
         'published_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'published_at' => 'datetime',
+        ];
+    }
 }

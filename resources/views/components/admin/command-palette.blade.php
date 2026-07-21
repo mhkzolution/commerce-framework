@@ -4,13 +4,15 @@
             <input
                 id="admin-command-input"
                 type="search"
-                placeholder="Search pages and commands..."
+                placeholder="Search pages, products, orders..."
                 class="cf-input"
                 autocomplete="off"
+                data-search-url="{{ route('admin.search') }}"
             >
         </div>
-        <div class="max-h-80 overflow-y-auto p-2">
+        <div id="admin-command-results" class="max-h-80 overflow-y-auto p-2">
             <p id="admin-command-empty" hidden class="px-3 py-6 text-center text-sm text-muted">No matches found.</p>
+            <div id="admin-command-static">
             @foreach ($adminCommandItems ?? [] as $item)
                 @if (!empty($item['url']))
                     <button
@@ -39,6 +41,8 @@
                     <span class="text-xs text-muted">Shell</span>
                 </button>
             @endif
+            </div>
+            <div id="admin-command-dynamic"></div>
         </div>
         <div class="border-t border-border px-3 py-2 text-xs text-muted">
             <span>↑↓ navigate</span>

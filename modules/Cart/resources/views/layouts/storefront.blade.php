@@ -13,6 +13,9 @@
             <a href="{{ route('storefront.shop.index') }}" class="storefront-brand">{{ config('commerce.name', 'Commerce Framework') }}</a>
             <nav class="flex items-center gap-4 text-sm">
                 <a href="{{ route('storefront.shop.index') }}" class="storefront-nav-link">Shop</a>
+                @if (Route::has('storefront.cms.posts.index'))
+                    <a href="{{ route('storefront.cms.posts.index') }}" class="storefront-nav-link">Blog</a>
+                @endif
                 <a href="{{ route('storefront.cart.index') }}" class="storefront-nav-link">Cart</a>
                 @if (!empty($storeCurrencies) && Route::has('storefront.cart.currency'))
                     <form method="POST" action="{{ route('storefront.cart.currency') }}" class="inline">

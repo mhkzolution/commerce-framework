@@ -9,7 +9,8 @@
     "permissions": [
     "pos.register.view",
     "pos.register.manage",
-    "pos.session.view"
+    "pos.session.view",
+    "pos.terminal.use"
 ],
     "admin_menu": {
     "label": "POS",

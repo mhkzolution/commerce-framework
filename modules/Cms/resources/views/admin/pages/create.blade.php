@@ -3,14 +3,16 @@
 @section('page')
     <x-admin.form.shell action="{{ route('admin.cms.pages.store') }}" method="POST" class="max-w-2xl">
         @csrf
-        <x-admin.form.section title="Details">
-            <input name="name" class="cf-input" placeholder="Name">
-            <input name="title" class="cf-input mt-2" placeholder="Title">
-            <input name="slug" class="cf-input mt-2" placeholder="Slug">
-            <input name="email" type="email" class="cf-input mt-2" placeholder="Email">
-            <textarea name="content" class="cf-input mt-2" rows="4" placeholder="Content"></textarea>
-            <select name="status" class="cf-input mt-2">@foreach($statuses as $k=>$v)<option value="{{ $k }}">{{ $v }}</option>@endforeach</select>
+        <x-admin.form.section title="Page details">
+            <label class="block text-sm font-medium text-text">Title</label>
+            <input name="title" value="{{ old('title') }}" class="cf-input mt-1" required>
+            <label class="mt-4 block text-sm font-medium text-text">Slug</label>
+            <input name="slug" value="{{ old('slug') }}" class="cf-input mt-1" placeholder="auto-generated from title">
+            <label class="mt-4 block text-sm font-medium text-text">Content</label>
+            <textarea name="content" class="cf-input mt-1" rows="8">{{ old('content') }}</textarea>
+            <label class="mt-4 block text-sm font-medium text-text">Status</label>
+            <select name="status" class="cf-input mt-1">@foreach($statuses as $k=>$v)<option value="{{ $k }}" @selected(old('status', 'draft')==$k)>{{ $v }}</option>@endforeach</select>
         </x-admin.form.section>
-        <x-slot:actions><x-admin.button variant="primary" type="submit">Create</x-admin.button></x-slot:actions>
+        <x-slot:actions><x-admin.button variant="primary" type="submit">Create page</x-admin.button></x-slot:actions>
     </x-admin.form.shell>
 @endsection

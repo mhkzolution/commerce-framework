@@ -10,6 +10,11 @@ final class CmsServiceProvider extends BaseModuleServiceProvider
 {
     public function getModuleAlias(): string { return 'cms'; }
 
+    public function register(): void
+    {
+        $this->mergeConfigFrom($this->modulePath('config/cms.php'), 'cms');
+    }
+
     public function boot(): void
     {
         $this->loadMigrationsFrom($this->modulePath('database/migrations'));

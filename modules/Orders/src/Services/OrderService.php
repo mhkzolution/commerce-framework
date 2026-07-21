@@ -121,13 +121,16 @@ final class OrderService extends BaseService implements OrderServiceInterface
                 );
 
                 if (config('inventory.reserve_on_checkout', true)) {
-                    $this->inventoryService->release(
-                        purchasableUuid: $line->purchasable_uuid,
-                        quantity: $line->quantity,
-                        referenceType: Order::REFERENCE_TYPE,
-                        referenceId: $order->uuid,
-                        reason: "Confirm {$order->order_number}",
-                    );
+                    $level = $this->inventoryQueryService->getStockLevel($line->purchasable_uuid);
+                    if ($level->getReserved() >= $line->quantity) {
+                        $this->inventoryService->release(
+                            purchasableUuid: $line->purchasable_uuid,
+                            quantity: $line->quantity,
+                            referenceType: Order::REFERENCE_TYPE,
+                            referenceId: $order->uuid,
+                            reason: "Confirm {$order->order_number}",
+                        );
+                    }
                 }
             }
 

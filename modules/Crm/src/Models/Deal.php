@@ -24,4 +24,9 @@ class Deal extends Model
         'stage',
         'status',
     ];
+
+    public function lead(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Lead::class);
+    }
 }

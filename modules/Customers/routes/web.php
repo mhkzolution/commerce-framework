@@ -41,6 +41,8 @@ Route::middleware('web')->group(function (): void {
 
         Route::middleware('auth:customer')->group(function (): void {
             Route::get('/', [AccountController::class, 'show'])->name('account');
+            Route::put('/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
+            Route::get('/orders/{order}', [AccountController::class, 'showOrder'])->name('account.orders.show');
             Route::post('/logout', [AccountController::class, 'logout'])->name('account.logout');
             Route::post('/addresses', [AccountController::class, 'storeAddress'])->name('account.addresses.store');
             Route::delete('/addresses/{address}', [AccountController::class, 'destroyAddress'])->name('account.addresses.destroy');
