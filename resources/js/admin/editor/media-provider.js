@@ -29,6 +29,9 @@ export function createMediaProvider(pickerUrl) {
                 };
 
                 overlay.querySelector('[data-cms-media-close]').addEventListener('click', close);
+                overlay.querySelector('.cms-editor-media-dialog').addEventListener('click', (event) => {
+                    event.stopPropagation();
+                });
                 overlay.addEventListener('click', (event) => {
                     if (event.target === overlay) {
                         close();
