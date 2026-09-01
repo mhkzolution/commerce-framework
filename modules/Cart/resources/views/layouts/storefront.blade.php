@@ -6,6 +6,7 @@
     <title>@yield('title', 'Shop') — {{ config('commerce.name', 'Commerce Framework') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <x-admin.design-tokens />
+    @stack('head')
 </head>
 <body class="min-h-screen bg-background text-text antialiased">
     <header class="storefront-header">
