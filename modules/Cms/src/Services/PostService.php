@@ -104,8 +104,6 @@ final class PostService extends BaseService
         return Post::query()
             ->where('slug', $slug)
             ->where('status', 'published')
-            ->whereNotNull('published_at')
-            ->where('published_at', '<=', now())
             ->first();
     }
 

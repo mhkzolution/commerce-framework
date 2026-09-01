@@ -100,9 +100,7 @@ final class StorefrontBlogService
     {
         return Tag::query()
             ->withCount(['posts as published_posts_count' => function (Builder $query): void {
-                $query->where('status', 'published')
-                    ->whereNotNull('published_at')
-                    ->where('published_at', '<=', now());
+                $query->where('status', 'published');
             }])
             ->get()
             ->filter(static fn (Tag $tag): bool => (int) $tag->published_posts_count > 0)
@@ -289,9 +287,6 @@ final class StorefrontBlogService
      */
     public function publishedQuery(): Builder
     {
-        return Post::query()
-            ->where('status', 'published')
-            ->whereNotNull('published_at')
-            ->where('published_at', '<=', now());
+        return Post::query()->where('status', 'published');
     }
 }

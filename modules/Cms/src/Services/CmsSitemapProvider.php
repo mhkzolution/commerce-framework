@@ -28,8 +28,6 @@ final class CmsSitemapProvider implements SitemapProviderInterface
 
             Post::query()
                 ->where('status', 'published')
-                ->whereNotNull('published_at')
-                ->where('published_at', '<=', now())
                 ->whereNotNull('slug')
                 ->get(['slug', 'updated_at', 'published_at'])
                 ->each(function (Post $post) use (&$urls): void {
