@@ -13,6 +13,8 @@ return [
     'content' => 'เนื้อหา',
     'excerpt' => 'คำโปรย',
     'published_at' => 'วันเผยแพร่',
+    'unpublish_at' => 'วันยกเลิกเผยแพร่',
+    'schedule_helper' => 'หากสถานะเป็น Published และวันเผยแพร่อยู่ในอนาคต รายการนี้จะถูกบันทึกเป็น Scheduled.',
     'author' => 'ผู้เขียน',
     'categories' => 'หมวดหมู่บทความ',
     'category' => 'หมวดหมู่',
