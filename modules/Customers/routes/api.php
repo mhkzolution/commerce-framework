@@ -3,21 +3,25 @@
 declare(strict_types=1);
 
 use Commerce\Api\Responses\ApiResponse;
+use Commerce\Api\Support\ApiInclude;
 use Commerce\Contracts\Order\OrderQueryServiceInterface;
 use Commerce\Core\Exceptions\DomainException;
 use Commerce\Core\Exceptions\EntityNotFoundException;
 use Commerce\Customers\Contracts\CustomerAddressServiceInterface;
 use Commerce\Customers\Contracts\CustomerServiceInterface;
-use Commerce\Customers\DTO\CreateCustomerData;
-use Commerce\Customers\Http\Requests\StoreCustomerRequest;
 use Commerce\Customers\DTO\CreateAddressData;
+use Commerce\Customers\DTO\CreateCustomerData;
+use Commerce\Customers\DTO\UpdateCustomerData;
 use Commerce\Customers\Http\Requests\StoreAddressRequest;
+use Commerce\Customers\Http\Requests\StoreCustomerRequest;
 use Commerce\Customers\Http\Resources\CustomerAddressResource;
 use Commerce\Customers\Http\Resources\CustomerResource;
 use Commerce\Customers\Services\CustomerAddressQueryService;
 use Commerce\Customers\Services\CustomerQueryService;
 use Commerce\Orders\Http\Resources\OrderResource;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\Rule;
 
 Route::prefix('api/v1')->middleware(['api'])->group(function (): void {
     Route::post('/customers', function (StoreCustomerRequest $request, CustomerServiceInterface $customers) {
@@ -35,15 +39,48 @@ Route::prefix('api/v1')->middleware(['api'])->group(function (): void {
         }
     })->name('api.v1.customers.store');
 
-    Route::get('/customers/{uuid}', function (CustomerQueryService $customers, string $uuid) {
+    Route::get('/customers/{uuid}', function (CustomerQueryService $customers, Request $request, string $uuid) {
         $customer = $customers->findByUuid($uuid);
 
         if ($customer === null) {
             return ApiResponse::error('customer.not_found', 'Customer not found.', status: 404);
         }
 
+        $relations = ApiInclude::relations($request, CustomerResource::INCLUDE_MAP);
+        if ($relations !== []) {
+            $customer->loadMissing($relations);
+        }
+
         return ApiResponse::success(new CustomerResource($customer));
     })->name('api.v1.customers.show');
+
+    Route::patch('/customers/{uuid}', function (Request $request, CustomerQueryService $customers, CustomerServiceInterface $customerService, string $uuid) {
+        $customer = $customers->findByUuid($uuid);
+
+        if ($customer === null) {
+            return ApiResponse::error('customer.not_found', 'Customer not found.', status: 404);
+        }
+
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:255', Rule::unique('customers', 'email')->ignore($customer->id)],
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'status' => ['required', 'string', Rule::in(array_keys(config('customers.statuses', [])))],
+        ]);
+
+        try {
+            $updated = $customerService->update($uuid, new UpdateCustomerData(
+                email: $data['email'],
+                name: $data['name'],
+                phone: $data['phone'] ?? null,
+                status: $data['status'],
+            ));
+
+            return ApiResponse::success(new CustomerResource($updated));
+        } catch (DomainException $exception) {
+            return ApiResponse::error('customer.invalid', $exception->getMessage(), status: 422);
+        }
+    })->name('api.v1.customers.update');
 
     Route::get('/customers/{uuid}/orders', function (CustomerQueryService $customers, string $uuid) {
         $customer = $customers->findByUuid($uuid);
@@ -111,4 +148,46 @@ Route::prefix('api/v1')->middleware(['api'])->group(function (): void {
             return ApiResponse::error('address.invalid', $exception->getMessage(), status: 422);
         }
     })->name('api.v1.customers.addresses.store');
+
+    Route::delete('/customers/{uuid}/addresses/{addressUuid}', function (
+        CustomerQueryService $customers,
+        CustomerAddressServiceInterface $addressService,
+        string $uuid,
+        string $addressUuid,
+    ) {
+        $customer = $customers->findByUuid($uuid);
+
+        if ($customer === null) {
+            return ApiResponse::error('customer.not_found', 'Customer not found.', status: 404);
+        }
+
+        try {
+            $addressService->delete($addressUuid);
+
+            return ApiResponse::success(['deleted' => true]);
+        } catch (DomainException|EntityNotFoundException $exception) {
+            return ApiResponse::error('address.invalid', $exception->getMessage(), status: 422);
+        }
+    })->name('api.v1.customers.addresses.destroy');
+
+    Route::post('/customers/{uuid}/addresses/{addressUuid}/default', function (
+        CustomerQueryService $customers,
+        CustomerAddressServiceInterface $addressService,
+        string $uuid,
+        string $addressUuid,
+    ) {
+        $customer = $customers->findByUuid($uuid);
+
+        if ($customer === null) {
+            return ApiResponse::error('customer.not_found', 'Customer not found.', status: 404);
+        }
+
+        try {
+            $address = $addressService->setDefault($addressUuid);
+
+            return ApiResponse::success(new CustomerAddressResource($address));
+        } catch (DomainException|EntityNotFoundException $exception) {
+            return ApiResponse::error('address.invalid', $exception->getMessage(), status: 422);
+        }
+    })->name('api.v1.customers.addresses.default');
 });

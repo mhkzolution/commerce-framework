@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Commerce\Crm\Models;
 
 use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Tenant\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Deal extends Model
 {
+    use BelongsToTenant;
     use HasUuid;
     use SoftDeletes;
 
@@ -25,7 +28,7 @@ class Deal extends Model
         'status',
     ];
 
-    public function lead(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);
     }

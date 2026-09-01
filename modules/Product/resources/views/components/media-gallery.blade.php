@@ -1,6 +1,7 @@
 @props([
     'mediaUuids' => [],
     'mediaPreviews' => [],
+    'showLabel' => true,
 ])
 
 @php
@@ -8,7 +9,9 @@
 @endphp
 
 <div id="{{ $galleryId }}" class="space-y-3" data-gallery-root>
-    <label class="block text-sm font-medium text-text">Product images</label>
+    @if ($showLabel)
+        <label class="block text-sm font-medium text-text">Product images</label>
+    @endif
     <p class="text-xs text-muted">First image is the primary image.</p>
 
     <div class="flex flex-wrap gap-3" data-gallery-list>

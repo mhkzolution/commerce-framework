@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Commerce\Customers\Http\Controllers\Admin;
 
 use Commerce\Contracts\Order\OrderQueryServiceInterface;
-use Commerce\Customers\Services\CustomerAddressQueryService;
 use Commerce\Customers\Contracts\CustomerServiceInterface;
 use Commerce\Customers\DTO\CreateCustomerData;
 use Commerce\Customers\DTO\UpdateCustomerData;
 use Commerce\Customers\Http\Requests\StoreCustomerRequest;
 use Commerce\Customers\Http\Requests\UpdateCustomerRequest;
 use Commerce\Customers\Models\Customer;
+use Commerce\Customers\Services\CustomerAddressQueryService;
 use Commerce\Customers\Services\CustomerQueryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,6 +39,7 @@ final class CustomerController extends Controller
     public function create(): View
     {
         return view('customers::admin.create', [
+            'customer' => null,
             'statuses' => config('customers.statuses', []),
         ]);
     }

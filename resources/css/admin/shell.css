@@ -83,6 +83,10 @@ html.admin-shell body {
     padding-left: 2.25rem;
 }
 
+.admin-nav-item.is-nested {
+    padding-left: 3.25rem;
+}
+
 .admin-sidebar.is-collapsed .admin-nav-label,
 .admin-sidebar.is-collapsed .admin-sidebar-search,
 .admin-sidebar.is-collapsed .admin-nav-badge,

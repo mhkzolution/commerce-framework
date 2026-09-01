@@ -9,7 +9,9 @@
     "permissions": [
         "marketplace.seller.view",
         "marketplace.seller.manage",
-        "marketplace.commission.view"
+        "marketplace.commission.view",
+        "marketplace.payout.view",
+        "marketplace.payout.manage"
     ],
     "admin_menu": {
     "label": "Marketplace",

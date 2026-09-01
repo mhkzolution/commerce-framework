@@ -3,60 +3,164 @@
 @section('title', $product->name)
 
 @section('content')
-    <nav class="mb-6 text-sm text-muted">
-        <a href="{{ route('storefront.shop.index') }}" class="hover:text-text">Shop</a>
-        <span class="mx-2">/</span>
-        <span class="text-text">{{ $product->name }}</span>
-    </nav>
+    @php
+        $breadcrumbItems = [
+            ['label' => __('storefront::storefront.shop'), 'url' => route('storefront.shop.index')],
+        ];
 
-    <div class="grid gap-8 lg:grid-cols-2">
-        <div class="rounded-lg border border-border bg-surface p-6">
-            @if ($product->media->isNotEmpty())
-                <div class="aspect-square rounded-md bg-background"></div>
-            @else
-                <div class="flex aspect-square items-center justify-center rounded-md bg-background text-muted">No image</div>
-            @endif
+        if ($product->categories->isNotEmpty()) {
+            $category = $product->categories->first();
+            $breadcrumbItems[] = [
+                'label' => $category->name,
+                'url' => route('storefront.shop.index', ['category' => $category->slug]),
+            ];
+        }
+
+        $breadcrumbItems[] = ['label' => $product->name];
+    @endphp
+
+    <article
+        class="storefront-pdp storefront-pdp--market"
+        data-product-page
+        data-product-uuid="{{ $product->uuid }}"
+        data-product-slug="{{ $product->slug }}"
+        data-product-name="{{ $product->name }}"
+        data-product-image="{{ $galleryItems[0]['thumbnail'] ?? $galleryItems[0]['url'] ?? '' }}"
+        data-product-price="{{ $variant?->price ?? 0 }}"
+        data-product-currency="{{ $displayCurrency }}"
+        data-product-currency-symbol="{{ \Commerce\Cart\Support\StorefrontMoney::meta((string) $displayCurrency)['symbol'] }}"
+        data-variants='@json($variantPayload)'
+        data-variant-axes='@json($variantOptionAxes)'
+    >
+        <x-storefront.breadcrumb :items="$breadcrumbItems" />
+
+        <div class="storefront-pdp__panels">
+            <section class="storefront-pdp__panel storefront-pdp__panel--gallery" aria-label="{{ __('storefront::storefront.product_gallery') }}">
+                <div class="storefront-pdp__panel-media">
+                    <x-storefront.commerce.product-gallery :items="$galleryItems" data-product-gallery-root />
+                </div>
+
+                <div class="storefront-pdp__gallery-footer">
+                    <div class="storefront-pdp__share">
+                        <span class="storefront-pdp__share-label">{{ __('storefront::storefront.share') }}:</span>
+                        <x-storefront.share-button :url="url()->current()" :title="$product->name" class="storefront-pdp__share-btn" />
+                    </div>
+                    <x-storefront.wishlist-button
+                        :product-uuid="$product->uuid"
+                        :variant-uuid="$variant?->uuid"
+                        class="storefront-pdp__favorite"
+                        :show-label="true"
+                    />
+                </div>
+            </section>
+
+            <section class="storefront-pdp__panel storefront-pdp__panel--buy">
+                <x-storefront.product-buy-box
+                    :product="$product"
+                    :variant="$variant"
+                    :variants="$variantPayload"
+                    :variant-option-axes="$variantOptionAxes"
+                    :price-summary="$priceSummary"
+                    :available="$available"
+                    :display-currency="$displayCurrency"
+                    :base-currency="$baseCurrency"
+                    :currency-converter="$currencyConverter"
+                    :visible-attributes="$visibleAttributes"
+                    :delivery-summary="$deliverySummary"
+                    :gallery-items="$galleryItems"
+                />
+            </section>
         </div>
 
-        <div>
-            <h1 class="text-3xl font-semibold text-text">{{ $product->name }}</h1>
-            @if ($product->description)
-                <div class="prose prose-sm mt-4 max-w-none text-text-secondary">{!! nl2br(e($product->description)) !!}</div>
-            @endif
+        <x-storefront.pdp-detail-sections
+            :product="$product"
+            :visible-attributes="$visibleAttributes"
+            class="storefront-pdp__details"
+        />
 
-            @if ($variant)
-                <p class="mt-6 text-2xl font-semibold text-text">
-                    @php
-                        $displayPrice = $variant->price;
-                        if ($currencyConverter && $displayCurrency !== $baseCurrency) {
-                            $displayPrice = $currencyConverter->convert($displayPrice, $baseCurrency, $displayCurrency);
-                        }
-                    @endphp
-                    {{ number_format($displayPrice / 100, 2) }} {{ $displayCurrency }}
+        <x-storefront.product-section
+            :title="__('storefront::storefront.recently_viewed')"
+            data-recently-viewed-section
+            hidden
+            class="storefront-pdp__product-section"
+        >
+            <x-storefront.product-grid class="storefront-product-grid--pdp" data-recently-viewed-grid></x-storefront.product-grid>
+            <div class="storefront-pdp-pagination" data-pdp-pagination="recently-viewed" hidden>
+                <p class="storefront-pdp-pagination__infinite" data-pdp-infinite-loading aria-live="polite">
+                    {{ __('storefront::storefront.scroll_to_load') }}
                 </p>
+                <div data-pdp-load-sentinel></div>
+            </div>
+        </x-storefront.product-section>
 
-                <p class="mt-2 text-sm text-muted">
-                    @if ($available > 0)
-                        {{ $available }} in stock
-                    @else
-                        Out of stock
-                    @endif
-                    @if ($variant->sku)
-                        · SKU {{ $variant->sku }}
-                    @endif
-                </p>
+        @if ($recommendedProducts->isNotEmpty())
+            <x-storefront.product-section
+                :title="__('storefront::storefront.related_products')"
+                class="storefront-pdp__product-section"
+            >
+                <x-storefront.product-grid class="storefront-product-grid--pdp" data-recommended-grid>
+                    @foreach ($recommendedProducts as $index => $related)
+                        @php $relatedVariant = $related->defaultVariant(); @endphp
+                        @if ($relatedVariant)
+                            <div
+                                class="storefront-pdp-card"
+                                data-pdp-card
+                                data-pdp-index="{{ $index }}"
+                                @if ($index >= 6) hidden @endif
+                            >
+                                <x-storefront.product-card
+                                    :product="$related"
+                                    :variant="$relatedVariant"
+                                    :display-currency="$displayCurrency"
+                                    :base-currency="$baseCurrency"
+                                    :currency-converter="$currencyConverter"
+                                    :available="$sectionStockLevels[$relatedVariant->uuid] ?? null"
+                                />
+                            </div>
+                        @endif
+                    @endforeach
+                </x-storefront.product-grid>
 
-                @if ($available > 0)
-                    <form method="POST" action="{{ route('storefront.cart.items.store') }}" class="mt-6 flex gap-3">
-                        @csrf
-                        <input type="hidden" name="purchasable_uuid" value="{{ $variant->uuid }}">
-                        <input type="number" name="quantity" value="1" min="1" max="{{ $available }}" class="cf-input w-20 py-2">
-                        <button type="submit" class="cf-btn cf-btn--primary flex-1">Add to cart</button>
-                    </form>
+                @if ($recommendedProducts->count() > 6)
+                    <div
+                        class="storefront-pdp-pagination"
+                        data-pdp-pagination="recommended"
+                        data-pdp-batch-size="6"
+                        data-pdp-visible="6"
+                        data-pdp-total="{{ $recommendedProducts->count() }}"
+                    >
+                        <button type="button" class="storefront-pdp-pagination__load-more" data-pdp-load-more>
+                            {{ __('storefront::storefront.load_more') }}
+                        </button>
+                        <p class="storefront-pdp-pagination__infinite" data-pdp-infinite-loading aria-live="polite">
+                            {{ __('storefront::storefront.scroll_to_load') }}
+                        </p>
+                        <div data-pdp-load-sentinel></div>
+                    </div>
                 @endif
-            @else
-                <p class="mt-6 text-muted">This product is not available.</p>
-            @endif
-        </div>
-    </div>
+            </x-storefront.product-section>
+        @endif
+
+        @if ($variant && $available > 0)
+            <div class="storefront-mobile-buy-bar storefront-mobile-buy-bar--market" data-mobile-buy-bar>
+                <div class="storefront-mobile-buy-bar__price" data-mobile-buy-price>
+                    {{ \Commerce\Cart\Support\StorefrontMoney::formatMajor(
+                        (float) ($currencyConverter && $displayCurrency !== $baseCurrency ? $currencyConverter->convert($variant->price, $baseCurrency, $displayCurrency) : $variant->price),
+                        (string) $displayCurrency,
+                        0,
+                    ) }}
+                </div>
+                <button type="button" class="storefront-mobile-buy-bar__button storefront-mobile-buy-bar__button--cart" data-mobile-buy-trigger="cart">
+                    {{ __('storefront::storefront.add_to_cart') }}
+                </button>
+                <button type="button" class="storefront-mobile-buy-bar__button storefront-mobile-buy-bar__button--buy" data-mobile-buy-trigger="checkout">
+                    {{ __('storefront::storefront.buy_now') }}
+                </button>
+            </div>
+        @endif
+    </article>
 @endsection
+
+@push('scripts')
+    @vite('resources/js/storefront/product.js')
+@endpush

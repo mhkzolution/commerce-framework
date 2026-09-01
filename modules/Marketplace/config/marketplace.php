@@ -8,4 +8,13 @@ return [
         'active' => 'Active',
         'suspended' => 'Suspended',
     ],
+    'commission_statuses' => [
+        'pending' => 'Pending',
+        'paid' => 'Paid',
+    ],
+    'payout_statuses' => [
+        'pending' => 'Pending',
+        'paid' => 'Paid',
+        'cancelled' => 'Cancelled',
+    ],
 ];

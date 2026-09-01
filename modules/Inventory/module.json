@@ -16,7 +16,9 @@
     },
     "permissions": [
         "inventory.stock.view",
-        "inventory.stock.adjust"
+        "inventory.stock.adjust",
+        "inventory.purchase_order.view",
+        "inventory.purchase_order.manage"
     ],
     "settings": [],
     "admin_menu": {

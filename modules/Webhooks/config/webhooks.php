@@ -17,5 +17,11 @@ return [
         'payment.paid' => 'Payment paid',
         'payment.failed' => 'Payment failed',
         'customer.created' => 'Customer created',
+        'product.created' => 'Product created',
+        'product.updated' => 'Product updated',
+        'product.published' => 'Product published',
+        'product.unpublished' => 'Product unpublished',
+        'product.archived' => 'Product archived',
+        'product.deleted' => 'Product deleted',
     ],
 ];

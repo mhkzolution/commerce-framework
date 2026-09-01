@@ -2,7 +2,17 @@
 
 namespace Database\Seeders;
 
+use Commerce\Catalog\Database\Seeders\CatalogMockupSeeder;
+use Commerce\Currency\Database\Seeders\CurrencySeeder;
 use Commerce\Iam\Database\Seeders\IamSeeder;
+use Commerce\Inventory\Database\Seeders\InventoryLocationSeeder;
+use Commerce\Notification\Database\Seeders\NotificationTemplateSeeder;
+use Commerce\Product\Database\Seeders\ProductMockupSeeder;
+use Commerce\Product\Database\Seeders\VariantOptionPresetSeeder;
+use Commerce\Promotion\Database\Seeders\PromotionSeeder;
+use Commerce\Settings\Database\Seeders\SettingsSeeder;
+use Commerce\Shipping\Database\Seeders\ShippingMethodSeeder;
+use Commerce\Tax\Database\Seeders\TaxRateSeeder;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -11,13 +21,16 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             IamSeeder::class,
-            \Commerce\Settings\Database\Seeders\SettingsSeeder::class,
-            \Commerce\Currency\Database\Seeders\CurrencySeeder::class,
-            \Commerce\Shipping\Database\Seeders\ShippingMethodSeeder::class,
-            \Commerce\Tax\Database\Seeders\TaxRateSeeder::class,
-            \Commerce\Inventory\Database\Seeders\InventoryLocationSeeder::class,
-            \Commerce\Notification\Database\Seeders\NotificationTemplateSeeder::class,
-            \Commerce\Promotion\Database\Seeders\PromotionSeeder::class,
+            SettingsSeeder::class,
+            CurrencySeeder::class,
+            ShippingMethodSeeder::class,
+            TaxRateSeeder::class,
+            InventoryLocationSeeder::class,
+            NotificationTemplateSeeder::class,
+            PromotionSeeder::class,
+            CatalogMockupSeeder::class,
+            VariantOptionPresetSeeder::class,
+            ProductMockupSeeder::class,
         ]);
     }
 }

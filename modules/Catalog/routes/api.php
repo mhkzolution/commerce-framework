@@ -6,11 +6,13 @@ use Commerce\Api\Responses\ApiResponse;
 use Commerce\Catalog\Http\Resources\AttributeResource;
 use Commerce\Catalog\Http\Resources\BrandResource;
 use Commerce\Catalog\Http\Resources\CategoryResource;
+use Commerce\Catalog\Http\Resources\CollectionResource;
 use Commerce\Catalog\Http\Resources\TagResource;
 use Commerce\Catalog\Services\AttributeQueryService;
 use Commerce\Catalog\Services\AttributeSetService;
 use Commerce\Catalog\Services\BrandQueryService;
 use Commerce\Catalog\Services\CategoryQueryService;
+use Commerce\Catalog\Services\CollectionQueryService;
 use Commerce\Catalog\Services\TagQueryService;
 use Illuminate\Support\Facades\Route;
 
@@ -53,6 +55,41 @@ Route::prefix('api/v1/catalog')->middleware(['api', 'auth'])->group(function ():
                 ],
             );
         })->name('api.v1.catalog.brands.index');
+
+        Route::get('/brands/{uuid}', function (BrandQueryService $brands, string $uuid) {
+            $brand = $brands->findByUuid($uuid);
+
+            if ($brand === null) {
+                return ApiResponse::error('catalog.brand.not_found', 'Brand not found.', status: 404);
+            }
+
+            return ApiResponse::success(new BrandResource($brand));
+        })->name('api.v1.catalog.brands.show');
+    });
+
+    Route::middleware('permission:catalog.collection.view')->group(function (): void {
+        Route::get('/collections', function (CollectionQueryService $collections) {
+            $paginator = $collections->paginate();
+
+            return ApiResponse::success(
+                CollectionResource::collection($paginator->items()),
+                meta: [
+                    'current_page' => $paginator->currentPage(),
+                    'last_page' => $paginator->lastPage(),
+                    'total' => $paginator->total(),
+                ],
+            );
+        })->name('api.v1.catalog.collections.index');
+
+        Route::get('/collections/{uuid}', function (CollectionQueryService $collections, string $uuid) {
+            $collection = $collections->findByUuid($uuid);
+
+            if ($collection === null) {
+                return ApiResponse::error('catalog.collection.not_found', 'Collection not found.', status: 404);
+            }
+
+            return ApiResponse::success(new CollectionResource($collection));
+        })->name('api.v1.catalog.collections.show');
     });
 
     Route::middleware('permission:catalog.tag.view')->group(function (): void {

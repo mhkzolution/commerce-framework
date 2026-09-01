@@ -24,6 +24,7 @@ final class DashboardController extends Controller
             'summary' => $this->dashboard->summary($range),
             'revenueSeries' => $this->dashboard->revenueSeries($range),
             'ordersByStatus' => $this->dashboard->ordersByStatus($range),
+            'salesByChannel' => $this->dashboard->salesByChannel($range),
             'recentOrders' => $this->dashboard->recentOrders(range: $range),
             'orderStatuses' => config('orders.statuses', []),
             'range' => $range,
@@ -53,7 +54,7 @@ final class DashboardController extends Controller
             }
 
             fclose($handle);
-        }, 'orders-' . $range->from->format('Y-m-d') . '-to-' . $range->to->format('Y-m-d') . '.csv', [
+        }, 'orders-'.$range->from->format('Y-m-d').'-to-'.$range->to->format('Y-m-d').'.csv', [
             'Content-Type' => 'text/csv',
         ]);
     }

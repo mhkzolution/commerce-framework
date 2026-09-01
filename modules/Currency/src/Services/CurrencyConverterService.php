@@ -70,7 +70,7 @@ final class CurrencyConverterService extends BaseService implements CurrencyConv
         $decimals = $model?->decimal_places ?? 2;
         $symbol = $model?->symbol ?? strtoupper($currency);
 
-        return $symbol . number_format($amount / (10 ** $decimals), $decimals);
+        return $symbol.' '.number_format($amount / (10 ** $decimals), $decimals);
     }
 
     private function rateMicroFor(string $code): int

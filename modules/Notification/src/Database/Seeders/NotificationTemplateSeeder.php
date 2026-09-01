@@ -38,5 +38,12 @@ final class NotificationTemplateSeeder extends Seeder
             'Payment failed for order {{order_number}}',
             'notification::mail.payment-failed',
         );
+
+        $templates->upsert(
+            'purchase_order.supplier',
+            'Purchase Order to Supplier',
+            'Purchase Order {{reference}}',
+            'inventory::mail.purchase-order',
+        );
     }
 }

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Commerce\Product\Models;
 
-use Commerce\Core\Concerns\HasUuid;
-use Commerce\Core\Tenant\BelongsToTenant;
 use Commerce\Catalog\Models\AttributeSet;
 use Commerce\Catalog\Models\Category;
+use Commerce\Catalog\Models\Collection;
 use Commerce\Catalog\Models\Tag;
+use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Tenant\BelongsToTenant;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -19,8 +21,8 @@ class Product extends Model
 {
     public const SEO_ENTITY_TYPE = 'product';
 
-    use HasUuid;
     use BelongsToTenant;
+    use HasUuid;
     use SoftDeletes;
 
     protected $fillable = [
@@ -29,7 +31,6 @@ class Product extends Model
         'name',
         'slug',
         'description',
-        'type',
         'status',
         'visibility',
         'brand_uuid',
@@ -56,8 +57,11 @@ class Product extends Model
 
     public function defaultVariant(): ?ProductVariant
     {
-        return $this->variants()->where('is_default', true)->first()
-            ?? $this->variants()->first();
+        $variants = $this->relationLoaded('variants')
+            ? $this->variants
+            : $this->variants()->get();
+
+        return $variants->firstWhere('is_default', true) ?? $variants->first();
     }
 
     public function media(): HasMany
@@ -73,6 +77,11 @@ class Product extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class, 'product_tags');
+    }
+
+    public function collections(): BelongsToMany
+    {
+        return $this->belongsToMany(Collection::class, 'product_collections');
     }
 
     public function attributeValues(): HasMany
@@ -109,8 +118,8 @@ class Product extends Model
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
     public function scopePublished($query)
     {
@@ -123,8 +132,8 @@ class Product extends Model
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
     public function scopeVisibleOnStorefront($query)
     {
@@ -133,6 +142,20 @@ class Product extends Model
 
     public function isSimple(): bool
     {
-        return $this->type === 'simple';
+        return $this->variantCount() <= 1;
+    }
+
+    public function variantCount(): int
+    {
+        if ($this->relationLoaded('variants')) {
+            return $this->variants->count();
+        }
+
+        return (int) $this->variants()->count();
+    }
+
+    public function getTypeAttribute(): string
+    {
+        return $this->variantCount() > 1 ? 'variable' : 'simple';
     }
 }

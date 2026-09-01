@@ -24,6 +24,7 @@ use Commerce\Orders\Events\OrderCreated;
 use Commerce\Orders\Models\Order;
 use Commerce\Orders\Models\OrderLineItem;
 use Commerce\Orders\Support\OrderNumberGenerator;
+use Commerce\Product\Support\ProductPrice;
 use Illuminate\Support\Facades\DB;
 
 final class OrderService extends BaseService implements OrderServiceInterface
@@ -254,7 +255,7 @@ final class OrderService extends BaseService implements OrderServiceInterface
                 throw new DomainException("Variant [{$line->purchasableUuid}] is not available for purchase.");
             }
 
-            $unitPrice = (int) $variant->price;
+            $unitPrice = ProductPrice::toMinorUnits($variant->price);
             $name = $variant->name
                 ?? ($variant->product->name ?? 'Product');
 

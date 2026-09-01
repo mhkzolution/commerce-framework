@@ -24,7 +24,7 @@
 
         <x-admin.card>
             @if (count($tree) > 0)
-                @include('catalog::admin.categories._tree', ['categories' => $tree])
+                @include('catalog::admin.categories._tree', ['categories' => $tree, 'imageUrls' => $imageUrls])
             @else
                 <div class="py-8 text-center text-sm text-muted">No categories yet.</div>
             @endif

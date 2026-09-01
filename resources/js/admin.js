@@ -1,5 +1,9 @@
 import './admin/shell.js';
-import './admin/theme.js';
 import './admin/command-palette.js';
 import './admin/dropdowns.js';
 import './admin/forms.js';
+import './admin/collection-rule-builder.js';
+import './admin/product-workspace.js';
+import './admin/media-library.js';
+import './admin/customer-experience.js';
+import './admin/footer-settings.js';

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Commerce\Currency;
 
+use Commerce\Cart\Contracts\CartStorageInterface;
 use Commerce\Contracts\Currency\CurrencyConverterInterface;
 use Commerce\Core\Base\BaseModuleServiceProvider;
 use Commerce\Currency\Contracts\CurrencyServiceInterface;
@@ -39,6 +40,9 @@ final class CurrencyServiceProvider extends BaseModuleServiceProvider
         $this->loadViewsFrom($this->modulePath('resources/views'), 'currency');
 
         View::composer('cart::layouts.storefront', function ($view): void {
+            $view->with('storeLocales', config('admin.locale.available', []));
+            $view->with('storeDisplayLocale', app()->getLocale());
+
             if (! app()->bound(CurrencyConverterInterface::class)) {
                 return;
             }
@@ -47,8 +51,8 @@ final class CurrencyServiceProvider extends BaseModuleServiceProvider
             $view->with('storeCurrencies', $converter->activeCurrencies());
             $view->with('storeBaseCurrency', $converter->baseCurrency());
 
-            if (app()->bound(\Commerce\Cart\Contracts\CartStorageInterface::class)) {
-                $view->with('storeDisplayCurrency', app(\Commerce\Cart\Contracts\CartStorageInterface::class)->currency());
+            if (app()->bound(CartStorageInterface::class)) {
+                $view->with('storeDisplayCurrency', app(CartStorageInterface::class)->currency());
             }
         });
     }

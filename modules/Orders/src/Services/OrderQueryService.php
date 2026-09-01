@@ -11,18 +11,18 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 final class OrderQueryService extends BaseQueryService implements OrderQueryServiceInterface
 {
-    public function findByUuid(string $uuid): ?object
+    public function findByUuid(string $uuid, array $relations = []): ?object
     {
         return Order::query()
-            ->with('lineItems')
+            ->when($relations !== [], static fn ($query) => $query->with($relations))
             ->where('uuid', $uuid)
             ->first();
     }
 
-    public function findByOrderNumber(string $orderNumber): ?object
+    public function findByOrderNumber(string $orderNumber, array $relations = []): ?object
     {
         return Order::query()
-            ->with('lineItems')
+            ->when($relations !== [], static fn ($query) => $query->with($relations))
             ->where('order_number', $orderNumber)
             ->first();
     }
@@ -30,11 +30,17 @@ final class OrderQueryService extends BaseQueryService implements OrderQueryServ
     /**
      * @return LengthAwarePaginator<int, Order>
      */
-    public function paginate(?string $search = null, ?string $status = null, int $perPage = 25): LengthAwarePaginator
-    {
+    public function paginate(
+        ?string $search = null,
+        ?string $status = null,
+        int $perPage = 25,
+        array $relations = [],
+        ?string $channel = null,
+    ): LengthAwarePaginator {
         return Order::query()
-            ->with('lineItems')
+            ->when($relations !== [], static fn ($query) => $query->with($relations))
             ->when($status, static fn ($query) => $query->where('status', $status))
+            ->when($channel, static fn ($query) => $query->where('channel', $channel))
             ->when($search, static function ($query, string $search): void {
                 $query->where(function ($inner) use ($search): void {
                     $inner->where('order_number', 'like', "%{$search}%")

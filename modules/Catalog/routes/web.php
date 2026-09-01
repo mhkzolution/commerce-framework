@@ -6,11 +6,25 @@ use Commerce\Catalog\Http\Controllers\Admin\AttributeController;
 use Commerce\Catalog\Http\Controllers\Admin\AttributeSetController;
 use Commerce\Catalog\Http\Controllers\Admin\BrandController;
 use Commerce\Catalog\Http\Controllers\Admin\CategoryController;
+use Commerce\Catalog\Http\Controllers\Admin\CollectionController;
 use Commerce\Catalog\Http\Controllers\Admin\DashboardController;
 use Commerce\Catalog\Http\Controllers\Admin\TagController;
+use Commerce\Catalog\Http\Controllers\Storefront\BrandController as StorefrontBrandController;
+use Commerce\Catalog\Http\Controllers\Storefront\CategoryController as StorefrontCategoryController;
+use Commerce\Catalog\Http\Controllers\Storefront\CollectionController as StorefrontCollectionController;
+use Commerce\Product\Http\Controllers\Admin\VariantOptionPresetController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('web')->group(function (): void {
+    Route::get('/categories/{slug}', [StorefrontCategoryController::class, 'show'])
+        ->name('storefront.catalog.categories.show');
+    Route::get('/collections/{slug}', [StorefrontCollectionController::class, 'show'])
+        ->name('storefront.catalog.collections.show');
+    Route::get('/brands', [StorefrontBrandController::class, 'index'])
+        ->name('storefront.catalog.brands.index');
+    Route::get('/brands/{slug}', [StorefrontBrandController::class, 'show'])
+        ->name('storefront.catalog.brands.show');
+
     Route::middleware(['auth', 'permission:catalog.category.view'])
         ->prefix('admin/catalog')
         ->name('admin.catalog.')
@@ -48,6 +62,20 @@ Route::middleware('web')->group(function (): void {
                     ->name('destroy');
             });
 
+            Route::prefix('collections')->name('collections.')->group(function (): void {
+                Route::get('/', [CollectionController::class, 'index'])->name('index');
+                Route::post('/', [CollectionController::class, 'store'])
+                    ->middleware('permission:catalog.collection.create')
+                    ->name('store');
+                Route::middleware('permission:catalog.collection.update')->group(function (): void {
+                    Route::get('/{collection}/edit', [CollectionController::class, 'edit'])->name('edit');
+                    Route::put('/{collection}', [CollectionController::class, 'update'])->name('update');
+                });
+                Route::delete('/{collection}', [CollectionController::class, 'destroy'])
+                    ->middleware('permission:catalog.collection.delete')
+                    ->name('destroy');
+            });
+
             Route::prefix('tags')->name('tags.')->group(function (): void {
                 Route::get('/', [TagController::class, 'index'])->name('index');
                 Route::post('/', [TagController::class, 'store'])
@@ -69,6 +97,23 @@ Route::middleware('web')->group(function (): void {
                     Route::put('/{attribute}', [AttributeController::class, 'update'])->name('update');
                 });
                 Route::delete('/{attribute}', [AttributeController::class, 'destroy'])
+                    ->middleware('permission:catalog.attribute.delete')
+                    ->name('destroy');
+            });
+
+            Route::prefix('variant-options')->name('variant-options.')->group(function (): void {
+                Route::get('/', [VariantOptionPresetController::class, 'index'])
+                    ->middleware('permission:catalog.attribute.view')
+                    ->name('index');
+                Route::middleware('permission:catalog.attribute.create')->group(function (): void {
+                    Route::get('/create', [VariantOptionPresetController::class, 'create'])->name('create');
+                    Route::post('/', [VariantOptionPresetController::class, 'store'])->name('store');
+                });
+                Route::middleware('permission:catalog.attribute.update')->group(function (): void {
+                    Route::get('/{variant_option}/edit', [VariantOptionPresetController::class, 'edit'])->name('edit');
+                    Route::put('/{variant_option}', [VariantOptionPresetController::class, 'update'])->name('update');
+                });
+                Route::delete('/{variant_option}', [VariantOptionPresetController::class, 'destroy'])
                     ->middleware('permission:catalog.attribute.delete')
                     ->name('destroy');
             });

@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Commerce\Orders\Models;
 
 use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Tenant\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderLineItem extends Model
 {
+    use BelongsToTenant;
     use HasUuid;
 
     protected $fillable = [

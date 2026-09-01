@@ -3,10 +3,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Two-factor authentication — {{ config('commerce.name', 'Commerce Framework') }}</title>
+    <title>Two-factor authentication — {{ app(\Commerce\Contracts\Settings\SiteIdentityServiceInterface::class)->name() }}</title>
+    <x-site.favicon />
+    <x-site.fonts />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="flex min-h-screen items-center justify-center bg-gray-100 antialiased">
+<body class="flex min-h-screen items-center justify-center bg-gray-100 font-sans antialiased">
     <div class="w-full max-w-md rounded-lg bg-white p-8 shadow-sm">
         <h1 class="text-xl font-semibold text-gray-900">Two-factor authentication</h1>
         <p class="mt-1 text-sm text-gray-500">Enter the 6-digit code from your authenticator app.</p>

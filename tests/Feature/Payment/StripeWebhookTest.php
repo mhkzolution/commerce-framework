@@ -27,7 +27,7 @@ final class StripeWebhookTest extends TestCase
             'payment.stripe.webhook_secret' => 'whsec_test_secret',
         ]);
 
-        $variant = $this->createPurchasableProduct(price: 2500, stock: 10);
+        $variant = $this->createPurchasableProduct(price: 25, stock: 10);
 
         $this->post(route('storefront.cart.items.store'), [
             'purchasable_uuid' => $variant->uuid,
@@ -53,7 +53,7 @@ final class StripeWebhookTest extends TestCase
         ], JSON_THROW_ON_ERROR);
 
         $timestamp = time();
-        $signature = hash_hmac('sha256', $timestamp . '.' . $payload, 'whsec_test_secret');
+        $signature = hash_hmac('sha256', $timestamp.'.'.$payload, 'whsec_test_secret');
 
         $this->call(
             'POST',

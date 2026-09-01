@@ -1,47 +1,57 @@
-@extends('cart::layouts.storefront')
+@extends('cart::layouts.auth')
 
-@section('title', 'Create account')
+@section('title', __('customers::auth.register_title'))
 
 @section('content')
-    <h1 class="text-2xl font-semibold text-text">Create account</h1>
+    <div class="storefront-auth-page" data-auth
+        @if ($authConfig->recaptchaEnabled())
+            data-recaptcha-enabled="1"
+            data-recaptcha-site-key="{{ config('customers.storefront.recaptcha.site_key') }}"
+        @endif
+    >
+        <x-storefront.auth.auth-card>
+            <x-storefront.auth.heading
+                :title="__('customers::auth.register_title')"
+                :description="__('customers::auth.register_description')"
+                class="storefront-auth-card__heading"
+            />
 
-    @if ($errors->any())
-        <div class="cf-flash cf-flash--danger mt-4">
-            <ul class="list-disc pl-4">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+            <x-storefront.auth.recaptcha-script :auth-config="$authConfig" />
+            <x-storefront.auth.register-form :recaptcha-enabled="$authConfig->recaptchaEnabled()" />
 
-    <form method="POST" action="{{ route('storefront.account.register.store') }}" class="mt-6 max-w-md space-y-4 rounded-lg border border-border bg-surface p-6 shadow-sm">
-        @csrf
-        <div>
-            <label class="block text-sm font-medium text-text" for="name">Name</label>
-            <input id="name" name="name" value="{{ old('name') }}" required class="cf-input mt-1">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-text" for="email">Email</label>
-            <input id="email" type="email" name="email" value="{{ old('email') }}" required class="cf-input mt-1">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-text" for="phone">Phone</label>
-            <input id="phone" name="phone" value="{{ old('phone') }}" class="cf-input mt-1">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-text" for="password">Password</label>
-            <input id="password" type="password" name="password" required class="cf-input mt-1">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-text" for="password_confirmation">Confirm password</label>
-            <input id="password_confirmation" type="password" name="password_confirmation" required class="cf-input mt-1">
-        </div>
-        <button type="submit" class="cf-btn cf-btn--primary w-full">Create account</button>
-    </form>
+            @php($oauthProviders = $authConfig->oauthProviders())
+            @if (count($oauthProviders) > 0)
+                <x-storefront.auth.divider />
+                <x-storefront.auth.social-buttons :providers="$oauthProviders" />
+            @endif
 
-    <p class="mt-4 text-sm text-muted">
-        Already have an account?
-        <a href="{{ route('storefront.account.login') }}" class="text-link underline">Sign in</a>
-    </p>
+            <footer class="storefront-auth-footer storefront-auth-card__footer">
+                <p class="storefront-auth-footer__register">
+                    {{ __('customers::auth.already_have_account') }}
+                    <a href="{{ route('storefront.account.login') }}" class="storefront-auth-footer__link">
+                        {{ __('customers::auth.sign_in') }}
+                    </a>
+                </p>
+
+                @php($support = $authConfig->support())
+                @if ($support['email'] || $support['phone'])
+                    <div class="storefront-auth-footer__support">
+                        <p class="storefront-auth-footer__support-label">{{ __('customers::auth.support') }}</p>
+                        <div class="storefront-auth-footer__support-links">
+                            @if ($support['email'])
+                                <a href="mailto:{{ $support['email'] }}" class="storefront-auth-footer__link">{{ __('customers::auth.support_email') }}</a>
+                            @endif
+                            @if ($support['phone'])
+                                <a href="tel:{{ preg_replace('/\s+/', '', $support['phone']) }}" class="storefront-auth-footer__link">{{ __('customers::auth.support_phone') }}</a>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+            </footer>
+        </x-storefront.auth.auth-card>
+    </div>
 @endsection
+
+@push('scripts')
+    @vite('resources/js/storefront/auth.js')
+@endpush

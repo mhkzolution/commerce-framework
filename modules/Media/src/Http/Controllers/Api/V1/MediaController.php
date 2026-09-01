@@ -8,6 +8,7 @@ use Commerce\Api\Responses\ApiResponse;
 use Commerce\Contracts\Media\MediaUploadServiceInterface;
 use Commerce\Media\Contracts\MediaServiceInterface;
 use Commerce\Media\DTO\UpdateMediaData;
+use Commerce\Media\Http\Requests\ImportMediaRequest;
 use Commerce\Media\Http\Requests\UpdateMediaRequest;
 use Commerce\Media\Http\Requests\UploadMediaRequest;
 use Commerce\Media\Http\Resources\MediaResource;
@@ -39,6 +40,16 @@ final class MediaController extends Controller
     {
         $media = $this->uploadService->upload(
             $request->file('file'),
+            $request->validated('folder_uuid'),
+        );
+
+        return ApiResponse::success(new MediaResource($media), status: 201);
+    }
+
+    public function import(ImportMediaRequest $request): JsonResponse
+    {
+        $media = $this->uploadService->upload(
+            $request->validated('url'),
             $request->validated('folder_uuid'),
         );
 

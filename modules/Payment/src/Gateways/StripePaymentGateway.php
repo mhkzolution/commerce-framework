@@ -39,7 +39,7 @@ final class StripePaymentGateway implements PaymentGatewayInterface
                 'amount' => (int) $payment->amount,
                 'currency' => strtolower((string) $payment->currency),
                 'metadata[payment_uuid]' => (string) $payment->uuid,
-                'description' => 'Order payment ' . ($payment->order_uuid ?? ''),
+                'description' => 'Order payment '.($payment->order_uuid ?? ''),
                 'automatic_payment_methods[enabled]' => 'true',
             ])
             ->throw()
@@ -60,6 +60,10 @@ final class StripePaymentGateway implements PaymentGatewayInterface
         }
 
         if (($payload['type'] ?? '') === 'payment_intent.payment_failed') {
+            return $payload['data']['object']['metadata']['payment_uuid'] ?? null;
+        }
+
+        if (($payload['type'] ?? '') === 'charge.refunded') {
             return $payload['data']['object']['metadata']['payment_uuid'] ?? null;
         }
 
@@ -89,9 +93,42 @@ final class StripePaymentGateway implements PaymentGatewayInterface
             return false;
         }
 
-        $signedPayload = $timestamp . '.' . $payload;
+        $signedPayload = $timestamp.'.'.$payload;
         $computed = hash_hmac('sha256', $signedPayload, $secret);
 
         return hash_equals($computed, $expected);
+    }
+
+    public function refund(object $payment, ?int $amount = null): array
+    {
+        $secretKey = (string) config('payment.stripe.secret_key');
+
+        if ($secretKey === '') {
+            throw new \RuntimeException('Stripe is not configured.');
+        }
+
+        $paymentIntent = (string) ($payment->gateway_reference ?? '');
+
+        if ($paymentIntent === '') {
+            throw new \RuntimeException('Payment has no Stripe payment intent reference.');
+        }
+
+        $payload = [
+            'payment_intent' => $paymentIntent,
+        ];
+
+        if ($amount !== null) {
+            $payload['amount'] = $amount;
+        }
+
+        $response = Http::asForm()
+            ->withToken($secretKey)
+            ->post('https://api.stripe.com/v1/refunds', $payload)
+            ->throw()
+            ->json();
+
+        return [
+            'reference' => (string) ($response['id'] ?? ''),
+        ];
     }
 }

@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use Commerce\Iam\Http\Controllers\Admin\AuditLogController;
+use Commerce\Iam\Http\Controllers\Admin\ImpersonationController;
 use Commerce\Iam\Http\Controllers\Admin\PermissionController;
 use Commerce\Iam\Http\Controllers\Admin\RoleController;
 use Commerce\Iam\Http\Controllers\Admin\SecurityController;
+use Commerce\Iam\Http\Controllers\Admin\TeamController;
 use Commerce\Iam\Http\Controllers\Admin\UserController;
 use Commerce\Iam\Http\Controllers\Auth\LoginController;
 use Commerce\Iam\Http\Controllers\Auth\TwoFactorChallengeController;
@@ -23,6 +25,7 @@ Route::middleware('web')->group(function (): void {
 
     Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): void {
         Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+        Route::post('/impersonation/stop', [ImpersonationController::class, 'destroy'])->name('impersonation.stop');
 
         Route::prefix('iam')->name('iam.')->group(function (): void {
             Route::middleware('permission:iam.user.view')->group(function (): void {
@@ -41,6 +44,10 @@ Route::middleware('web')->group(function (): void {
                 Route::delete('/users/{user}', [UserController::class, 'destroy'])
                     ->middleware('permission:iam.user.delete')
                     ->name('users.destroy');
+
+                Route::post('/users/{user}/impersonate', [ImpersonationController::class, 'store'])
+                    ->middleware('permission:iam.user.update')
+                    ->name('users.impersonate');
             });
 
             Route::middleware('permission:iam.role.view')->group(function (): void {
@@ -68,6 +75,20 @@ Route::middleware('web')->group(function (): void {
             Route::get('/audit-logs', [AuditLogController::class, 'index'])
                 ->middleware('permission:iam.audit.view')
                 ->name('audit-logs.index');
+
+            Route::middleware('permission:iam.team.view')->group(function (): void {
+                Route::get('/teams', [TeamController::class, 'index'])->name('teams.index');
+            });
+
+            Route::middleware('permission:iam.team.manage')->group(function (): void {
+                Route::get('/teams/create', [TeamController::class, 'create'])->name('teams.create');
+                Route::post('/teams', [TeamController::class, 'store'])->name('teams.store');
+                Route::get('/teams/{team}/edit', [TeamController::class, 'edit'])->name('teams.edit');
+                Route::put('/teams/{team}', [TeamController::class, 'update'])->name('teams.update');
+                Route::post('/teams/{team}/members', [TeamController::class, 'addMember'])->name('teams.members.store');
+                Route::delete('/teams/{team}/members/{user}', [TeamController::class, 'removeMember'])->name('teams.members.destroy');
+                Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy');
+            });
 
             Route::prefix('security')->name('security.')->group(function (): void {
                 Route::get('/', [SecurityController::class, 'show'])->name('show');

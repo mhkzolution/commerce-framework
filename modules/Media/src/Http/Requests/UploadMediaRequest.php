@@ -17,8 +17,15 @@ final class UploadMediaRequest extends FormRequest
     {
         $maxSize = (int) config('media.max_upload_size', 10240);
 
+        $mimes = implode(',', config('media.allowed_mimes', []));
+
         return [
-            'file' => ['required', 'file', 'max:' . $maxSize],
+            'file' => array_values(array_filter([
+                'required',
+                'file',
+                'max:'.$maxSize,
+                $mimes !== '' ? 'mimetypes:'.$mimes : null,
+            ])),
             'folder_uuid' => ['nullable', 'uuid'],
         ];
     }

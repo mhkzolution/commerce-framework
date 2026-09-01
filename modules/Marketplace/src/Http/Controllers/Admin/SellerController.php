@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Commerce\Marketplace\Http\Controllers\Admin;
 
+use Commerce\Iam\Models\User;
 use Commerce\Marketplace\Models\Seller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,7 @@ final class SellerController extends Controller
     {
         return view('marketplace::admin.sellers.create', [
             'statuses' => config('marketplace.statuses', []),
+            'users' => User::query()->orderBy('name')->get(),
         ]);
     }
 
@@ -40,6 +42,7 @@ final class SellerController extends Controller
         return view('marketplace::admin.sellers.edit', [
             'item' => $seller,
             'statuses' => config('marketplace.statuses', []),
+            'users' => User::query()->orderBy('name')->get(),
         ]);
     }
 
@@ -68,6 +71,7 @@ final class SellerController extends Controller
             'email' => ['nullable', 'email', 'max:255'],
             'commission_rate' => ['required', 'integer', 'min:0', 'max:10000'],
             'status' => ['required', 'string', Rule::in(array_keys(config('marketplace.statuses', [])))],
+            'user_uuid' => ['nullable', 'uuid', Rule::exists('users', 'uuid')],
         ]);
 
         $data['slug'] = filled($data['slug'] ?? null)

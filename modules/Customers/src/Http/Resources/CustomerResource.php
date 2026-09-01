@@ -11,6 +11,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /** @mixin Customer */
 final class CustomerResource extends JsonResource
 {
+    /** @var array<string, string|list<string>> */
+    public const INCLUDE_MAP = [
+        'addresses' => 'addresses',
+    ];
+
     public function toArray(Request $request): array
     {
         return [
@@ -21,6 +26,7 @@ final class CustomerResource extends JsonResource
             'status' => $this->status,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
+            'addresses' => CustomerAddressResource::collection($this->whenLoaded('addresses')),
         ];
     }
 }

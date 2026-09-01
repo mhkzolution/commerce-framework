@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Commerce\Webhooks\Models;
 
 use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Tenant\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Webhook extends Model
 {
+    use BelongsToTenant;
     use HasUuid;
 
     protected $fillable = [

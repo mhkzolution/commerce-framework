@@ -47,6 +47,15 @@ return [
             'report' => false,
         ],
 
+        'wordpress_uploads' => [
+            'driver' => 'local',
+            'root' => public_path('wp-content/uploads'),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/wp-content/uploads',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

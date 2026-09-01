@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace Commerce\Tax;
 
+use Commerce\Contracts\Tax\TaxCalculatorInterface;
 use Commerce\Contracts\Tax\TaxQuoteServiceInterface;
 use Commerce\Core\Base\BaseModuleServiceProvider;
 use Commerce\Tax\Contracts\TaxRateServiceInterface;
+use Commerce\Tax\Services\DatabaseTaxCalculator;
 use Commerce\Tax\Services\TaxQuoteService;
 use Commerce\Tax\Services\TaxRateQueryService;
 use Commerce\Tax\Services\TaxRateService;
 
 final class TaxServiceProvider extends BaseModuleServiceProvider
 {
-    public function getModuleAlias(): string { return 'tax'; }
+    public function getModuleAlias(): string
+    {
+        return 'tax';
+    }
 
     public function register(): void
     {
@@ -21,6 +26,8 @@ final class TaxServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(TaxRateQueryService::class);
         $this->app->singleton(TaxRateService::class);
         $this->app->singleton(TaxQuoteService::class);
+        $this->app->singleton(DatabaseTaxCalculator::class);
+        $this->app->bind(TaxCalculatorInterface::class, DatabaseTaxCalculator::class);
         $this->app->bind(TaxRateServiceInterface::class, TaxRateService::class);
         $this->app->bind(TaxQuoteServiceInterface::class, TaxQuoteService::class);
     }

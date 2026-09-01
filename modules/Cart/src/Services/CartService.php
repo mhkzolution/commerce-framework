@@ -108,6 +108,23 @@ final class CartService extends BaseService implements CartServiceInterface
         return $this->get();
     }
 
+    public function removePurchasedLines(array $purchasableUuids): CartData
+    {
+        if ($purchasableUuids === []) {
+            return $this->get();
+        }
+
+        $remove = array_flip($purchasableUuids);
+        $lines = array_values(array_filter(
+            $this->storage->lines(),
+            static fn (array $line): bool => ! isset($remove[$line['purchasable_uuid']]),
+        ));
+
+        $this->storage->put($lines);
+
+        return $this->get();
+    }
+
     public function applyCoupon(string $code): CartData
     {
         if (! app()->bound(PromotionServiceInterface::class)) {

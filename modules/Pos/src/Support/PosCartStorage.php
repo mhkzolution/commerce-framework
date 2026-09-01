@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Commerce\Pos\Support;
 
 use Commerce\Cart\Contracts\CartStorageInterface;
-use Commerce\Contracts\Currency\CurrencyConverterInterface;
 use Illuminate\Contracts\Session\Session;
 
 final class PosCartStorage implements CartStorageInterface
@@ -20,6 +19,9 @@ final class PosCartStorage implements CartStorageInterface
         return $this->payload()['lines'] ?? [];
     }
 
+    /**
+     * @param  list<array{purchasable_uuid: string, quantity: int, unit_price_override?: int|null, line_discount_minor?: int|null}>  $lines
+     */
     public function put(array $lines): void
     {
         $payload = $this->payload();
@@ -46,27 +48,70 @@ final class PosCartStorage implements CartStorageInterface
 
     public function couponCode(): ?string
     {
-        return null;
+        $code = $this->payload()['coupon_code'] ?? null;
+
+        return is_string($code) && $code !== '' ? $code : null;
     }
 
     public function setCouponCode(?string $code): void
     {
-        // POS terminal does not support coupons.
+        $payload = $this->payload();
+        $payload['coupon_code'] = $code;
+        $this->session->put($this->key(), $payload);
     }
 
-  /**
-     * @return array{currency?: string, lines?: list<array{purchasable_uuid: string, quantity: int}>}
+    /**
+     * @param  list<array{purchasable_uuid: string, quantity: int, unit_price_override?: int|null, line_discount_minor?: int|null}>  $lines
+     */
+    public function replaceLines(array $lines): void
+    {
+        $this->put($lines);
+    }
+
+    /**
+     * @return array{
+     *     currency?: string,
+     *     coupon_code?: string|null,
+     *     lines?: list<array{purchasable_uuid: string, quantity: int, unit_price_override?: int|null, line_discount_minor?: int|null}>
+     * }
+     */
+    public function export(): array
+    {
+        return $this->payload();
+    }
+
+    /**
+     * @param  array{
+     *     currency?: string,
+     *     coupon_code?: string|null,
+     *     lines?: list<array{purchasable_uuid: string, quantity: int, unit_price_override?: int|null, line_discount_minor?: int|null}>
+     * }  $payload
+     */
+    public function import(array $payload): void
+    {
+        $current = $this->payload();
+        $this->session->put($this->key(), array_merge($current, $payload));
+    }
+
+    /**
+     * @return array{
+     *     currency?: string,
+     *     coupon_code?: string|null,
+     *     lines?: list<array{purchasable_uuid: string, quantity: int, unit_price_override?: int|null, line_discount_minor?: int|null}>
+     * }
      */
     private function payload(): array
     {
         $payload = $this->session->get($this->key(), []);
+        $storeCurrency = $this->defaultCurrency();
 
         if (! is_array($payload)) {
-            return ['currency' => $this->defaultCurrency(), 'lines' => []];
+            return ['currency' => $storeCurrency, 'lines' => []];
         }
 
-        if (! isset($payload['currency'])) {
-            $payload['currency'] = $this->defaultCurrency();
+        if (($payload['currency'] ?? null) !== $storeCurrency) {
+            $payload['currency'] = $storeCurrency;
+            $this->session->put($this->key(), $payload);
         }
 
         if (! isset($payload['lines']) || ! is_array($payload['lines'])) {
@@ -78,15 +123,11 @@ final class PosCartStorage implements CartStorageInterface
 
     private function key(): string
     {
-        return 'commerce.pos.cart.' . $this->registerUuid;
+        return 'commerce.pos.cart.'.$this->registerUuid;
     }
 
     private function defaultCurrency(): string
     {
-        if (app()->bound(CurrencyConverterInterface::class)) {
-            return app(CurrencyConverterInterface::class)->baseCurrency();
-        }
-
-        return strtoupper((string) config('cart.default_currency', 'USD'));
+        return PosStoreCurrency::resolve();
     }
 }

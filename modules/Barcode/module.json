@@ -1,0 +1,32 @@
+{
+    "name": "Barcode",
+    "alias": "barcode",
+    "description": "Barcode label generation and printing center",
+    "version": "1.0.0",
+    "priority": 28,
+    "providers": [
+        "Commerce\\Barcode\\BarcodeServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "iam",
+            "product",
+            "marketplace",
+            "media"
+        ]
+    },
+    "permissions": [
+        "barcode.print",
+        "barcode.template.manage",
+        "barcode.history.view",
+        "barcode.history.reprint"
+    ],
+    "admin_menu": {
+        "label": "Barcode Center",
+        "icon": "tag",
+        "route": "admin.barcode.index",
+        "order": 28,
+        "permission": "barcode.print"
+    }
+}

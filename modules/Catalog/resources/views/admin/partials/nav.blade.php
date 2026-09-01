@@ -1,20 +1,25 @@
-<nav class="cf-subnav" aria-label="Catalog sections">
+<nav class="cf-subnav" aria-label="{{ __('catalog::admin.catalog_sections') }}">
     @foreach ([
-        ['Overview', 'admin.catalog.index'],
-        ['Categories', 'admin.catalog.categories.*'],
-        ['Brands', 'admin.catalog.brands.*'],
-        ['Tags', 'admin.catalog.tags.*'],
-        ['Attributes', 'admin.catalog.attributes.*'],
-        ['Attribute Sets', 'admin.catalog.attribute-sets.*'],
-    ] as [$label, $routePattern])
+        ['catalog::admin.overview', 'admin.catalog.index'],
+        ['catalog::admin.categories', 'admin.catalog.categories.*'],
+        ['catalog::admin.brands', 'admin.catalog.brands.*'],
+        ['catalog::admin.collections', 'admin.catalog.collections.*'],
+        ['catalog::admin.tags', 'admin.catalog.tags.*'],
+        ['product::workspace.variant_options_nav', 'admin.catalog.variant-options.*'],
+        ['catalog::admin.attributes', 'admin.catalog.attributes.*'],
+        ['catalog::admin.attribute_sets', 'admin.catalog.attribute-sets.*'],
+    ] as [$labelKey, $routePattern])
         @php
-            $url = match ($label) {
-                'Overview' => route('admin.catalog.index'),
-                'Categories' => route('admin.catalog.categories.index'),
-                'Brands' => route('admin.catalog.brands.index'),
-                'Tags' => route('admin.catalog.tags.index'),
-                'Attributes' => route('admin.catalog.attributes.index'),
-                'Attribute Sets' => route('admin.catalog.attribute-sets.index'),
+            $label = __($labelKey);
+            $url = match ($labelKey) {
+                'catalog::admin.overview' => route('admin.catalog.index'),
+                'catalog::admin.categories' => route('admin.catalog.categories.index'),
+                'catalog::admin.brands' => route('admin.catalog.brands.index'),
+                'catalog::admin.collections' => route('admin.catalog.collections.index'),
+                'catalog::admin.tags' => route('admin.catalog.tags.index'),
+                'product::workspace.variant_options_nav' => route('admin.catalog.variant-options.index'),
+                'catalog::admin.attributes' => route('admin.catalog.attributes.index'),
+                'catalog::admin.attribute_sets' => route('admin.catalog.attribute-sets.index'),
             };
         @endphp
         <a

@@ -24,7 +24,8 @@ final class StoreAttributeRequest extends FormRequest
             'is_required' => ['nullable', 'boolean'],
             'is_visible' => ['nullable', 'boolean'],
             'position' => ['nullable', 'integer', 'min:0'],
-            'options' => ['nullable', 'string'],
+            'options' => ['nullable'],
+            'options.*' => ['string', 'max:255'],
         ];
     }
 }

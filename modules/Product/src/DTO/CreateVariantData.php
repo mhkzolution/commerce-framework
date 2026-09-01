@@ -12,8 +12,8 @@ final readonly class CreateVariantData extends DataTransferObject
         public string $productUuid,
         public ?string $sku = null,
         public ?string $name = null,
-        public int $price = 0,
-        public ?int $compareAtPrice = null,
+        public float $price = 0,
+        public ?float $compareAtPrice = null,
         public bool $isDefault = false,
         public int $position = 0,
     ) {}

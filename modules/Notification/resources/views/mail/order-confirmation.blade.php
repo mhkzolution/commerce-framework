@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<body style="font-family: sans-serif; color: #111;">
+<body style="font-family: 'Prompt', ui-sans-serif, system-ui, sans-serif; color: #111;">
     <h1>Thank you for your order!</h1>
     <p>Hi {{ $customer_name }},</p>
     <p>Your order <strong>{{ $order_number }}</strong> has been confirmed.</p>

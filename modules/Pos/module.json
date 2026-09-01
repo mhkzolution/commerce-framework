@@ -15,8 +15,8 @@
     "admin_menu": {
     "label": "POS",
     "icon": "device-tablet",
-    "route": "admin.pos.registers.index",
-    "permission": "pos.register.view",
+    "route": "pos.index",
+    "permission": "pos.terminal.use",
     "order": 15
 }
 }

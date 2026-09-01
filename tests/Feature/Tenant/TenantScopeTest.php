@@ -40,7 +40,7 @@ final class TenantScopeTest extends TestCase
             status: 'published',
             visibility: 'public',
             sku: 'A-001',
-            price: 1000,
+            price: 10,
         ));
 
         $context->set($tenantB);

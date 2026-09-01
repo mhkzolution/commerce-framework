@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Commerce\Marketplace\Http\Controllers\Admin\CommissionController;
+use Commerce\Marketplace\Http\Controllers\Admin\PayoutController;
 use Commerce\Marketplace\Http\Controllers\Admin\SellerController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,14 @@ Route::middleware('web')->group(function (): void {
             Route::get('/commissions', [CommissionController::class, 'index'])
                 ->middleware('permission:marketplace.commission.view')
                 ->name('commissions.index');
+
+            Route::get('/payouts', [PayoutController::class, 'index'])
+                ->middleware('permission:marketplace.payout.view')
+                ->name('payouts.index');
+
+            Route::post('/payouts/{payout}/mark-paid', [PayoutController::class, 'markPaid'])
+                ->middleware('permission:marketplace.payout.manage')
+                ->name('payouts.mark-paid');
 
             Route::get('/sellers', [SellerController::class, 'index'])->name('sellers.index');
 

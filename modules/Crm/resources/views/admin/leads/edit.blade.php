@@ -1,6 +1,26 @@
 @extends('layouts.admin')
 @section('title', 'Edit Lead')
 @section('page')
+    @if (in_array($item->status, ['new', 'contacted'], true))
+        <form method="POST" action="{{ route('admin.crm.leads.qualify', $item) }}" class="mb-4">
+            @csrf
+            <x-admin.button variant="secondary" type="submit">Qualify lead</x-admin.button>
+        </form>
+    @endif
+
+    @if ($item->status === 'qualified')
+        <x-admin.form.shell action="{{ route('admin.crm.leads.convert', $item) }}" method="POST" class="mb-6 max-w-xl rounded-lg border border-border bg-surface p-4">
+            @csrf
+            <x-admin.form.section title="Convert to deal">
+                <label class="block text-sm font-medium text-text">Deal title</label>
+                <input name="title" value="{{ old('title', $item->name . ' — Deal') }}" class="cf-input mt-1" required>
+                <label class="mt-4 block text-sm font-medium text-text">Amount (cents)</label>
+                <input name="amount" type="number" min="0" value="{{ old('amount', 0) }}" class="cf-input mt-1" required>
+            </x-admin.form.section>
+            <x-slot:actions><x-admin.button variant="primary" type="submit">Convert to deal</x-admin.button></x-slot:actions>
+        </x-admin.form.shell>
+    @endif
+
     <x-admin.form.shell action="{{ route('admin.crm.leads.update', $item) }}" method="POST" class="max-w-xl">
         @csrf @method('PUT')
         <x-admin.form.section title="Lead details">

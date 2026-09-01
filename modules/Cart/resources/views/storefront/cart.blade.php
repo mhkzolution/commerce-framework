@@ -1,108 +1,89 @@
 @extends('cart::layouts.storefront')
 
-@section('title', 'Cart')
+@section('title', __('storefront::storefront.cart_title'))
 
 @section('content')
-    <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-semibold text-text">Cart</h1>
-        @if ($cart->lines !== [])
-            <form method="POST" action="{{ route('storefront.cart.clear') }}">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="text-sm text-danger hover:underline">Clear cart</button>
-            </form>
-        @endif
-    </div>
+    <div
+        class="storefront-cart"
+        data-cart
+        data-currency="{{ $cart->currency }}"
+        data-currency-symbol="{{ \Commerce\Cart\Support\StorefrontMoney::meta((string) $cart->currency)['symbol'] }}"
+        data-cheapest-shipping="{{ $page->cheapestShipping }}"
+    >
+        <header class="storefront-cart__header">
+            <x-storefront.breadcrumb :items="[
+                ['label' => __('storefront::storefront.shop'), 'url' => route('storefront.shop.index')],
+                ['label' => __('storefront::storefront.cart_title')],
+            ]" />
 
-    @session('status')
-        <div class="cf-flash cf-flash--success mt-4">{{ $value }}</div>
-    @endsession
+            <div class="storefront-cart__title-row">
+                <h1 class="storefront-cart__title">{{ __('storefront::storefront.cart_title') }}</h1>
 
-    @if ($errors->any())
-        <div class="cf-flash cf-flash--danger mt-4">{{ $errors->first() }}</div>
-    @endif
-
-    @if ($cart->lines === [])
-        <p class="mt-8 text-muted">
-            Your cart is empty.
-            <a href="{{ route('storefront.shop.index') }}" class="text-link hover:underline">Continue shopping</a>
-        </p>
-    @else
-        <div class="mt-8 overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
-            <table class="min-w-full divide-y divide-border text-sm">
-                <thead class="bg-surface-muted">
-                    <tr>
-                        <th class="px-4 py-3 text-left font-medium text-text-secondary">Product</th>
-                        <th class="px-4 py-3 text-left font-medium text-text-secondary">Price</th>
-                        <th class="px-4 py-3 text-left font-medium text-text-secondary">Qty</th>
-                        <th class="px-4 py-3 text-left font-medium text-text-secondary">Total</th>
-                        <th class="px-4 py-3 text-right font-medium text-text-secondary">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-border">
-                    @foreach ($cart->lines as $line)
-                        <tr>
-                            <td class="px-4 py-3">
-                                <div class="font-medium text-text">{{ $line->name }}</div>
-                                <div class="text-xs text-muted">{{ $line->sku ?? $line->purchasableUuid }}</div>
-                                @if ($line->available < $line->quantity)
-                                    <div class="mt-1 text-xs text-danger">Only {{ $line->available }} available</div>
-                                @endif
-                            </td>
-                            <td class="px-4 py-3">{{ number_format($line->unitPrice / 100, 2) }}</td>
-                            <td class="px-4 py-3">
-                                <form method="POST" action="{{ route('storefront.cart.items.update', $line->purchasableUuid) }}" class="inline-flex gap-2">
-                                    @csrf
-                                    @method('PATCH')
-                                    <input type="number" name="quantity" value="{{ $line->quantity }}" min="0" class="cf-input w-16 py-1">
-                                    <button type="submit" class="text-muted hover:text-text">Update</button>
-                                </form>
-                            </td>
-                            <td class="px-4 py-3">{{ number_format($line->lineTotal / 100, 2) }}</td>
-                            <td class="px-4 py-3 text-right">
-                                <form method="POST" action="{{ route('storefront.cart.items.destroy', $line->purchasableUuid) }}">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-danger hover:underline">Remove</button>
-                                </form>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-
-        <div class="mt-6 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <div class="text-sm text-muted">Subtotal ({{ $cart->itemCount }} items)</div>
-                <div class="text-2xl font-semibold text-text">{{ number_format($cart->subtotal / 100, 2) }} {{ $cart->currency }}</div>
-                @if ($cart->discountTotal > 0)
-                    <div class="mt-1 text-sm text-success">
-                        {{ $cart->promotionName }} ({{ $cart->couponCode }}): -{{ number_format($cart->discountTotal / 100, 2) }}
-                    </div>
+                @if ($cart->lines !== [])
+                    <form method="POST" action="{{ route('storefront.cart.clear') }}" class="storefront-cart__clear">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="storefront-cart__clear-btn">{{ __('storefront::storefront.clear_cart') }}</button>
+                    </form>
                 @endif
             </div>
-            <a href="{{ route('storefront.checkout') }}" class="cf-btn cf-btn--primary text-center">Checkout</a>
-        </div>
+        </header>
 
-        <section class="mt-6 rounded-lg border border-border bg-surface p-4 shadow-sm">
-            <h2 class="text-sm font-medium text-text">Promotion code</h2>
-            @if ($cart->couponCode)
-                <div class="mt-2 flex items-center justify-between text-sm">
-                    <span class="text-success">{{ $cart->couponCode }} applied</span>
-                    <form method="POST" action="{{ route('storefront.cart.coupon.remove') }}">
-                        @csrf @method('DELETE')
-                        <button type="submit" class="text-danger hover:underline">Remove</button>
-                    </form>
-                </div>
-            @else
-                <form method="POST" action="{{ route('storefront.cart.coupon.apply') }}" class="mt-2 flex gap-2">
-                    @csrf
-                    <input name="code" placeholder="Enter code" class="cf-input flex-1 uppercase">
-                    <button type="submit" class="cf-btn cf-btn--secondary">Apply</button>
-                </form>
-            @endif
-            @error('coupon')<p class="mt-2 text-sm text-danger">{{ $message }}</p>@enderror
-        </section>
-    @endif
+        @session('status')
+            <div class="cf-flash cf-flash--success storefront-cart__flash">{{ $value }}</div>
+        @endsession
+
+        @if ($errors->any())
+            <div class="cf-flash cf-flash--danger storefront-cart__flash">{{ $errors->first() }}</div>
+        @endif
+
+        @if ($cart->lines === [])
+            <x-storefront.empty-state
+                :title="__('storefront::storefront.cart_empty_title')"
+                :description="__('storefront::storefront.cart_empty_description')"
+                class="storefront-cart__empty"
+            >
+                <x-admin.button :href="route('storefront.shop.index')" variant="primary">
+                    {{ __('storefront::storefront.continue_shopping') }}
+                </x-admin.button>
+            </x-storefront.empty-state>
+        @else
+            <div class="storefront-cart__layout">
+                <section class="storefront-cart__main" aria-label="{{ __('storefront::storefront.cart_items') }}">
+                    <x-storefront.cart.cart-items :lines="$page->lines" :currency="$cart->currency" />
+                </section>
+
+                <x-storefront.cart.cart-summary :cart="$cart" :page="$page" />
+            </div>
+
+            <div class="storefront-cart__recommendations">
+                <x-storefront.cart.recommendation-rail
+                    :title="__('storefront::storefront.recommended_for_cart')"
+                    :products="$page->completeOrderProducts"
+                    :stock-levels="$page->completeOrderStockLevels"
+                    :currency="$cart->currency"
+                />
+
+                <x-storefront.product-section
+                    :title="__('storefront::storefront.recently_viewed')"
+                    class="storefront-cart__recently-viewed"
+                    data-recently-viewed-section
+                    hidden
+                >
+                    <x-storefront.product-grid data-recently-viewed-grid></x-storefront.product-grid>
+                </x-storefront.product-section>
+
+                <x-storefront.cart.recommendation-rail
+                    :title="__('storefront::storefront.you_may_also_like')"
+                    :products="$page->youMayAlsoLikeProducts"
+                    :stock-levels="$page->youMayAlsoLikeStockLevels"
+                    :currency="$cart->currency"
+                />
+            </div>
+        @endif
+    </div>
 @endsection
+
+@push('scripts')
+    @vite('resources/js/storefront/cart.js')
+@endpush

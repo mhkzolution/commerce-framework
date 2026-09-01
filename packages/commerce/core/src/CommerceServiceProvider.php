@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Commerce\Core;
 
+use Commerce\Contracts\Authorization\PermissionRegistryInterface;
+use Commerce\Contracts\Barcode\BarcodeValueGeneratorInterface;
+use Commerce\Contracts\Channel\ChannelContextInterface;
 use Commerce\Contracts\Event\EventBusInterface;
 use Commerce\Contracts\Hook\HookRegistryInterface;
 use Commerce\Contracts\Pricing\PriceResolverInterface;
@@ -12,23 +15,32 @@ use Commerce\Contracts\Search\SearchQueryInterface;
 use Commerce\Contracts\Seo\SeoServiceInterface;
 use Commerce\Contracts\Seo\SlugServiceInterface;
 use Commerce\Contracts\Seo\UrlRedirectServiceInterface;
-use Commerce\Contracts\Authorization\PermissionRegistryInterface;
+use Commerce\Core\Barcode\BarcodeValueGenerator;
+use Commerce\Core\Barcode\Strategies\PrefixBarcodeStrategy;
+use Commerce\Core\Barcode\Strategies\RandomBarcodeStrategy;
+use Commerce\Core\Barcode\Strategies\SequentialBarcodeStrategy;
+use Commerce\Core\Barcode\Strategies\TimestampBarcodeStrategy;
+use Commerce\Core\Channel\ChannelContext;
 use Commerce\Core\Console\PublishOutboxCommand;
 use Commerce\Core\Events\EventBus;
 use Commerce\Core\Hooks\HookRegistry;
-use Commerce\Core\Outbox\OutboxPublisher;
-use Commerce\Core\Outbox\OutboxRecorder;
+use Commerce\Core\Http\Middleware\ResolveChannel;
+use Commerce\Core\Http\Middleware\ResolveLocale;
 use Commerce\Core\Http\Middleware\ResolveTenant;
 use Commerce\Core\Http\Middleware\ResolveUrlRedirect;
-use Commerce\Core\Tenant\TenantContext;
-use Commerce\Core\Tenant\TenantService;
+use Commerce\Core\Outbox\OutboxPublisher;
+use Commerce\Core\Outbox\OutboxRecorder;
 use Commerce\Core\Pricing\CompositePriceResolver;
 use Commerce\Core\Search\DatabaseSearchIndex;
 use Commerce\Core\Search\DatabaseSearchQuery;
+use Commerce\Core\Search\ElasticsearchSearchIndex;
+use Commerce\Core\Search\ElasticsearchSearchQuery;
 use Commerce\Core\Seo\SeoService;
-use Commerce\Core\Seo\SlugService;
 use Commerce\Core\Seo\SitemapGenerator;
+use Commerce\Core\Seo\SlugService;
 use Commerce\Core\Seo\UrlRedirectService;
+use Commerce\Core\Tenant\TenantContext;
+use Commerce\Core\Tenant\TenantService;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Support\ServiceProvider;
 
@@ -36,7 +48,9 @@ class CommerceServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/commerce.php', 'commerce');
+        $this->mergeConfigFrom(__DIR__.'/../config/commerce.php', 'commerce');
+        $this->mergeConfigFrom(__DIR__.'/../config/barcode.php', 'barcode');
+        $this->mergePluginState();
 
         $this->app->singleton(EventBusInterface::class, EventBus::class);
         $this->app->singleton(HookRegistryInterface::class, HookRegistry::class);
@@ -50,30 +64,52 @@ class CommerceServiceProvider extends ServiceProvider
             return new SitemapGenerator($app->tagged('commerce.sitemap'));
         });
         $this->app->singleton(DatabaseSearchIndex::class);
-        $this->app->bind(SearchIndexInterface::class, DatabaseSearchIndex::class);
         $this->app->singleton(DatabaseSearchQuery::class);
-        $this->app->bind(SearchQueryInterface::class, DatabaseSearchQuery::class);
+        $this->app->singleton(ElasticsearchSearchIndex::class);
+        $this->app->singleton(ElasticsearchSearchQuery::class);
+
+        $searchDriver = (string) config('commerce.search.driver', 'database');
+        $this->app->bind(SearchIndexInterface::class, $searchDriver === 'elasticsearch'
+            ? ElasticsearchSearchIndex::class
+            : DatabaseSearchIndex::class);
+        $this->app->bind(SearchQueryInterface::class, $searchDriver === 'elasticsearch'
+            ? ElasticsearchSearchQuery::class
+            : DatabaseSearchQuery::class);
         $this->app->singleton(CompositePriceResolver::class);
         $this->app->bind(PriceResolverInterface::class, CompositePriceResolver::class);
         $this->app->singleton(TenantContext::class);
         $this->app->singleton(TenantService::class);
+        $this->app->singleton(ChannelContext::class);
+        $this->app->bind(ChannelContextInterface::class, ChannelContext::class);
         $this->app->singleton(OutboxRecorder::class);
         $this->app->singleton(OutboxPublisher::class);
+
+        $this->app->singleton(BarcodeValueGeneratorInterface::class, static function (): BarcodeValueGenerator {
+            return new BarcodeValueGenerator([
+                new RandomBarcodeStrategy,
+                new TimestampBarcodeStrategy,
+                new PrefixBarcodeStrategy,
+                new SequentialBarcodeStrategy,
+            ]);
+        });
     }
 
     public function boot(): void
     {
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
         /** @var HttpKernel $kernel */
         $kernel = $this->app->make(HttpKernel::class);
         $kernel->prependMiddlewareToGroup('web', ResolveUrlRedirect::class);
         $kernel->prependMiddlewareToGroup('web', ResolveTenant::class);
+        $kernel->prependMiddlewareToGroup('web', ResolveChannel::class);
+        $kernel->appendMiddlewareToGroup('web', ResolveLocale::class);
         $kernel->prependMiddlewareToGroup('api', ResolveTenant::class);
+        $kernel->prependMiddlewareToGroup('api', ResolveChannel::class);
 
-        $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
-        $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'commerce');
+        $this->loadRoutesFrom(__DIR__.'/../routes/api.php');
+        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'commerce');
 
         if ($this->app->runningInConsole()) {
             $this->commands([PublishOutboxCommand::class]);
@@ -82,7 +118,7 @@ class CommerceServiceProvider extends ServiceProvider
         $this->registerPlatformPermissions();
 
         $this->publishes([
-            __DIR__ . '/../config/commerce.php' => config_path('commerce.php'),
+            __DIR__.'/../config/commerce.php' => config_path('commerce.php'),
         ], 'commerce-config');
     }
 
@@ -100,5 +136,18 @@ class CommerceServiceProvider extends ServiceProvider
                 'label' => $label,
             ]);
         }
+    }
+
+    private function mergePluginState(): void
+    {
+        $path = storage_path('framework/commerce-plugins.php');
+
+        if (! is_file($path)) {
+            return;
+        }
+
+        /** @var array<string, bool> $overrides */
+        $overrides = require $path;
+        config(['commerce.plugins' => array_merge(config('commerce.plugins', []), $overrides)]);
     }
 }

@@ -14,6 +14,10 @@ Route::middleware('web')->group(function (): void {
         ->group(function (): void {
             Route::get('/', [PaymentController::class, 'index'])->name('index');
             Route::get('/{payment}', [PaymentController::class, 'show'])->name('show');
+
+            Route::middleware('permission:payment.payment.manage')
+                ->post('/{payment}/refund', [PaymentController::class, 'refund'])
+                ->name('refund');
         });
 
     Route::get('/payment/{payment}', [StorefrontPaymentController::class, 'show'])->name('storefront.payment.show');

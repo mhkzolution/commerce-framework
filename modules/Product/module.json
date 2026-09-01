@@ -13,7 +13,8 @@
             "iam",
             "catalog",
             "media",
-            "settings"
+            "settings",
+            "marketplace"
         ]
     },
     "permissions": [
@@ -23,12 +24,33 @@
         "product.product.delete",
         "product.product.publish"
     ],
-    "settings": [],
+    "settings": [
+        {
+            "key": "product.fallback_image_media_uuid",
+            "type": "string",
+            "label": "Fallback product image",
+            "group": "product",
+            "input": "media",
+            "help": "Shown when a product has no images assigned.",
+            "default": null,
+            "validation": ["nullable", "uuid"]
+        },
+        {
+            "key": "product.sku_pattern",
+            "type": "string",
+            "label": "Default SKU pattern",
+            "group": "product",
+            "input": "text",
+            "help": "Tokens: {PRODUCT}, {COLOR}, {SIZE}, and option names in braces.",
+            "default": "{PRODUCT}-{COLOR}-{SIZE}",
+            "validation": ["nullable", "string", "max:255"]
+        }
+    ],
     "admin_menu": {
         "label": "Products",
         "icon": "cube",
         "route": "admin.products.index",
-        "order": 25,
+        "order": 30,
         "permission": "product.product.view"
     }
 }

@@ -15,4 +15,9 @@ interface MediaQueryServiceInterface
      * @return array<string, object>
      */
     public function findByUuids(array $uuids): array;
+
+    /**
+     * @param  list<string>  $uuids
+     */
+    public function preload(array $uuids): void;
 }

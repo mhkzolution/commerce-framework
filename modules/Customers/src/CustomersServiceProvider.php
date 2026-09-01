@@ -9,11 +9,19 @@ use Commerce\Core\Base\BaseModuleServiceProvider;
 use Commerce\Customers\Contracts\CustomerAddressServiceInterface;
 use Commerce\Customers\Contracts\CustomerAuthServiceInterface;
 use Commerce\Customers\Contracts\CustomerServiceInterface;
+use Commerce\Customers\Contracts\SmsSenderInterface;
 use Commerce\Customers\Services\CustomerAddressQueryService;
 use Commerce\Customers\Services\CustomerAddressService;
 use Commerce\Customers\Services\CustomerAuthService;
+use Commerce\Customers\Services\CustomerOtpService;
+use Commerce\Customers\Services\CustomerPasswordResetService;
 use Commerce\Customers\Services\CustomerQueryService;
 use Commerce\Customers\Services\CustomerService;
+use Commerce\Customers\Services\LineOAuthService;
+use Commerce\Customers\Services\RecaptchaVerifier;
+use Commerce\Customers\Services\Sms\HttpSmsSender;
+use Commerce\Customers\Services\Sms\LogSmsSender;
+use Commerce\Customers\Services\StorefrontAuthConfigService;
 
 final class CustomersServiceProvider extends BaseModuleServiceProvider
 {
@@ -31,6 +39,17 @@ final class CustomersServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(CustomerAddressQueryService::class);
         $this->app->singleton(CustomerAddressService::class);
         $this->app->singleton(CustomerAuthService::class);
+        $this->app->singleton(CustomerPasswordResetService::class);
+        $this->app->singleton(CustomerOtpService::class);
+        $this->app->singleton(RecaptchaVerifier::class);
+        $this->app->singleton(LineOAuthService::class);
+        $this->app->singleton(StorefrontAuthConfigService::class);
+
+        $this->app->bind(SmsSenderInterface::class, function (): SmsSenderInterface {
+            return config('customers.storefront.sms.driver') === 'http'
+                ? app(HttpSmsSender::class)
+                : app(LogSmsSender::class);
+        });
 
         $this->app->bind(CustomerQueryServiceInterface::class, CustomerQueryService::class);
         $this->app->bind(CustomerServiceInterface::class, CustomerService::class);

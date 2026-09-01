@@ -1,8 +1,7 @@
 /**
  * Backward compatibility aliases — migrate views to semantic tokens over time.
  */
-:root,
-.dark {
+:root {
     --color-admin-bg: var(--color-background);
     --color-admin-surface: var(--color-surface);
     --color-admin-sidebar: var(--color-sidebar);

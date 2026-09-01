@@ -11,6 +11,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /** @mixin Order */
 final class OrderResource extends JsonResource
 {
+    /** @var array<string, string|list<string>> */
+    public const INCLUDE_MAP = [
+        'line_items' => 'lineItems',
+    ];
+
     public function toArray(Request $request): array
     {
         return [

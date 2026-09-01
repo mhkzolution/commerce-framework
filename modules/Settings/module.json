@@ -17,21 +17,344 @@
         "settings.setting.view",
         "settings.setting.update"
     ],
-    "settings": [],
-    "admin_navigation": [
+    "settings": [
         {
-            "type": "group",
-            "label": "Platform",
-            "icon": "server",
-            "order": 4,
-            "permission": "platform.tenant.view",
-            "children": [
-                {
-                    "label": "Tenants",
-                    "route": "admin.platform.tenants.index",
-                    "permission": "platform.tenant.view"
-                }
-            ]
+            "key": "site.name",
+            "type": "string",
+            "label": "Site name",
+            "group": "site",
+            "default": "",
+            "is_public": true,
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "site.logo_media_uuid",
+            "type": "string",
+            "label": "Site logo",
+            "group": "site",
+            "input": "media",
+            "help": "Displayed in the storefront header and auth pages.",
+            "default": null,
+            "validation": ["nullable", "uuid"]
+        },
+        {
+            "key": "site.favicon_media_uuid",
+            "type": "string",
+            "label": "Favicon",
+            "group": "site",
+            "input": "media",
+            "help": "Browser tab icon. Square PNG or ICO recommended.",
+            "default": null,
+            "validation": ["nullable", "uuid"]
+        },
+        {
+            "key": "site.contact_address",
+            "type": "string",
+            "label": "Address",
+            "group": "site",
+            "default": "",
+            "is_public": true,
+            "validation": ["nullable", "string", "max:1000"]
+        },
+        {
+            "key": "site.contact_email",
+            "type": "string",
+            "label": "Email",
+            "group": "site",
+            "default": "",
+            "is_public": true,
+            "validation": ["nullable", "email", "max:255"]
+        },
+        {
+            "key": "site.contact_phone",
+            "type": "string",
+            "label": "Phone",
+            "group": "site",
+            "default": "",
+            "is_public": true,
+            "validation": ["nullable", "string", "max:50"]
+        },
+        {
+            "key": "site.social_facebook",
+            "type": "string",
+            "label": "Facebook",
+            "group": "site",
+            "default": "",
+            "is_public": true,
+            "validation": ["nullable", "url", "max:500"]
+        },
+        {
+            "key": "site.social_instagram",
+            "type": "string",
+            "label": "Instagram",
+            "group": "site",
+            "default": "",
+            "is_public": true,
+            "validation": ["nullable", "url", "max:500"]
+        },
+        {
+            "key": "site.social_tiktok",
+            "type": "string",
+            "label": "TikTok",
+            "group": "site",
+            "default": "",
+            "is_public": true,
+            "validation": ["nullable", "url", "max:500"]
+        },
+        {
+            "key": "site.social_line",
+            "type": "string",
+            "label": "LINE",
+            "group": "site",
+            "default": "",
+            "is_public": true,
+            "validation": ["nullable", "string", "max:500"]
+        },
+        {
+            "key": "theme.primary",
+            "type": "string",
+            "label": "Primary color",
+            "group": "theme",
+            "default": "#2563eb",
+            "is_public": true,
+            "validation": ["nullable", "regex:/^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/"]
+        },
+        {
+            "key": "theme.primary_hover",
+            "type": "string",
+            "label": "Primary hover",
+            "group": "theme",
+            "default": "#1d4ed8",
+            "is_public": true,
+            "validation": ["nullable", "regex:/^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/"]
+        },
+        {
+            "key": "theme.primary_active",
+            "type": "string",
+            "label": "Primary active",
+            "group": "theme",
+            "default": "#1e40af",
+            "is_public": true,
+            "validation": ["nullable", "regex:/^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/"]
+        },
+        {
+            "key": "theme.background",
+            "type": "string",
+            "label": "Background",
+            "group": "theme",
+            "default": "#f4f6f8",
+            "is_public": true,
+            "validation": ["nullable", "regex:/^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/"]
+        },
+        {
+            "key": "theme.surface",
+            "type": "string",
+            "label": "Surface",
+            "group": "theme",
+            "default": "#ffffff",
+            "is_public": true,
+            "validation": ["nullable", "regex:/^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/"]
+        },
+        {
+            "key": "theme.accent",
+            "type": "string",
+            "label": "Accent",
+            "group": "theme",
+            "default": "#2563eb",
+            "is_public": true,
+            "validation": ["nullable", "regex:/^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/"]
+        },
+        {
+            "key": "theme.accent_hover",
+            "type": "string",
+            "label": "Accent hover",
+            "group": "theme",
+            "default": "#1d4ed8",
+            "is_public": true,
+            "validation": ["nullable", "regex:/^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/"]
+        },
+        {
+            "key": "mail.mailer",
+            "type": "string",
+            "label": "Mail driver",
+            "group": "mail",
+            "default": "log",
+            "validation": ["required", "in:smtp,log,sendmail"]
+        },
+        {
+            "key": "mail.host",
+            "type": "string",
+            "label": "SMTP host",
+            "group": "mail",
+            "default": "",
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "mail.port",
+            "type": "string",
+            "label": "SMTP port",
+            "group": "mail",
+            "default": "587",
+            "validation": ["nullable", "integer", "min:1", "max:65535"]
+        },
+        {
+            "key": "mail.username",
+            "type": "string",
+            "label": "SMTP username",
+            "group": "mail",
+            "default": "",
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "mail.password",
+            "type": "string",
+            "label": "SMTP password",
+            "group": "mail",
+            "default": "",
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "mail.encryption",
+            "type": "string",
+            "label": "SMTP encryption",
+            "group": "mail",
+            "default": "tls",
+            "validation": ["nullable", "in:tls,ssl,"]
+        },
+        {
+            "key": "mail.from_address",
+            "type": "string",
+            "label": "From address",
+            "group": "mail",
+            "default": "",
+            "validation": ["nullable", "email", "max:255"]
+        },
+        {
+            "key": "mail.from_name",
+            "type": "string",
+            "label": "From name",
+            "group": "mail",
+            "default": "",
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "auth.recaptcha_enabled",
+            "type": "boolean",
+            "label": "reCAPTCHA enabled",
+            "group": "auth",
+            "default": false,
+            "validation": ["boolean"]
+        },
+        {
+            "key": "auth.recaptcha_site_key",
+            "type": "string",
+            "label": "reCAPTCHA site key",
+            "group": "auth",
+            "default": "",
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "auth.recaptcha_secret_key",
+            "type": "string",
+            "label": "reCAPTCHA secret key",
+            "group": "auth",
+            "default": "",
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "auth.recaptcha_min_score",
+            "type": "string",
+            "label": "reCAPTCHA minimum score",
+            "group": "auth",
+            "default": "0.5",
+            "validation": ["nullable", "numeric", "min:0", "max:1"]
+        },
+        {
+            "key": "auth.line_enabled",
+            "type": "boolean",
+            "label": "LINE login enabled",
+            "group": "auth",
+            "default": false,
+            "validation": ["boolean"]
+        },
+        {
+            "key": "auth.line_channel_id",
+            "type": "string",
+            "label": "LINE channel ID",
+            "group": "auth",
+            "default": "",
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "auth.line_channel_secret",
+            "type": "string",
+            "label": "LINE channel secret",
+            "group": "auth",
+            "default": "",
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "auth.registration_enabled",
+            "type": "boolean",
+            "label": "Customer registration enabled",
+            "group": "auth",
+            "default": true,
+            "validation": ["boolean"]
+        },
+        {
+            "key": "customer_experience.config",
+            "type": "json",
+            "label": "Customer experience",
+            "group": "customer_experience",
+            "default": {
+                "quickView": {
+                    "enabled": true,
+                    "showImages": true,
+                    "showName": true,
+                    "showPrice": true,
+                    "showSalePrice": true,
+                    "showPromotionBadge": true,
+                    "showShortDescription": true,
+                    "showFullDescription": false,
+                    "showStockStatus": true,
+                    "showRemainingStock": true,
+                    "showSku": false,
+                    "showBrand": true,
+                    "showCategory": true,
+                    "showTags": true,
+                    "showVariants": true,
+                    "showQuantitySelector": true,
+                    "showAddToCart": true,
+                    "showBuyNow": true,
+                    "showWishlist": true,
+                    "showViewFullDetail": true
+                },
+                "notifications": {
+                    "enabled": true,
+                    "duration": 5,
+                    "position": "bottom-right",
+                    "newProduct": true,
+                    "promotion": true,
+                    "lowStock": false,
+                    "review": false,
+                    "recentPurchase": false
+                },
+                "navigation": {
+                    "backToTop": true,
+                    "showAfter": 500,
+                    "position": "bottom-right",
+                    "style": "circle",
+                    "fadeIn": true,
+                    "smoothScroll": true,
+                    "target": "top"
+                },
+                "productCard": { "enabled": true },
+                "productDetail": { "enabled": true },
+                "cart": { "enabled": true },
+                "checkout": { "enabled": true }
+            },
+            "is_public": true,
+            "validation": ["nullable", "array"]
         }
     ],
     "admin_menu": {

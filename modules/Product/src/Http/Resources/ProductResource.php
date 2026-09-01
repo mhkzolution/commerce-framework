@@ -13,6 +13,15 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /** @mixin Product */
 final class ProductResource extends JsonResource
 {
+    /** @var array<string, string|list<string>> */
+    public const INCLUDE_MAP = [
+        'variants' => 'variants',
+        'categories' => 'categories',
+        'tags' => 'tags',
+        'media' => 'media',
+        'attributes' => 'attributeValues.attribute',
+    ];
+
     public function toArray(Request $request): array
     {
         /** @var MediaQueryServiceInterface $media */

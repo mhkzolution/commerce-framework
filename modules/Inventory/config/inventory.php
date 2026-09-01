@@ -13,4 +13,9 @@ return [
     ],
     'low_stock_threshold' => 5,
     'reserve_on_checkout' => true,
+    'purchase_order' => [
+        'auto_email_supplier' => (bool) env('INVENTORY_PO_AUTO_EMAIL', false),
+        'queue_emails' => (bool) env('INVENTORY_PO_QUEUE_EMAIL', true),
+        'queue_name' => env('INVENTORY_PO_QUEUE_NAME', 'notifications'),
+    ],
 ];

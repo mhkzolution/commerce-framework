@@ -27,7 +27,10 @@ final class MediaResource extends JsonResource
             'width' => $this->width,
             'height' => $this->height,
             'alt_text' => $this->alt_text,
+            'folder_id' => $this->folder_id,
+            'folder_uuid' => $this->folder?->uuid,
             'url' => $query->getUrl($this->uuid),
+            'preview_url' => $query->getUrl($this->uuid, 'thumbnail'),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

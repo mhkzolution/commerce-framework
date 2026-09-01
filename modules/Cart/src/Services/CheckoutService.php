@@ -8,6 +8,7 @@ use Commerce\Cart\Contracts\CartServiceInterface;
 use Commerce\Cart\Contracts\CheckoutServiceInterface;
 use Commerce\Cart\DTO\CartData;
 use Commerce\Cart\DTO\CheckoutData;
+use Commerce\Cart\Support\CartCheckoutSelection;
 use Commerce\Contracts\Customer\CustomerQueryServiceInterface;
 use Commerce\Contracts\Promotion\PromotionServiceInterface;
 use Commerce\Contracts\Shipping\ShippingQuoteServiceInterface;
@@ -34,7 +35,7 @@ final class CheckoutService extends BaseService implements CheckoutServiceInterf
 
     public function checkout(CheckoutData $data): Order
     {
-        $cart = $this->cartService->get();
+        $cart = CartCheckoutSelection::filterCart($this->cartService->get());
 
         if ($cart->lines === []) {
             throw new DomainException('Cart is empty.');
@@ -128,7 +129,10 @@ final class CheckoutService extends BaseService implements CheckoutServiceInterf
                 }
             }
 
-            $this->cartService->clear();
+            $this->cartService->removePurchasedLines(
+                array_map(static fn ($line) => $line->purchasableUuid, $cart->lines),
+            );
+            CartCheckoutSelection::clear();
 
             return $order->fresh(['lineItems']);
         });

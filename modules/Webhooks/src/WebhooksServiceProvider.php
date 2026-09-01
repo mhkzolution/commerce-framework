@@ -12,6 +12,12 @@ use Commerce\Orders\Events\OrderConfirmed;
 use Commerce\Orders\Events\OrderCreated;
 use Commerce\Payment\Events\PaymentFailed;
 use Commerce\Payment\Events\PaymentPaid;
+use Commerce\Product\Events\ProductArchived;
+use Commerce\Product\Events\ProductCreated;
+use Commerce\Product\Events\ProductDeleted;
+use Commerce\Product\Events\ProductPublished;
+use Commerce\Product\Events\ProductUnpublished;
+use Commerce\Product\Events\ProductUpdated;
 use Commerce\Webhooks\Contracts\WebhookServiceInterface;
 use Commerce\Webhooks\Listeners\DispatchWebhooks;
 use Commerce\Webhooks\Services\WebhookDispatcher;
@@ -52,6 +58,12 @@ final class WebhooksServiceProvider extends BaseModuleServiceProvider
             PaymentPaid::class,
             PaymentFailed::class,
             CustomerCreated::class,
+            ProductCreated::class,
+            ProductUpdated::class,
+            ProductPublished::class,
+            ProductUnpublished::class,
+            ProductArchived::class,
+            ProductDeleted::class,
         ] as $eventClass) {
             Event::listen($eventClass, $listener);
         }

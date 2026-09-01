@@ -63,5 +63,20 @@
         @if ($payment->gateway_reference)
             <p class="mt-4 text-sm text-muted">Reference: {{ $payment->gateway_reference }}</p>
         @endif
+
+        @if ($payment->refund_reference)
+            <p class="mt-2 text-sm text-muted">Refund reference: {{ $payment->refund_reference }}</p>
+        @endif
+
+        @session('status')
+            <div class="cf-flash cf-flash--success mt-4">{{ $value }}</div>
+        @endsession
+
+        @if ($payment->status === 'paid')
+            <form method="POST" action="{{ route('admin.payments.refund', $payment) }}" class="mt-6" onsubmit="return confirm('Refund this payment?')">
+                @csrf
+                <x-admin.button variant="danger" type="submit">Refund payment</x-admin.button>
+            </form>
+        @endif
     </x-admin.page>
 @endsection

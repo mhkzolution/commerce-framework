@@ -26,14 +26,14 @@
                     <tr>
                         <td class="px-4 py-3 text-text">{{ $line->name }}</td>
                         <td class="px-4 py-3 text-right text-muted">{{ $line->quantity }}</td>
-                        <td class="px-4 py-3 text-right">{{ number_format($line->line_total / 100, 2) }} {{ $order->currency }}</td>
+                        <td class="px-4 py-3 text-right">{{ \Commerce\Cart\Support\StorefrontMoney::formatMinor((int) $line->line_total, (string) $order->currency) }}</td>
                     </tr>
                 @endforeach
             </tbody>
             <tfoot class="bg-surface-muted">
                 <tr>
                     <td colspan="2" class="px-4 py-3 text-right font-medium text-text">Grand total</td>
-                    <td class="px-4 py-3 text-right font-medium text-text">{{ number_format($order->grand_total / 100, 2) }} {{ $order->currency }}</td>
+                    <td class="px-4 py-3 text-right font-medium text-text">{{ \Commerce\Cart\Support\StorefrontMoney::formatMinor((int) $order->grand_total, (string) $order->currency) }}</td>
                 </tr>
             </tfoot>
         </table>

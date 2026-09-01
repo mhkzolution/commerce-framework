@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Commerce\Product\Services;
 
+use Commerce\Contracts\Product\ProductQueryServiceInterface;
 use Commerce\Contracts\Search\SearchQueryInterface;
 use Commerce\Core\Base\BaseQueryService;
-use Commerce\Contracts\Product\ProductQueryServiceInterface;
 use Commerce\Product\Models\Product;
 use Commerce\Product\Models\ProductVariant;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use Illuminate\Pagination\Paginator as PaginationPaginator;
 
 final class ProductQueryService extends BaseQueryService implements ProductQueryServiceInterface
 {
@@ -18,18 +19,18 @@ final class ProductQueryService extends BaseQueryService implements ProductQuery
         private readonly SearchQueryInterface $searchQuery,
     ) {}
 
-    public function findByUuid(string $uuid): ?object
+    public function findByUuid(string $uuid, array $relations = []): ?object
     {
         return Product::query()
-            ->with(['variants', 'media', 'categories', 'tags', 'attributeValues.attribute'])
+            ->when($relations !== [], static fn ($query) => $query->with($relations))
             ->where('uuid', $uuid)
             ->first();
     }
 
-    public function findBySlug(string $slug): ?object
+    public function findBySlug(string $slug, array $relations = []): ?object
     {
         return Product::query()
-            ->with(['variants', 'media', 'categories', 'tags', 'attributeValues.attribute'])
+            ->when($relations !== [], static fn ($query) => $query->with($relations))
             ->where('slug', $slug)
             ->first();
     }
@@ -43,18 +44,18 @@ final class ProductQueryService extends BaseQueryService implements ProductQuery
     }
 
     /**
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator<int, Product>
+     * @return LengthAwarePaginator<int, Product>
      */
-    public function paginateStorefront(int $perPage = 25)
+    public function paginateStorefront(int $perPage = 25, array $relations = [])
     {
         return Product::query()
-            ->with(['variants', 'media', 'categories', 'tags', 'attributeValues.attribute'])
+            ->when($relations !== [], static fn ($query) => $query->with($relations))
             ->visibleOnStorefront()
             ->latest()
             ->paginate($perPage);
     }
 
-    public function paginateStorefrontSearch(string $search, int $perPage = 25)
+    public function paginateStorefrontSearch(string $search, int $perPage = 25, array $relations = [])
     {
         if (trim($search) === '') {
             return $this->paginateStorefront($perPage);
@@ -71,7 +72,7 @@ final class ProductQueryService extends BaseQueryService implements ProductQuery
         }
 
         $products = Product::query()
-            ->with(['variants', 'media', 'categories', 'tags', 'attributeValues.attribute'])
+            ->when($relations !== [], static fn ($query) => $query->with($relations))
             ->visibleOnStorefront()
             ->whereIn('uuid', $uuids)
             ->get()
@@ -95,6 +96,15 @@ final class ProductQueryService extends BaseQueryService implements ProductQuery
             ->first();
     }
 
+    public function findStorefrontByUuid(string $uuid): ?Product
+    {
+        return Product::query()
+            ->with(['variants', 'media', 'categories', 'tags'])
+            ->visibleOnStorefront()
+            ->where('uuid', $uuid)
+            ->first();
+    }
+
     private static function storefrontSearchIndex(): string
     {
         return ProductSearchIndexer::INDEX;
@@ -103,10 +113,12 @@ final class ProductQueryService extends BaseQueryService implements ProductQuery
     /**
      * @return LengthAwarePaginator<int, Product>
      */
-    public function paginate(?string $search = null, ?string $status = null, int $perPage = 25)
+    public function paginate(?string $search = null, ?string $status = null, int $perPage = 25, ?int $page = null)
     {
+        $page ??= PaginationPaginator::resolveCurrentPage();
+
         if ($search !== null && $search !== '') {
-            return $this->paginateViaSearch($search, $status, $perPage);
+            return $this->paginateViaSearch($search, $status, $perPage, $page);
         }
 
         return Product::query()
@@ -127,21 +139,21 @@ final class ProductQueryService extends BaseQueryService implements ProductQuery
     /**
      * @return LengthAwarePaginator<int, Product>
      */
-    private function paginateViaSearch(string $search, ?string $status, int $perPage): LengthAwarePaginator
+    private function paginateViaSearch(string $search, ?string $status, int $perPage, int $page): LengthAwarePaginator
     {
         $filters = [];
         if ($status !== null && $status !== '') {
             $filters['status'] = $status === 'published' ? 'published' : $status;
         }
 
-        $result = $this->searchQuery->search(ProductSearchIndexer::INDEX, $search, $filters, 1, $perPage);
+        $result = $this->searchQuery->search(ProductSearchIndexer::INDEX, $search, $filters, $page, $perPage);
         $uuids = array_values(array_filter(array_map(
             static fn (array $hit): ?string => isset($hit['uuid']) ? (string) $hit['uuid'] : null,
             $result->getHits(),
         )));
 
         if ($uuids === []) {
-            return new Paginator([], 0, $perPage);
+            return $this->makeSearchPaginator([], 0, $perPage, $page);
         }
 
         $products = Product::query()
@@ -156,6 +168,16 @@ final class ProductQueryService extends BaseQueryService implements ProductQuery
             ->values()
             ->all();
 
-        return new Paginator($ordered, $result->getTotal(), $perPage, $result->getPage());
+        return $this->makeSearchPaginator($ordered, $result->getTotal(), $perPage, $page);
+    }
+
+    /**
+     * @param  list<Product>  $items
+     * @return LengthAwarePaginator<int, Product>
+     */
+    private function makeSearchPaginator(array $items, int $total, int $perPage, int $page): LengthAwarePaginator
+    {
+        return (new Paginator($items, $total, $perPage, $page))
+            ->withPath(PaginationPaginator::resolveCurrentPath());
     }
 }

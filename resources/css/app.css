@@ -3,17 +3,39 @@
 @import './tokens/semantic-light.css';
 @import './tokens/tailwind-theme.css';
 @import './admin/components.css';
+@import './storefront/tokens.css';
 @import './storefront/shell.css';
+@import './storefront/components.css';
+@import './storefront/header.css';
+@import './storefront/product.css';
 @import './storefront/blog.css';
+@import './storefront/cart.css';
+@import './storefront/checkout.css';
+@import './storefront/customer-experience.css';
+@import './storefront/auth.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../resources/views/components/admin/**/*.blade.php';
 @source '../../resources/views/components/storefront/**/*.blade.php';
+@source '../../modules/Cms/resources/views/storefront/**/*.blade.php';
 @source '../../resources/views/layouts/**/*.blade.php';
 @source '../../modules/**/resources/views/storefront/**/*.blade.php';
 @source '../../modules/**/resources/views/layouts/storefront.blade.php';
+@source '../../modules/Pos/resources/views/**/*.blade.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Prompt', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Storefront device breakpoints — see DESIGN.md */
+    --breakpoint-tablet: 48rem;   /* 768px */
+    --breakpoint-laptop: 64rem;   /* 1024px */
+    --breakpoint-desktop: 80rem;  /* 1280px */
+    --breakpoint-wide: 96rem;     /* 1536px */
+}
+
+@layer base {
+    html {
+        font-family: var(--font-sans);
+    }
 }

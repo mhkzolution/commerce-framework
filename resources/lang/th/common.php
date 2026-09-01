@@ -1,0 +1,36 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'save' => 'บันทึก',
+    'cancel' => 'ยกเลิก',
+    'create' => 'สร้าง',
+    'edit' => 'แก้ไข',
+    'delete' => 'ลบ',
+    'view' => 'ดู',
+    'back' => 'กลับ',
+    'actions' => 'การดำเนินการ',
+    'search' => 'ค้นหา',
+    'filter' => 'กรอง',
+    'reset' => 'รีเซ็ต',
+    'confirm' => 'ยืนยัน',
+    'yes' => 'ใช่',
+    'no' => 'ไม่',
+    'status' => 'สถานะ',
+    'name' => 'ชื่อ',
+    'description' => 'รายละเอียด',
+    'created_at' => 'สร้างเมื่อ',
+    'updated_at' => 'อัปเดตเมื่อ',
+    'none' => '— ไม่มี —',
+    'loading' => 'กำลังโหลด...',
+    'no_results' => 'ไม่พบข้อมูล',
+    'required' => 'จำเป็น',
+    'optional' => 'ไม่บังคับ',
+    'active' => 'ใช้งาน',
+    'inactive' => 'ไม่ใช้งาน',
+    'draft' => 'แบบร่าง',
+    'published' => 'เผยแพร่',
+    'archived' => 'เก็บถาวร',
+    'configuration' => 'การตั้งค่า',
+];
