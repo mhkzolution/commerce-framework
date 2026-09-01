@@ -17,7 +17,11 @@ final class PublishScheduledContentCommand extends Command
     public function handle(CmsPublishScheduler $scheduler): int
     {
         $result = $scheduler->run();
-        Log::info('cms.publish-scheduled', $result);
+
+        if (($result['published'] + $result['archived']) > 0) {
+            Log::info('cms.publish-scheduled', $result);
+        }
+
         $this->info("Published {$result['published']}, archived {$result['archived']}.");
 
         return self::SUCCESS;

@@ -28,10 +28,11 @@ final class PostService extends BaseService
 
     public function create(CreatePostData $data): Post
     {
-        return DB::transaction(function () use ($data): Post {
+        $state = $this->publishState->resolve($data->status, $data->publishedAt, $data->unpublishAt);
+
+        return DB::transaction(function () use ($data, $state): Post {
             $slug = $this->resolveSlug($data->slug, $data->title);
             $content = $this->editorPipeline->sanitize($data->content);
-            $state = $this->publishState->resolve($data->status, $data->publishedAt, $data->unpublishAt);
             $payload = [
                 'title' => $data->title,
                 'slug' => $slug,
@@ -58,11 +59,12 @@ final class PostService extends BaseService
 
     public function update(Post $post, UpdatePostData $data): Post
     {
-        return DB::transaction(function () use ($post, $data): Post {
+        $state = $this->publishState->resolve($data->status, $data->publishedAt, $data->unpublishAt);
+
+        return DB::transaction(function () use ($post, $data, $state): Post {
             $previousSlug = $post->slug;
             $slug = $this->resolveSlug($data->slug, $data->title, $post->uuid);
             $content = $this->editorPipeline->sanitize($data->content);
-            $state = $this->publishState->resolve($data->status, $data->publishedAt, $data->unpublishAt);
             $payload = [
                 'title' => $data->title,
                 'slug' => $slug,
