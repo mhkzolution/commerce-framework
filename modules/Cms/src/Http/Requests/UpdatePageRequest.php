@@ -27,6 +27,8 @@ final class UpdatePageRequest extends FormRequest
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('cms_pages', 'slug')->ignore($uuid, 'uuid')],
             'content' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::in(array_keys(config('cms.statuses', [])))],
+            'published_at' => ['nullable', 'date'],
+            'unpublish_at' => ['nullable', 'date'],
             'seo.meta_title' => ['nullable', 'string', 'max:255'],
             'seo.meta_description' => ['nullable', 'string'],
             'seo.meta_keywords' => ['nullable', 'string', 'max:255'],

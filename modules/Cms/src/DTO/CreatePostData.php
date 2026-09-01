@@ -19,6 +19,7 @@ final readonly class CreatePostData extends DataTransferObject
         public ?string $content = null,
         public string $status = 'draft',
         public ?string $publishedAt = null,
+        public ?string $unpublishAt = null,
         public ?int $categoryId = null,
         public array $tagIds = [],
         public ?string $authorUuid = null,

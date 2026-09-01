@@ -26,6 +26,7 @@ final class StorePostRequest extends FormRequest
             'content' => ['nullable', 'string'],
             'status' => ['required', 'string', Rule::in(array_keys(config('cms.statuses', [])))],
             'published_at' => ['nullable', 'date'],
+            'unpublish_at' => ['nullable', 'date'],
             'category_id' => ['nullable', 'integer', 'exists:cms_categories,id'],
             'tag_ids' => ['nullable', 'array'],
             'tag_ids.*' => ['integer', 'exists:cms_tags,id'],
