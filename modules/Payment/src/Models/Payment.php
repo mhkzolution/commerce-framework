@@ -6,10 +6,12 @@ namespace Commerce\Payment\Models;
 
 use Commerce\Contracts\Payment\PaymentStatus;
 use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Tenant\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 
 class Payment extends Model
 {
+    use BelongsToTenant;
     use HasUuid;
 
     protected $fillable = [
@@ -23,6 +25,8 @@ class Payment extends Model
         'gateway_reference',
         'paid_at',
         'failed_at',
+        'refunded_at',
+        'refund_reference',
         'meta',
     ];
 
@@ -32,6 +36,7 @@ class Payment extends Model
             'meta' => 'array',
             'paid_at' => 'datetime',
             'failed_at' => 'datetime',
+            'refunded_at' => 'datetime',
         ];
     }
 
@@ -43,5 +48,10 @@ class Payment extends Model
     public function isPaid(): bool
     {
         return $this->status === PaymentStatus::Paid->value;
+    }
+
+    public function isRefunded(): bool
+    {
+        return $this->status === PaymentStatus::Refunded->value;
     }
 }

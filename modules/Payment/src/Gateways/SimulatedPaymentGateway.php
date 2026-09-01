@@ -26,12 +26,19 @@ final class SimulatedPaymentGateway implements PaymentGatewayInterface
     public function initiate(object $payment, array $context = []): array
     {
         return [
-            'reference' => 'SIM-' . strtoupper(substr((string) $payment->uuid, 0, 8)),
+            'reference' => 'SIM-'.strtoupper(substr((string) $payment->uuid, 0, 8)),
         ];
     }
 
     public function handleWebhook(array $payload, ?string $signature = null): ?string
     {
         return isset($payload['payment_uuid']) ? (string) $payload['payment_uuid'] : null;
+    }
+
+    public function refund(object $payment, ?int $amount = null): array
+    {
+        return [
+            'reference' => 'REF-SIM-'.strtoupper(substr((string) $payment->uuid, 0, 8)),
+        ];
     }
 }

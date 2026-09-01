@@ -23,5 +23,10 @@ interface CartServiceInterface
 
     public function clear(): void;
 
+    /**
+     * @param  list<string>  $purchasableUuids
+     */
+    public function removePurchasedLines(array $purchasableUuids): CartData;
+
     public function setCurrency(string $currency): CartData;
 }

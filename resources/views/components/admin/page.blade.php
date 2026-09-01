@@ -1,9 +1,10 @@
 @props([
     'title',
     'description' => null,
+    'wide' => false,
 ])
 
-<div class="mx-auto max-w-7xl">
+<div @class(['mx-auto', 'max-w-7xl' => ! $wide, 'max-w-none' => $wide])>
     <x-admin.flash />
 
     <x-admin.page-header :title="$title" :description="$description">

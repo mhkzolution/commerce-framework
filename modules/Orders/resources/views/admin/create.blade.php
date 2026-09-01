@@ -56,7 +56,7 @@
                                     @foreach ($variants as $variant)
                                         <option value="{{ $variant->uuid }}" @selected(old("lines.{$i}.purchasable_uuid") === $variant->uuid)>
                                             {{ $variant->product?->name }} — {{ $variant->name ?? $variant->sku ?? $variant->uuid }}
-                                            ({{ number_format($variant->price / 100, 2) }})
+                                            ({{ number_format((float) $variant->price, 2) }})
                                         </option>
                                     @endforeach
                                 </select>

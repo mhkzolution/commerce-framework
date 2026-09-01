@@ -6,6 +6,7 @@ namespace Commerce\Crm\Http\Controllers\Admin;
 
 use Commerce\Crm\Models\Deal;
 use Commerce\Crm\Models\Lead;
+use Commerce\Crm\Services\DealService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -14,11 +15,33 @@ use Illuminate\View\View;
 
 final class DealController extends Controller
 {
+    public function __construct(private readonly DealService $deals) {}
+
     public function index(): View
     {
         return view('crm::admin.deals.index', [
             'items' => Deal::query()->with('lead')->latest()->paginate(25),
+            'stages' => config('crm.deal_stages', []),
         ]);
+    }
+
+    public function board(): View
+    {
+        return view('crm::admin.deals.board', [
+            'stages' => config('crm.deal_stages', []),
+            'dealsByStage' => $this->deals->dealsByStage(),
+        ]);
+    }
+
+    public function updateStage(Request $request, Deal $deal): RedirectResponse
+    {
+        $stage = $request->validate([
+            'stage' => ['required', 'string', Rule::in(array_keys(config('crm.deal_stages', [])))],
+        ])['stage'];
+
+        $this->deals->moveStage($deal, $stage);
+
+        return redirect()->route('admin.crm.deals.board')->with('status', 'Deal stage updated.');
     }
 
     public function create(): View
@@ -32,7 +55,7 @@ final class DealController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $item = Deal::query()->create($this->validated($request));
+        $item = $this->deals->create($this->validated($request));
 
         return redirect()->route('admin.crm.deals.edit', $item)->with('status', 'Deal created.');
     }
@@ -49,14 +72,14 @@ final class DealController extends Controller
 
     public function update(Request $request, Deal $deal): RedirectResponse
     {
-        $deal->update($this->validated($request));
+        $this->deals->update($deal, $this->validated($request));
 
         return redirect()->route('admin.crm.deals.edit', $deal)->with('status', 'Deal saved.');
     }
 
     public function destroy(Deal $deal): RedirectResponse
     {
-        $deal->delete();
+        $this->deals->delete($deal);
 
         return redirect()->route('admin.crm.deals.index')->with('status', 'Deal deleted.');
     }

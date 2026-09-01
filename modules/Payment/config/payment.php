@@ -19,4 +19,5 @@ return [
     ],
     'confirm_order_on_payment' => true,
     'cancel_order_on_payment_failure' => true,
+    'cancel_order_on_refund' => true,
 ];

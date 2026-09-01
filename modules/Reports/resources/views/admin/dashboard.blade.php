@@ -1,24 +1,27 @@
 @extends('layouts.admin')
 
-@section('title', 'Dashboard')
+@section('title', 'แดชบอร์ด')
 
 @section('page')
-    <x-admin.page title="Dashboard" description="Commerce performance overview for the selected period.">
+    <x-admin.page title="แดชบอร์ด" description="ภาพรวมยอดขายและคำสั่งซื้อในช่วงเวลาที่เลือก">
         <x-slot:breadcrumb>
-            <x-admin.breadcrumb :items="[['label' => 'Dashboard', 'active' => true]]" />
+            <x-admin.breadcrumb :items="[['label' => 'แดชบอร์ด', 'active' => true]]" />
         </x-slot:breadcrumb>
 
         <x-slot:secondaryActions>
             <x-admin.button variant="secondary" :href="route('admin.dashboard.export', request()->query())">
                 <x-admin.icon name="arrow-down-tray" class="h-4 w-4" />
-                Export CSV
+                ส่งออก CSV
+            </x-admin.button>
+            <x-admin.button variant="secondary" :href="route('admin.reports.index')">
+                รายงานทั้งหมด
             </x-admin.button>
         </x-slot:secondaryActions>
 
         <x-slot:filters>
             <div class="flex flex-wrap items-end gap-3">
                 <div class="flex flex-wrap gap-2">
-                    @foreach (['7d' => '7 days', '30d' => '30 days', '90d' => '90 days'] as $key => $label)
+                    @foreach (['7d' => '7 วัน', '30d' => '30 วัน', '90d' => '90 วัน'] as $key => $label)
                         <x-admin.button
                             :href="route('admin.dashboard', ['range' => $key])"
                             :variant="$summary['preset'] === $key ? 'primary' : 'secondary'"
@@ -28,47 +31,57 @@
                 <form method="GET" class="flex flex-wrap items-end gap-3">
                     <input type="hidden" name="range" value="custom">
                     <label class="text-sm">
-                        <span class="mb-1 block text-muted">From</span>
+                        <span class="mb-1 block text-muted">ตั้งแต่</span>
                         <input type="date" name="from" value="{{ $summary['from'] }}" class="cf-input py-2">
                     </label>
                     <label class="text-sm">
-                        <span class="mb-1 block text-muted">To</span>
+                        <span class="mb-1 block text-muted">ถึง</span>
                         <input type="date" name="to" value="{{ $summary['to'] }}" class="cf-input py-2">
                     </label>
-                    <x-admin.button type="submit" variant="secondary">Apply</x-admin.button>
+                    <x-admin.button type="submit" variant="secondary">ใช้ตัวกรอง</x-admin.button>
                 </form>
             </div>
         </x-slot:filters>
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <x-admin.stat-card
-                label="Revenue (period)"
+                label="ยอดขาย (ช่วงที่เลือก)"
                 :value="number_format($summary['revenue_period'] / 100, 2) . ' ' . $summary['currency']"
-                :hint="'All time ' . number_format($summary['revenue_total'] / 100, 2)"
+                :hint="'ทั้งหมด ' . number_format($summary['revenue_total'] / 100, 2) . ' ' . $summary['currency']"
             />
             <x-admin.stat-card
-                label="Orders (period)"
+                label="ออเดอร์ (ช่วงที่เลือก)"
                 :value="(string) $summary['orders_period']"
-                :hint="$summary['orders_total'] . ' total orders'"
+                :hint="$summary['orders_total'] . ' ออเดอร์ทั้งหมด'"
             />
             <x-admin.stat-card
-                label="Pending orders"
+                label="รอดำเนินการ"
                 :value="(string) $summary['orders_pending']"
-                hint="Awaiting payment or fulfillment"
+                hint="รอชำระเงินหรือดำเนินการ"
             />
             <x-admin.stat-card
-                label="Average order value"
+                label="ยอดเฉลี่ยต่อออเดอร์"
                 :value="number_format($summary['average_order_value'] / 100, 2) . ' ' . $summary['currency']"
-                hint="Paid orders in selected period"
+                hint="ออเดอร์ที่ชำระแล้วในช่วงที่เลือก"
             />
         </div>
 
-        <div class="mt-6">
-            <x-admin.bar-chart :series="$revenueSeries" currency="{{ $summary['currency'] }}" title="Daily revenue" />
+        <div class="mt-6 grid gap-6 xl:grid-cols-2">
+            <x-admin.bar-chart
+                :series="$revenueSeries"
+                currency="{{ $summary['currency'] }}"
+                title="ยอดขายรายวัน"
+            />
+            <x-admin.bar-chart
+                :series="$revenueSeries"
+                value-key="orders"
+                format="number"
+                title="จำนวนออเดอร์รายวัน"
+            />
         </div>
 
         <div class="mt-6 grid gap-6 lg:grid-cols-2">
-            <x-admin.card title="Orders by status">
+            <x-admin.card title="ออเดอร์ตามสถานะ">
                 <ul class="space-y-2 text-sm">
                     @forelse ($ordersByStatus as $status => $count)
                         <li class="flex items-center justify-between rounded-md bg-primary-subtle px-3 py-2">
@@ -76,18 +89,41 @@
                             <x-admin.badge>{{ $count }}</x-admin.badge>
                         </li>
                     @empty
-                        <li class="text-muted">No orders in this period.</li>
+                        <li class="text-muted">ไม่มีออเดอร์ในช่วงเวลานี้</li>
                     @endforelse
                 </ul>
             </x-admin.card>
 
+            <x-admin.card title="ยอดขายตามช่องทาง">
+                <x-admin.table.shell>
+                    <x-slot:head>
+                        <tr class="text-left text-xs uppercase tracking-wide text-muted">
+                            <th class="px-4 py-3">ช่องทาง</th>
+                            <th class="px-4 py-3">ออเดอร์</th>
+                            <th class="px-4 py-3">ยอดขาย</th>
+                        </tr>
+                    </x-slot:head>
+                    @forelse ($salesByChannel as $row)
+                        <tr>
+                            <td class="px-4 py-3">{{ $row['label'] }}</td>
+                            <td class="px-4 py-3">{{ $row['orders'] }}</td>
+                            <td class="px-4 py-3">{{ number_format($row['revenue'] / 100, 2) }} {{ $summary['currency'] }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="3" class="px-4 py-8 text-center text-muted">ไม่มียอดขายในช่วงเวลานี้</td></tr>
+                    @endforelse
+                </x-admin.table.shell>
+            </x-admin.card>
+        </div>
+
+        <x-admin.card title="ออเดอร์ล่าสุด" class="mt-6">
             <x-admin.table.shell>
                 <x-slot:head>
                     <tr class="text-left text-xs uppercase tracking-wide text-muted">
-                        <th class="px-4 py-3">Order</th>
-                        <th class="px-4 py-3">Customer</th>
-                        <th class="px-4 py-3">Total</th>
-                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">เลขออเดอร์</th>
+                        <th class="px-4 py-3">ลูกค้า</th>
+                        <th class="px-4 py-3">ยอดรวม</th>
+                        <th class="px-4 py-3">สถานะ</th>
                     </tr>
                 </x-slot:head>
 
@@ -110,7 +146,7 @@
                                 <span class="font-medium text-text">{{ $order->order_number }}</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-muted">{{ $order->customer_name ?? $order->customer_email ?? 'Guest' }}</td>
+                        <td class="px-4 py-3 text-muted">{{ $order->customer_name ?? $order->customer_email ?? 'ลูกค้าทั่วไป' }}</td>
                         <td class="px-4 py-3">{{ number_format($order->grand_total / 100, 2) }} {{ $order->currency }}</td>
                         <td class="px-4 py-3">
                             <x-admin.badge :variant="$orderBadge">
@@ -119,9 +155,9 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="px-4 py-8 text-center text-muted">No orders in this period.</td></tr>
+                    <tr><td colspan="4" class="px-4 py-8 text-center text-muted">ไม่มีออเดอร์ในช่วงเวลานี้</td></tr>
                 @endforelse
             </x-admin.table.shell>
-        </div>
+        </x-admin.card>
     </x-admin.page>
 @endsection

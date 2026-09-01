@@ -7,20 +7,23 @@ namespace Commerce\Product\Http\Controllers\Admin;
 use Commerce\Catalog\Models\AttributeSet;
 use Commerce\Catalog\Models\Brand;
 use Commerce\Catalog\Models\Category;
+use Commerce\Catalog\Models\Collection;
 use Commerce\Catalog\Models\Tag;
-use Commerce\Contracts\Inventory\InventoryQueryServiceInterface;
 use Commerce\Contracts\Media\MediaQueryServiceInterface;
 use Commerce\Contracts\Seo\SeoServiceInterface;
+use Commerce\Inventory\Contracts\InventoryServiceInterface;
+use Commerce\Marketplace\Models\Seller;
+use Commerce\Media\Models\Media;
 use Commerce\Product\Contracts\ProductServiceInterface;
-use Commerce\Product\DTO\CreateProductData;
-use Commerce\Product\DTO\CreateVariantData;
-use Commerce\Product\DTO\SeoData;
-use Commerce\Product\DTO\UpdateProductData;
 use Commerce\Product\Http\Requests\StoreProductRequest;
-use Commerce\Product\Http\Requests\StoreVariantRequest;
 use Commerce\Product\Http\Requests\UpdateProductRequest;
 use Commerce\Product\Models\Product;
+use Commerce\Product\Services\ProductImageResolver;
 use Commerce\Product\Services\ProductQueryService;
+use Commerce\Product\Services\ProductWorkspaceSaveService;
+use Commerce\Product\Services\ProductWorkspaceStateBuilder;
+use Commerce\Product\Services\VariantOptionPresetService;
+use Commerce\Product\Support\WorkspacePayload;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -31,8 +34,11 @@ final class ProductController extends Controller
     public function __construct(
         private readonly ProductQueryService $queryService,
         private readonly ProductServiceInterface $productService,
+        private readonly ProductWorkspaceSaveService $workspaceSaveService,
+        private readonly ProductWorkspaceStateBuilder $workspaceStateBuilder,
         private readonly MediaQueryServiceInterface $mediaQueryService,
         private readonly SeoServiceInterface $seoService,
+        private readonly ProductImageResolver $imageResolver,
     ) {}
 
     public function index(Request $request): View
@@ -44,10 +50,9 @@ final class ProductController extends Controller
 
         $imageUrls = [];
         foreach ($products as $product) {
-            $primary = $product->media->firstWhere('is_primary', true) ?? $product->media->first();
-            if ($primary) {
-                $imageUrls[$product->uuid] = $this->mediaQueryService->getUrl($primary->media_uuid, 'thumbnail')
-                    ?? $this->mediaQueryService->getUrl($primary->media_uuid);
+            $url = $this->imageResolver->urlForProduct($product);
+            if ($url !== null) {
+                $imageUrls[$product->uuid] = $url;
             }
         }
 
@@ -60,12 +65,17 @@ final class ProductController extends Controller
 
     public function create(): View
     {
-        return view('product::admin.products.create', $this->formOptions());
+        return view('product::admin.products.create', array_merge(
+            $this->formOptions(),
+            ['initialState' => $this->workspaceStateBuilder->build()],
+        ));
     }
 
     public function store(StoreProductRequest $request): RedirectResponse
     {
-        $product = $this->productService->create($this->mapProductData($request));
+        $product = $this->workspaceSaveService->create(
+            WorkspacePayload::fromRequest($request),
+        );
 
         return redirect()
             ->route('admin.products.edit', $product)
@@ -75,39 +85,31 @@ final class ProductController extends Controller
     public function edit(string $product): View
     {
         $model = Product::query()
-            ->with(['variants', 'media', 'categories', 'tags', 'attributeValues', 'attributeSet.attributes'])
+            ->with(['variants', 'media', 'categories', 'collections', 'tags', 'attributeValues', 'attributeSet.attributes'])
             ->where('uuid', $product)
             ->firstOrFail();
 
-        $mediaPreviews = [];
-        foreach ($model->media as $item) {
-            $mediaPreviews[$item->media_uuid] = $this->mediaQueryService->getUrl($item->media_uuid, 'thumbnail')
-                ?? $this->mediaQueryService->getUrl($item->media_uuid);
-        }
-
         $seo = $this->seoService->getForEntity(Product::SEO_ENTITY_TYPE, $model->uuid);
 
-        $stockLevels = [];
-        if (app()->bound(InventoryQueryServiceInterface::class)) {
-            $stockLevels = app(InventoryQueryServiceInterface::class)->levelsForPurchasables(
-                $model->variants->pluck('uuid')->all(),
-            );
-        }
+        $stockLevels = $this->workspaceStateBuilder->stockLevelsFor($model);
 
         return view('product::admin.products.edit', array_merge(
-            $this->formOptions($model),
+            $this->formOptions($model, $stockLevels),
             [
                 'product' => $model,
-                'mediaPreviews' => $mediaPreviews,
                 'seo' => $seo,
                 'stockLevels' => $stockLevels,
+                'initialState' => $this->workspaceStateBuilder->build($model, $stockLevels),
             ],
         ));
     }
 
     public function update(UpdateProductRequest $request, string $product): RedirectResponse
     {
-        $this->productService->update($product, $this->mapProductData($request, true));
+        $this->workspaceSaveService->update(
+            $product,
+            WorkspacePayload::fromRequest($request),
+        );
 
         return redirect()
             ->route('admin.products.edit', $product)
@@ -141,40 +143,28 @@ final class ProductController extends Controller
             ->with('status', 'Product archived.');
     }
 
-    public function storeVariant(StoreVariantRequest $request, string $product): RedirectResponse
-    {
-        $this->productService->addVariant(new CreateVariantData(
-            productUuid: $product,
-            sku: $request->validated('sku'),
-            name: $request->validated('name'),
-            price: $this->toCents($request->input('price')),
-            compareAtPrice: $request->filled('compare_at_price') ? $this->toCents($request->input('compare_at_price')) : null,
-            isDefault: (bool) $request->validated('is_default', false),
-        ));
-
-        return redirect()
-            ->route('admin.products.edit', $product)
-            ->with('status', 'Variant added.');
-    }
-
-    public function destroyVariant(string $product, string $variant): RedirectResponse
-    {
-        $this->productService->deleteVariant($variant);
-
-        return redirect()
-            ->route('admin.products.edit', $product)
-            ->with('status', 'Variant deleted.');
-    }
-
     /**
+     * @param  array<string, mixed>  $stockLevels
      * @return array<string, mixed>
      */
-    private function formOptions(?Product $product = null): array
+    private function formOptions(?Product $product = null, array $stockLevels = []): array
     {
-        $attributeSetId = (int) old('attribute_set_id', $product?->attribute_set_id ?? 0);
+        $attributeSetId = (int) old(
+            'attribute_set_id',
+            $product?->attribute_set_id ?? $this->defaultAttributeSetId() ?? 0,
+        );
         $attributeSet = $attributeSetId > 0
             ? AttributeSet::query()->with('attributes')->find($attributeSetId)
             : null;
+
+        $mediaUuids = array_values(array_filter(old('media_uuids', $product?->media->pluck('media_uuid')->all() ?? [])));
+        $mediaPreviews = [];
+        $mediaTypes = [];
+        foreach ($mediaUuids as $uuid) {
+            $mediaPreviews[$uuid] = $this->mediaQueryService->getUrl($uuid, 'thumbnail')
+                ?? $this->mediaQueryService->getUrl($uuid);
+            $mediaTypes[$uuid] = Media::query()->where('uuid', $uuid)->value('media_type') ?? 'image';
+        }
 
         return [
             'types' => config('product.types', []),
@@ -183,51 +173,66 @@ final class ProductController extends Controller
             'brands' => Brand::query()->orderBy('name')->get(),
             'sellers' => $this->activeSellers(),
             'categories' => Category::query()->orderBy('name')->get(),
+            'collections' => Collection::query()->orderBy('name')->get(),
             'tags' => Tag::query()->orderBy('name')->get(),
             'attributeSets' => AttributeSet::query()->orderBy('name')->get(),
+            'defaultAttributeSetId' => $this->defaultAttributeSetId(),
+            'attributeSetsPayload' => $this->attributeSetsPayload(),
+            'attributeOptionPresets' => config('product.attribute_option_presets', []),
+            'optionPresets' => app(VariantOptionPresetService::class)->presetMap(),
             'attributes' => $attributeSet?->attributes ?? collect(),
             'attributeValues' => $product?->attributeValues->keyBy('attribute_id') ?? collect(),
+            'mediaPreviews' => $mediaPreviews,
+            'mediaTypes' => $mediaTypes,
             'seo' => null,
+            'inventoryEnabled' => app()->bound(InventoryServiceInterface::class),
+            'stockLevels' => $stockLevels,
         ];
     }
 
-    private function mapProductData(StoreProductRequest|UpdateProductRequest $request, bool $isUpdate = false): CreateProductData|UpdateProductData
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function attributeSetsPayload(): array
     {
-        $seoInput = $request->input('seo', []);
-
-        $data = [
-            'name' => $request->validated('name'),
-            'slug' => $request->validated('slug'),
-            'description' => $request->validated('description'),
-            'type' => $request->validated('type'),
-            'status' => $request->validated('status'),
-            'visibility' => $request->validated('visibility'),
-            'brandUuid' => $request->validated('brand_uuid'),
-            'sellerUuid' => $request->validated('seller_uuid'),
-            'attributeSetId' => $request->validated('attribute_set_id'),
-            'sku' => $request->validated('sku'),
-            'price' => $this->toCents($request->input('price', 0)),
-            'compareAtPrice' => $request->filled('compare_at_price') ? $this->toCents($request->input('compare_at_price')) : null,
-            'publishAt' => $request->validated('publish_at'),
-            'categoryIds' => array_map('intval', $request->validated('category_ids', [])),
-            'tagIds' => array_map('intval', $request->validated('tag_ids', [])),
-            'mediaUuids' => array_values(array_filter($request->validated('media_uuids', []))),
-            'attributeValues' => $request->input('attributes', []),
-            'seo' => new SeoData(
-                metaTitle: $seoInput['meta_title'] ?? null,
-                metaDescription: $seoInput['meta_description'] ?? null,
-                metaKeywords: $seoInput['meta_keywords'] ?? null,
-                canonicalUrl: $seoInput['canonical_url'] ?? null,
-                ogImageMediaUuid: $seoInput['og_image_media_uuid'] ?? null,
-            ),
-        ];
-
-        return $isUpdate ? new UpdateProductData(...$data) : new CreateProductData(...$data);
+        return AttributeSet::query()
+            ->with('attributes')
+            ->orderBy('name')
+            ->get()
+            ->map(static function (AttributeSet $set): array {
+                return [
+                    'id' => $set->id,
+                    'name' => $set->name,
+                    'attributes' => $set->attributes->map(static function ($attribute): array {
+                        return [
+                            'id' => $attribute->id,
+                            'name' => $attribute->name,
+                            'type' => $attribute->type,
+                            'options' => $attribute->options ?? [],
+                            'is_required' => (bool) ($attribute->pivot?->is_required ?? $attribute->is_required),
+                        ];
+                    })->values()->all(),
+                ];
+            })
+            ->values()
+            ->all();
     }
 
-    private function toCents(mixed $amount): int
+    private function defaultAttributeSetId(): ?int
     {
-        return (int) round(((float) $amount) * 100);
+        $code = (string) config('product.default_attribute_set_code', '');
+
+        if ($code !== '') {
+            $id = AttributeSet::query()->where('code', $code)->value('id');
+
+            if ($id !== null) {
+                return (int) $id;
+            }
+        }
+
+        $fallbackId = AttributeSet::query()->orderBy('name')->value('id');
+
+        return $fallbackId !== null ? (int) $fallbackId : null;
     }
 
     /**
@@ -235,11 +240,11 @@ final class ProductController extends Controller
      */
     private function activeSellers(): \Illuminate\Support\Collection
     {
-        if (! class_exists(\Commerce\Marketplace\Models\Seller::class)) {
+        if (! class_exists(Seller::class)) {
             return collect();
         }
 
-        return \Commerce\Marketplace\Models\Seller::query()
+        return Seller::query()
             ->where('status', 'active')
             ->orderBy('name')
             ->get();

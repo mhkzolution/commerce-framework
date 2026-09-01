@@ -14,11 +14,11 @@
             <p class="mt-1 text-sm text-muted">
                 Status: {{ $statuses[$order->status] ?? $order->status }}
             </p>
-            <p class="mt-1 text-sm text-muted">Total: {{ number_format($order->grand_total / 100, 2) }} {{ $order->currency }}</p>
+            <p class="mt-1 text-sm text-muted">Total: {{ \Commerce\Cart\Support\StorefrontMoney::formatMinor((int) $order->grand_total, (string) $order->currency) }}</p>
             @if ($order->shipping_method_name)
                 <p class="mt-1 text-sm text-muted">
                     Shipping: {{ $order->shipping_method_name }}
-                    ({{ $order->shipping_total === 0 ? 'Free' : number_format($order->shipping_total / 100, 2) }})
+                    ({{ $order->shipping_total === 0 ? 'Free' : \Commerce\Cart\Support\StorefrontMoney::formatMinor((int) $order->shipping_total, (string) $order->currency) }})
                 </p>
             @endif
         </div>

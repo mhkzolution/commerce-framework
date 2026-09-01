@@ -18,4 +18,9 @@ interface PaymentGatewayInterface
     public function initiate(object $payment, array $context = []): array;
 
     public function handleWebhook(array $payload, ?string $signature = null): ?string;
+
+    /**
+     * @return array{reference?: string}
+     */
+    public function refund(object $payment, ?int $amount = null): array;
 }

@@ -24,7 +24,7 @@
                     <div>
                         <label class="block text-sm font-medium text-text" for="subject">Subject</label>
                         <input id="subject" name="subject" value="{{ old('subject', $template->subject) }}" required class="cf-input mt-1">
-                        <p class="mt-1 text-xs text-muted">Use placeholders like {{ '{{order_number}}' }}</p>
+                        <p class="mt-1 text-xs text-muted">Use placeholders like @{{order_number}}</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-text" for="view">Blade view</label>

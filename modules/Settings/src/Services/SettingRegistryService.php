@@ -49,7 +49,11 @@ final class SettingRegistryService extends BaseService implements SettingRegistr
                 'value' => SettingValueCaster::serialize($default, $type),
                 'validation' => $schema['validation'] ?? null,
                 'is_public' => (bool) ($schema['is_public'] ?? false),
-                'meta' => ['label' => $schema['label'] ?? Str::headline($settingKey)],
+                'meta' => array_filter([
+                    'label' => $schema['label'] ?? Str::headline($settingKey),
+                    'input' => $schema['input'] ?? null,
+                    'help' => $schema['help'] ?? null,
+                ], static fn (mixed $value): bool => $value !== null && $value !== ''),
             ],
         );
     }

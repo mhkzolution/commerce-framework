@@ -16,7 +16,8 @@ return [
         'required' => env('IAM_TWO_FACTOR_REQUIRED', false),
     ],
     'teams' => [
-        'enabled' => false,
+        'enabled' => env('IAM_TEAMS_ENABLED', false),
+        'header' => 'X-Team',
     ],
     'impersonation' => [
         'enabled' => true,

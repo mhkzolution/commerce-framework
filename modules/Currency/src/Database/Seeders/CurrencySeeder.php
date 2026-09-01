@@ -13,9 +13,9 @@ final class CurrencySeeder extends Seeder
     {
         $currencies = [
             [
-                'code' => 'USD',
-                'name' => 'US Dollar',
-                'symbol' => '$',
+                'code' => 'THB',
+                'name' => 'Thai Baht',
+                'symbol' => '฿',
                 'decimal_places' => 2,
                 'rate_micro' => 1_000_000,
                 'is_base' => true,
@@ -23,11 +23,11 @@ final class CurrencySeeder extends Seeder
                 'sort_order' => 1,
             ],
             [
-                'code' => 'THB',
-                'name' => 'Thai Baht',
-                'symbol' => '฿',
+                'code' => 'USD',
+                'name' => 'US Dollar',
+                'symbol' => '$',
                 'decimal_places' => 2,
-                'rate_micro' => 35_500_000,
+                'rate_micro' => 28_169,
                 'is_base' => false,
                 'is_active' => true,
                 'sort_order' => 2,
@@ -37,7 +37,7 @@ final class CurrencySeeder extends Seeder
                 'name' => 'Euro',
                 'symbol' => '€',
                 'decimal_places' => 2,
-                'rate_micro' => 920_000,
+                'rate_micro' => 25_907,
                 'is_base' => false,
                 'is_active' => true,
                 'sort_order' => 3,

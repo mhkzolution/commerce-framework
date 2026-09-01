@@ -6,23 +6,30 @@ namespace Commerce\Marketplace;
 
 use Commerce\Core\Base\BaseModuleServiceProvider;
 use Commerce\Marketplace\Listeners\RecordOrderCommissions;
+use Commerce\Marketplace\Services\CommissionService;
+use Commerce\Marketplace\Services\PayoutService;
 use Commerce\Orders\Events\OrderConfirmed;
 use Illuminate\Support\Facades\Event;
 
 final class MarketplaceServiceProvider extends BaseModuleServiceProvider
 {
-    public function getModuleAlias(): string { return 'marketplace'; }
+    public function getModuleAlias(): string
+    {
+        return 'marketplace';
+    }
 
     public function register(): void
     {
         $this->mergeConfigFrom($this->modulePath('config/marketplace.php'), 'marketplace');
-        $this->app->singleton(\Commerce\Marketplace\Services\CommissionService::class);
+        $this->app->singleton(CommissionService::class);
+        $this->app->singleton(PayoutService::class);
     }
 
     public function boot(): void
     {
         $this->loadMigrationsFrom($this->modulePath('database/migrations'));
         $this->loadRoutesFrom($this->modulePath('routes/web.php'));
+        $this->loadRoutesFrom($this->modulePath('routes/seller.php'));
         $this->loadViewsFrom($this->modulePath('resources/views'), 'marketplace');
 
         Event::listen(OrderConfirmed::class, RecordOrderCommissions::class);

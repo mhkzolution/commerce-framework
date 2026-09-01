@@ -50,7 +50,7 @@ final class CustomerAccountTest extends TestCase
             'password_confirmation' => 'password123',
         ]);
 
-        $variant = $this->createPurchasableProduct(price: 2000, stock: 5);
+        $variant = $this->createPurchasableProduct(price: 20, stock: 5);
 
         $this->post(route('storefront.cart.items.store'), [
             'purchasable_uuid' => $variant->uuid,

@@ -35,7 +35,7 @@ final class MediaService extends BaseService implements MediaServiceInterface
             $media->update($attributes);
         }
 
-        return $media->fresh();
+        return $media->fresh(['folder', 'variants']);
     }
 
     public function delete(string $uuid): void
@@ -53,5 +53,34 @@ final class MediaService extends BaseService implements MediaServiceInterface
         }
 
         $media->delete();
+    }
+
+    public function deleteMany(array $uuids): int
+    {
+        $deleted = 0;
+
+        foreach (array_values(array_unique($uuids)) as $uuid) {
+            try {
+                $this->delete($uuid);
+                $deleted++;
+            } catch (EntityNotFoundException) {
+                continue;
+            }
+        }
+
+        return $deleted;
+    }
+
+    public function moveMany(array $uuids, ?int $folderId): int
+    {
+        $uuids = array_values(array_unique($uuids));
+
+        if ($uuids === []) {
+            return 0;
+        }
+
+        return Media::query()
+            ->whereIn('uuid', $uuids)
+            ->update(['folder_id' => $folderId]);
     }
 }

@@ -5,8 +5,9 @@
 @section('page')
     <x-admin.page :title="$register->name" :description="'Terminal ' . $register->code . ($register->location ? ' · ' . $register->location : '')">
         <x-slot:primaryActions>
-            <form method="POST" action="{{ route('admin.pos.terminal.close', $register) }}" onsubmit="return confirm('Close this session?')">
+            <form method="POST" action="{{ route('admin.pos.terminal.close', $register) }}" class="flex items-center gap-2" onsubmit="return confirm('Close this session?')">
                 @csrf
+                <input name="counted_cash" type="number" min="0" class="cf-input w-32" placeholder="Counted cash" required>
                 <x-admin.button variant="secondary" type="submit">Close session</x-admin.button>
             </form>
         </x-slot:primaryActions>
@@ -38,7 +39,7 @@
             <section class="lg:col-span-2 rounded-lg border border-border bg-surface p-4 shadow-sm">
                 <div class="flex items-center justify-between">
                     <h2 class="text-lg font-medium text-text">Current sale</h2>
-                    <span class="text-sm text-muted">Session {{ $session->uuid }}</span>
+                    <span class="text-sm text-muted">Session {{ $session->uuid }} · Float {{ number_format($session->opening_balance / 100, 2) }} · Sales {{ number_format($session->cash_sales_total / 100, 2) }}</span>
                 </div>
 
                 @if ($cart->lines === [])

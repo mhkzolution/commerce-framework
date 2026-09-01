@@ -10,6 +10,8 @@ use Commerce\Contracts\Pricing\PricingContextInterface;
 use Commerce\Contracts\Promotion\PromotionServiceInterface;
 use Commerce\Contracts\Purchasable\PurchasableInterface;
 use Commerce\Product\Models\ProductVariant;
+use Commerce\Product\Models\ProductVariantPriceTier;
+use Commerce\Product\Support\ProductPrice;
 
 final class CompositePriceResolver implements PriceResolverInterface
 {
@@ -19,14 +21,15 @@ final class CompositePriceResolver implements PriceResolverInterface
             return new PriceQuote(0, $context->getCurrency(), ['base' => 0]);
         }
 
-        $basePrice = (int) $purchasable->price;
         $quantity = max(1, $context->getQuantity());
+        $basePrice = $this->resolveTierPrice($purchasable, $quantity) ?? ProductPrice::toMinorUnits($purchasable->price);
         $lineSubtotal = $basePrice * $quantity;
         $discount = 0;
         $promotionCode = $context instanceof PricingContext ? $context->getCouponCode() : null;
 
         if ($promotionCode !== null && app()->bound(PromotionServiceInterface::class)) {
             $quote = app(PromotionServiceInterface::class)->resolve($promotionCode, $lineSubtotal);
+
             if ($quote !== null) {
                 $discount = $quote->discount;
             }
@@ -43,7 +46,19 @@ final class CompositePriceResolver implements PriceResolverInterface
                 'discount' => $discount,
                 'promotion_code' => $promotionCode,
                 'quantity' => $quantity,
+                'tier_applied' => $basePrice !== ProductPrice::toMinorUnits($purchasable->price),
             ],
         );
+    }
+
+    private function resolveTierPrice(ProductVariant $variant, int $quantity): ?int
+    {
+        $tier = ProductVariantPriceTier::query()
+            ->where('variant_uuid', $variant->uuid)
+            ->where('min_quantity', '<=', $quantity)
+            ->orderByDesc('min_quantity')
+            ->first();
+
+        return $tier !== null ? ProductPrice::toMinorUnits($tier->price) : null;
     }
 }

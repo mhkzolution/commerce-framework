@@ -6,7 +6,6 @@ namespace Tests\Feature\Checkout;
 
 use Commerce\Orders\Models\Order;
 use Commerce\Payment\Models\Payment;
-use Commerce\Shipping\Models\ShippingMethod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesPurchasableProduct;
 use Tests\TestCase;
@@ -24,7 +23,7 @@ final class CheckoutFlowTest extends TestCase
 
     public function test_happy_path_web_checkout_and_payment(): void
     {
-        $variant = $this->createPurchasableProduct(price: 2500, stock: 10);
+        $variant = $this->createPurchasableProduct(price: 25, stock: 10);
 
         $this->post(route('storefront.cart.items.store'), [
             'purchasable_uuid' => $variant->uuid,
@@ -57,7 +56,7 @@ final class CheckoutFlowTest extends TestCase
 
         $this->get(route('storefront.cart.index'))
             ->assertOk()
-            ->assertSee('Your cart is empty', false);
+            ->assertSee(__('storefront::storefront.cart_empty_title'), false);
     }
 
     public function test_checkout_with_empty_cart_fails(): void
@@ -69,7 +68,7 @@ final class CheckoutFlowTest extends TestCase
 
     public function test_insufficient_stock_at_checkout_fails(): void
     {
-        $variant = $this->createPurchasableProduct(price: 1000, stock: 1);
+        $variant = $this->createPurchasableProduct(price: 10, stock: 1);
 
         $this->post(route('storefront.cart.items.store'), [
             'purchasable_uuid' => $variant->uuid,
@@ -105,7 +104,7 @@ final class CheckoutFlowTest extends TestCase
 
     public function test_us_address_applies_tax(): void
     {
-        $variant = $this->createPurchasableProduct(price: 10000, stock: 5);
+        $variant = $this->createPurchasableProduct(price: 100, stock: 5);
 
         $this->post(route('storefront.cart.items.store'), [
             'purchasable_uuid' => $variant->uuid,

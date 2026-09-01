@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Commerce\Core\Outbox;
 
-use Commerce\Contracts\Event\EventBusInterface;
 use Commerce\Core\Models\OutboxMessage;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Log;
 
 final class OutboxPublisher
 {
-    public function __construct(private readonly EventBusInterface $eventBus) {}
+    public function __construct(private readonly Dispatcher $dispatcher) {}
 
     public function publishPending(int $limit = 100): int
     {
@@ -27,7 +27,7 @@ final class OutboxPublisher
                 $event = $this->rehydrate($message);
 
                 if ($event !== null) {
-                    $this->eventBus->dispatch($event);
+                    $this->dispatcher->dispatch($event);
                 }
 
                 $message->forceFill([

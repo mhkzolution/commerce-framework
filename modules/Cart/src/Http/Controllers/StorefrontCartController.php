@@ -9,11 +9,15 @@ use Commerce\Cart\Contracts\CheckoutServiceInterface;
 use Commerce\Cart\DTO\CartLineData;
 use Commerce\Cart\Http\Requests\AddCartLineRequest;
 use Commerce\Cart\Http\Requests\CheckoutRequest;
+use Commerce\Cart\Http\Requests\DestroyCartItemsRequest;
+use Commerce\Cart\Http\Requests\PrepareCartCheckoutRequest;
 use Commerce\Cart\Http\Requests\UpdateCartLineRequest;
+use Commerce\Cart\Services\StorefrontCartPageService;
+use Commerce\Cart\Support\CartCheckoutSelection;
 use Commerce\Contracts\Order\OrderQueryServiceInterface;
 use Commerce\Contracts\Payment\PaymentQueryServiceInterface;
-use Commerce\Contracts\Shipping\ShippingQuoteServiceInterface;
 use Commerce\Contracts\Tax\TaxQuoteServiceInterface;
+use Commerce\Core\Channel\ChannelContext;
 use Commerce\Core\Exceptions\DomainException;
 use Commerce\Core\Exceptions\EntityNotFoundException;
 use Commerce\Customers\Models\Customer;
@@ -29,12 +33,18 @@ final class StorefrontCartController extends Controller
         private readonly CheckoutServiceInterface $checkoutService,
         private readonly OrderQueryServiceInterface $orderQueryService,
         private readonly CustomerAddressQueryService $addressQueryService,
+        private readonly StorefrontCartPageService $cartPageService,
+        private readonly ChannelContext $channelContext,
     ) {}
 
     public function index(): View
     {
+        CartCheckoutSelection::clear();
+        $cart = $this->cartService->get();
+
         return view('cart::storefront.cart', [
-            'cart' => $this->cartService->get(),
+            'cart' => $cart,
+            'page' => app(StorefrontCartPageService::class)->forCart($cart),
         ]);
     }
 
@@ -49,7 +59,9 @@ final class StorefrontCartController extends Controller
             return redirect()->back()->withErrors(['cart' => $exception->getMessage()]);
         }
 
-        return redirect()->route('storefront.cart.index')->with('status', 'Item added to cart.');
+        return redirect()->route(
+            $request->validated('redirect_to') === 'checkout' ? 'storefront.checkout' : 'storefront.cart.index',
+        )->with('status', 'Item added to cart.');
     }
 
     public function update(UpdateCartLineRequest $request, string $purchasableUuid): RedirectResponse
@@ -68,6 +80,34 @@ final class StorefrontCartController extends Controller
         $this->cartService->remove($purchasableUuid);
 
         return redirect()->route('storefront.cart.index')->with('status', 'Item removed.');
+    }
+
+    public function destroyMany(DestroyCartItemsRequest $request): RedirectResponse
+    {
+        foreach ($request->validated('items') as $purchasableUuid) {
+            $this->cartService->remove((string) $purchasableUuid);
+        }
+
+        return redirect()->route('storefront.cart.index')->with('status', __('storefront::storefront.items_removed'));
+    }
+
+    public function prepareCheckout(PrepareCartCheckoutRequest $request): RedirectResponse
+    {
+        $items = array_map(static fn (mixed $uuid): string => (string) $uuid, $request->validated('items'));
+        $cart = $this->cartService->get();
+        $allowed = array_flip(array_map(static fn ($line) => $line->purchasableUuid, $cart->lines));
+
+        foreach ($items as $purchasableUuid) {
+            if (! isset($allowed[$purchasableUuid])) {
+                return redirect()->route('storefront.cart.index')->withErrors([
+                    'cart' => __('storefront::storefront.checkout_selection_invalid'),
+                ]);
+            }
+        }
+
+        CartCheckoutSelection::set($items);
+
+        return redirect()->route('storefront.checkout');
     }
 
     public function clear(): RedirectResponse
@@ -107,27 +147,63 @@ final class StorefrontCartController extends Controller
             return redirect()->back()->withErrors(['currency' => $exception->getMessage()]);
         }
 
-        return redirect()->back()->with('status', 'Currency updated.');
+        return redirect()->back()->with('status', __('storefront::storefront.currency_updated'));
     }
 
-    public function checkoutForm(): View
+    public function setLocale(): RedirectResponse
+    {
+        $locale = (string) request()->string('locale');
+        $available = array_keys(config('admin.locale.available', []));
+
+        if (! in_array($locale, $available, true)) {
+            return redirect()->back()->withErrors(['locale' => 'Unsupported locale.']);
+        }
+
+        session()->put((string) config('admin.locale.session_key', 'commerce.locale'), $locale);
+        app()->setLocale($locale);
+        $this->channelContext->setLocale($locale);
+
+        return redirect()->back()->with('status', __('storefront::storefront.locale_updated'));
+    }
+
+    public function checkoutForm(): View|RedirectResponse
     {
         /** @var Customer|null $customer */
         $customer = auth('customer')->user();
 
-        $cart = $this->cartService->get();
+        $cart = CartCheckoutSelection::filterCart($this->cartService->get());
+
+        if ($cart->lines === []) {
+            return redirect()->route('storefront.cart.index')->withErrors([
+                'cart' => __('storefront::storefront.checkout_selection_empty'),
+            ]);
+        }
+
         $taxQuote = app()->bound(TaxQuoteServiceInterface::class)
             ? app(TaxQuoteServiceInterface::class)->calculate($cart->taxableSubtotal(), null, $cart->currency)
             : (object) ['total' => 0, 'lines' => []];
 
+        $page = $this->cartPageService->forCart($cart);
+        $addresses = $customer ? $this->addressQueryService->forCustomer($customer->uuid) : collect();
+        $shippingAddresses = $addresses->filter(
+            fn ($address) => in_array($address->type, ['shipping', 'both'], true),
+        );
+        $billingAddresses = $addresses->filter(
+            fn ($address) => in_array($address->type, ['billing', 'both'], true),
+        );
+
         return view('cart::storefront.checkout', [
             'cart' => $cart,
+            'lines' => $page->lines,
             'customer' => $customer,
-            'addresses' => $customer ? $this->addressQueryService->forCustomer($customer->uuid) : collect(),
-            'shippingQuotes' => app()->bound(ShippingQuoteServiceInterface::class)
-                ? app(ShippingQuoteServiceInterface::class)->availableQuotes($cart->taxableSubtotal(), null, $cart->currency)
-                : [],
+            'addresses' => $addresses,
+            'shippingQuotes' => $page->shippingQuotes,
             'taxTotal' => $taxQuote->total,
+            'estimatedTotal' => max(0, $cart->taxableSubtotal() + $taxQuote->total + $page->cheapestShipping),
+            'cheapestShipping' => $page->cheapestShipping,
+            'estimatedDelivery' => $page->estimatedDelivery,
+            'showManualShipping' => ! $customer || $shippingAddresses->isEmpty(),
+            'showManualBilling' => ! $customer || $billingAddresses->isEmpty(),
         ]);
     }
 

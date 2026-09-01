@@ -21,6 +21,7 @@ final class StoreVariantRequest extends FormRequest
             'price' => ['required', 'numeric', 'min:0'],
             'compare_at_price' => ['nullable', 'numeric', 'min:0'],
             'is_default' => ['nullable', 'boolean'],
+            'stock' => ['nullable', 'integer', 'min:0'],
         ];
     }
 }

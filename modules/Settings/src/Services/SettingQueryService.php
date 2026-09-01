@@ -8,11 +8,20 @@ use Commerce\Contracts\Settings\SettingQueryServiceInterface;
 use Commerce\Core\Base\BaseQueryService;
 use Commerce\Settings\Models\Setting;
 use Commerce\Settings\Models\SettingGroup;
+use Commerce\Settings\Support\SettingTenantScope;
 use Commerce\Settings\Support\SettingValueCaster;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
 final class SettingQueryService extends BaseQueryService implements SettingQueryServiceInterface
 {
+    /** @var list<string> */
+    private const DEDICATED_UI_GROUPS = ['site', 'theme', 'mail', 'auth', 'customer_experience'];
+
+    public function __construct(
+        private readonly SettingTenantScope $tenantScope,
+    ) {}
+
     public function get(string $key, mixed $default = null): mixed
     {
         return Cache::remember(
@@ -49,7 +58,7 @@ final class SettingQueryService extends BaseQueryService implements SettingQuery
 
         $values = [];
 
-        foreach ($groupModel->settings()->orderBy('key')->get() as $setting) {
+        foreach ($this->tenantScope->apply($groupModel->settings())->orderBy('key')->get() as $setting) {
             $values[$setting->key] = $this->get("{$group}.{$setting->key}");
         }
 
@@ -57,12 +66,13 @@ final class SettingQueryService extends BaseQueryService implements SettingQuery
     }
 
     /**
-     * @return list<array{group: SettingGroup, settings: \Illuminate\Support\Collection<int, Setting>}>
+     * @return list<array{group: SettingGroup, settings: Collection<int, Setting>}>
      */
     public function getAdminStructure(): array
     {
         return SettingGroup::query()
-            ->with(['settings' => static fn ($query) => $query->orderBy('key')])
+            ->whereNotIn('code', self::DEDICATED_UI_GROUPS)
+            ->with(['settings' => fn ($query) => $this->tenantScope->apply($query)->orderBy('key')])
             ->orderBy('position')
             ->orderBy('label')
             ->get()
@@ -73,6 +83,38 @@ final class SettingQueryService extends BaseQueryService implements SettingQuery
             ->all();
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    public function getPublicSettings(): array
+    {
+        $values = [];
+
+        $this->tenantScope
+            ->apply(Setting::query())
+            ->where('is_public', true)
+            ->with('group')
+            ->orderBy('group_id')
+            ->orderBy('key')
+            ->get()
+            ->each(function (Setting $setting) use (&$values): void {
+                $groupCode = $setting->group?->code;
+
+                if ($groupCode === null) {
+                    return;
+                }
+
+                $fullKey = "{$groupCode}.{$setting->key}";
+                $raw = $setting->value ?? $setting->default_value;
+
+                $values[$fullKey] = $raw === null
+                    ? null
+                    : SettingValueCaster::cast($raw, $setting->type);
+            });
+
+        return $values;
+    }
+
     public function clearCache(?string $key = null): void
     {
         if ($key !== null) {
@@ -81,9 +123,12 @@ final class SettingQueryService extends BaseQueryService implements SettingQuery
             return;
         }
 
-        Setting::query()->each(function (Setting $setting): void {
-            Cache::forget($this->cacheKey($setting->full_key));
-        });
+        $this->tenantScope
+            ->apply(Setting::query())
+            ->with('group')
+            ->each(function (Setting $setting): void {
+                Cache::forget($this->cacheKey($setting->full_key));
+            });
     }
 
     private function findSetting(string $key): ?Setting
@@ -94,15 +139,15 @@ final class SettingQueryService extends BaseQueryService implements SettingQuery
             return null;
         }
 
-        return Setting::query()
+        return $this->tenantScope
+            ->apply(Setting::query())
             ->whereHas('group', static fn ($query) => $query->where('code', $groupCode))
             ->where('key', $settingKey)
-            ->whereNull('tenant_id')
             ->first();
     }
 
     private function cacheKey(string $key): string
     {
-        return 'settings.' . $key;
+        return $this->tenantScope->cachePrefix().$key;
     }
 }

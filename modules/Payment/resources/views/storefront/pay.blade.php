@@ -16,7 +16,7 @@
                 Order status: {{ config('orders.statuses')[$order->status] ?? $order->status }}
             </p>
         @endif
-        <p class="mt-2 text-3xl font-semibold text-text">{{ number_format($payment->amount / 100, 2) }} {{ $payment->currency }}</p>
+        <p class="mt-2 text-3xl font-semibold text-text">{{ \Commerce\Cart\Support\StorefrontMoney::formatMinor((int) $payment->amount, (string) $payment->currency) }}</p>
         <p class="mt-1 text-sm text-muted">
             Gateway: {{ $gateway->getName() }}
         </p>

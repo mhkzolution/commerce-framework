@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Commerce\Currency\Models;
 
 use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Tenant\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 
 class Currency extends Model
 {
+    use BelongsToTenant;
     use HasUuid;
 
     protected $fillable = [

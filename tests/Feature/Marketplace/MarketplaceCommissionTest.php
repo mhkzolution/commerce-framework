@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Marketplace;
 
+use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
 use Commerce\Marketplace\Models\Commission;
 use Commerce\Marketplace\Models\Seller;
@@ -34,7 +35,7 @@ final class MarketplaceCommissionTest extends TestCase
             'status' => 'active',
         ]);
 
-        $variant = $this->createPurchasableProduct(price: 10000, stock: 5, sku: 'VENDOR-SKU');
+        $variant = $this->createPurchasableProduct(price: 100, stock: 5, sku: 'VENDOR-SKU');
         $variant->product->update(['seller_uuid' => $seller->uuid]);
 
         $this->post(route('storefront.cart.items.store'), [
@@ -62,7 +63,7 @@ final class MarketplaceCommissionTest extends TestCase
 
     public function test_admin_can_view_commissions_index(): void
     {
-        $this->seed(\Commerce\Iam\Database\Seeders\IamSeeder::class);
+        $this->seed(IamSeeder::class);
 
         $seller = Seller::query()->create([
             'name' => 'Acme Vendor',

@@ -33,8 +33,13 @@ fi
 
 echo "→ Preparing database"
 php artisan config:clear --quiet
-php artisan migrate --force --quiet
+php artisan migrate --force
 php artisan db:seed --force --quiet
+
+if [ ! -L public/storage ]; then
+    echo "→ Linking public storage"
+    php artisan storage:link --quiet
+fi
 
 if [ ! -f public/build/manifest.json ]; then
     echo "→ Building frontend assets (first run)"

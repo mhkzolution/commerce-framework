@@ -21,6 +21,8 @@ return [
         'primary-active' => env('DESIGN_COLOR_PRIMARY_ACTIVE'),
         'background' => env('DESIGN_COLOR_BACKGROUND'),
         'surface' => env('DESIGN_COLOR_SURFACE'),
+        'accent' => env('DESIGN_COLOR_ACCENT'),
+        'accent-hover' => env('DESIGN_COLOR_ACCENT_HOVER'),
         'sidebar' => env('DESIGN_COLOR_SIDEBAR'),
     ], fn ($value) => filled($value)),
 

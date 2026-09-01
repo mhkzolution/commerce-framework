@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Commerce\Settings\Models;
 
 use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Tenant\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Setting extends Model
 {
+    use BelongsToTenant;
     use HasUuid;
 
     protected $fillable = [
@@ -41,6 +43,6 @@ class Setting extends Model
 
     public function getFullKeyAttribute(): string
     {
-        return ($this->group?->code ?? 'general') . '.' . $this->key;
+        return ($this->group?->code ?? 'general').'.'.$this->key;
     }
 }

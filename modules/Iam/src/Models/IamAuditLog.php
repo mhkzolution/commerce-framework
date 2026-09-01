@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Commerce\Iam\Models;
 
+use Commerce\Core\Tenant\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class IamAuditLog extends Model
 {
+    use BelongsToTenant;
+
     public $timestamps = false;
 
     protected $fillable = [

@@ -18,11 +18,14 @@ Route::middleware('web')->group(function (): void {
                 Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
                 Route::get('/leads/{lead}/edit', [LeadController::class, 'edit'])->name('leads.edit');
                 Route::put('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
+                Route::post('/leads/{lead}/qualify', [LeadController::class, 'qualify'])->name('leads.qualify');
+                Route::post('/leads/{lead}/convert', [LeadController::class, 'convert'])->name('leads.convert');
                 Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
             });
 
             Route::middleware('permission:crm.deal.view')->group(function (): void {
                 Route::get('/deals', [DealController::class, 'index'])->name('deals.index');
+                Route::get('/deals/board', [DealController::class, 'board'])->name('deals.board');
             });
 
             Route::middleware('permission:crm.deal.manage')->group(function (): void {
@@ -30,6 +33,7 @@ Route::middleware('web')->group(function (): void {
                 Route::post('/deals', [DealController::class, 'store'])->name('deals.store');
                 Route::get('/deals/{deal}/edit', [DealController::class, 'edit'])->name('deals.edit');
                 Route::put('/deals/{deal}', [DealController::class, 'update'])->name('deals.update');
+                Route::patch('/deals/{deal}/stage', [DealController::class, 'updateStage'])->name('deals.stage');
                 Route::delete('/deals/{deal}', [DealController::class, 'destroy'])->name('deals.destroy');
             });
         });

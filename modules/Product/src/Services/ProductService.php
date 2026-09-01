@@ -14,8 +14,11 @@ use Commerce\Core\Exceptions\EntityNotFoundException;
 use Commerce\Product\Contracts\ProductServiceInterface;
 use Commerce\Product\DTO\CreateProductData;
 use Commerce\Product\DTO\CreateVariantData;
+use Commerce\Product\DTO\SeoData;
 use Commerce\Product\DTO\UpdateProductData;
+use Commerce\Product\Events\ProductArchived;
 use Commerce\Product\Events\ProductCreated;
+use Commerce\Product\Events\ProductDeleted;
 use Commerce\Product\Events\ProductPublished;
 use Commerce\Product\Models\Product;
 use Commerce\Product\Models\ProductAttributeValue;
@@ -45,7 +48,6 @@ final class ProductService extends BaseService implements ProductServiceInterfac
                 'name' => $data->name,
                 'slug' => $slug,
                 'description' => $data->description,
-                'type' => $data->type,
                 'status' => $schedule['status'],
                 'visibility' => $data->visibility,
                 'brand_uuid' => $data->brandUuid,
@@ -89,7 +91,6 @@ final class ProductService extends BaseService implements ProductServiceInterfac
                 'name' => $data->name,
                 'slug' => $slug,
                 'description' => $data->description,
-                'type' => $data->type,
                 'status' => $schedule['status'],
                 'visibility' => $data->visibility,
                 'brand_uuid' => $data->brandUuid,
@@ -136,10 +137,18 @@ final class ProductService extends BaseService implements ProductServiceInterfac
     public function delete(string $uuid): void
     {
         $product = $this->findOrFail($uuid);
+        $productUuid = $product->uuid;
+        $tenantId = $product->tenant_id;
+
         $this->seoService->deleteForEntity(Product::SEO_ENTITY_TYPE, $product->uuid);
         $this->slugService->unregister(Product::SEO_ENTITY_TYPE, $product->uuid);
         $this->searchIndexer->delete($product->uuid);
         $product->delete();
+
+        $this->eventBus->dispatch(new ProductDeleted(
+            productUuid: $productUuid,
+            tenantId: $tenantId,
+        ));
     }
 
     public function publish(string $uuid): Product
@@ -167,6 +176,11 @@ final class ProductService extends BaseService implements ProductServiceInterfac
     {
         $product = $this->findOrFail($uuid);
         $product->update(['status' => 'archived', 'publish_at' => null]);
+
+        $this->eventBus->dispatch(new ProductArchived(
+            productUuid: $product->uuid,
+            tenantId: $product->tenant_id,
+        ));
 
         return $product->fresh();
     }
@@ -198,15 +212,11 @@ final class ProductService extends BaseService implements ProductServiceInterfac
     {
         $product = $this->findOrFail($data->productUuid);
 
-        if ($product->isSimple()) {
-            throw new DomainException('Simple products cannot have multiple variants.');
-        }
-
         if ($data->isDefault) {
             $product->variants()->update(['is_default' => false]);
         }
 
-        return ProductVariant::query()->create([
+        $variant = ProductVariant::query()->create([
             'product_id' => $product->id,
             'sku' => $data->sku,
             'name' => $data->name,
@@ -215,6 +225,8 @@ final class ProductService extends BaseService implements ProductServiceInterfac
             'is_default' => $data->isDefault,
             'position' => $data->position,
         ]);
+
+        return $variant;
     }
 
     public function deleteVariant(string $uuid): void
@@ -243,7 +255,7 @@ final class ProductService extends BaseService implements ProductServiceInterfac
         return $product;
     }
 
-    private function createDefaultVariant(Product $product, ?string $sku, int $price, ?int $compareAtPrice): void
+    private function createDefaultVariant(Product $product, ?string $sku, float $price, ?float $compareAtPrice): void
     {
         ProductVariant::query()->create([
             'product_id' => $product->id,
@@ -304,7 +316,7 @@ final class ProductService extends BaseService implements ProductServiceInterfac
         }
     }
 
-    private function syncSeo(Product $product, ?\Commerce\Product\DTO\SeoData $seo): void
+    private function syncSeo(Product $product, ?SeoData $seo): void
     {
         if ($seo === null) {
             return;
@@ -375,6 +387,6 @@ final class ProductService extends BaseService implements ProductServiceInterfac
 
     private function productPath(string $slug): string
     {
-        return '/products/' . ltrim($slug, '/');
+        return '/products/'.ltrim($slug, '/');
     }
 }

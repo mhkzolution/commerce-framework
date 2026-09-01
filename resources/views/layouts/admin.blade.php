@@ -4,30 +4,41 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Admin') — {{ config('admin.name', config('commerce.name')) }}</title>
+    <title>@yield('title', __('admin::shell.admin')) — {{ app(\Commerce\Contracts\Settings\SiteIdentityServiceInterface::class)->name() }}</title>
+    <x-site.favicon />
+    <x-site.fonts />
     @vite(['resources/css/app.css', 'resources/css/admin.css', 'resources/js/admin.js'])
     <x-admin.design-tokens />
     @stack('head')
 </head>
-<body class="h-full antialiased">
+<body class="h-full font-sans antialiased">
+    @php($impersonation = app(\Commerce\Iam\Contracts\Impersonation\ImpersonationServiceInterface::class))
+    @if ($impersonation->isImpersonating())
+        <div class="bg-amber-500 px-4 py-2 text-center text-sm font-medium text-white">
+            {{ __('admin::shell.impersonating', ['email' => auth()->user()?->email]) }}
+            <form method="POST" action="{{ route('admin.impersonation.stop') }}" class="inline">
+                @csrf
+                <button type="submit" class="underline">{{ __('admin::shell.stop_impersonation') }}</button>
+            </form>
+        </div>
+    @endif
     <div class="admin-shell-layout">
         <div id="admin-sidebar-backdrop" class="admin-sidebar-backdrop lg:hidden" aria-hidden="true"></div>
 
-        <aside id="admin-sidebar" class="admin-sidebar" aria-label="Sidebar navigation">
+        <aside id="admin-sidebar" class="admin-sidebar" aria-label="{{ __('admin::shell.sidebar_navigation') }}">
             <div class="admin-sidebar-inner">
                 <div class="flex h-[var(--topbar-height)] items-center gap-3 border-b border-border px-4">
-                    <div class="admin-brand-mark" aria-hidden="true">C</div>
+                    <x-site.logo variant="admin" :href="route('admin.dashboard')" class="min-w-0 flex-1" />
                     <div class="admin-brand-text min-w-0">
-                        <div class="truncate text-sm font-semibold text-text">{{ config('admin.name', config('commerce.name')) }}</div>
-                        <div class="truncate text-xs text-muted">Admin</div>
+                        <div class="truncate text-xs text-muted">{{ __('admin::shell.admin') }}</div>
                     </div>
                 </div>
 
                 <div class="admin-sidebar-search border-b border-border p-3">
-                    <x-admin.search-input id="admin-menu-search" placeholder="Search menu..." name="menu_search" :value="null" />
+                    <x-admin.search-input id="admin-menu-search" :placeholder="__('admin::shell.search_menu')" name="menu_search" :value="null" />
                 </div>
 
-                <nav class="flex-1 space-y-1 overflow-y-auto p-3" aria-label="Main">
+                <nav class="flex-1 space-y-1 overflow-y-auto p-3" aria-label="{{ __('admin::shell.main_navigation') }}">
                     @foreach ($adminNavigation ?? [] as $item)
                         <x-admin.nav-item :item="$item" />
                     @endforeach
@@ -43,14 +54,14 @@
             <header class="admin-topbar">
                 <div class="flex h-full items-center justify-between gap-4 px-4 lg:px-6">
                     <div class="flex min-w-0 flex-1 items-center gap-3">
-                        <button id="admin-sidebar-toggle" type="button" class="cf-surface-interactive p-2" aria-label="Toggle sidebar">
+                        <button id="admin-sidebar-toggle" type="button" class="cf-surface-interactive p-2" aria-label="{{ __('admin::shell.toggle_sidebar') }}">
                             <x-admin.icon name="bars-3" class="h-5 w-5" />
                         </button>
 
                         <div class="hidden min-w-0 flex-1 md:block">
                             <x-admin.search-input
                                 id="admin-global-search"
-                                placeholder="Search products, orders, customers..."
+                                :placeholder="__('admin::shell.search_global')"
                                 name="global_search"
                                 class="max-w-md"
                                 data-search-url="{{ route('admin.search') }}"
@@ -60,16 +71,12 @@
 
                     <div class="flex items-center gap-2">
                         <button id="admin-command-open" type="button" class="cf-surface-interactive hidden items-center gap-2 border border-border px-3 py-1.5 text-sm text-muted sm:inline-flex">
-                            <span>Search</span>
+                            <span>{{ __('admin::shell.search') }}</span>
                             <kbd class="rounded border border-border px-1.5 py-0.5 text-xs">⌘K</kbd>
                         </button>
 
-                        <button type="button" class="cf-surface-interactive p-2" aria-label="Notifications">
+                        <button type="button" class="cf-surface-interactive p-2" aria-label="{{ __('admin::shell.notifications') }}">
                             <x-admin.icon name="bell" class="h-5 w-5" />
-                        </button>
-
-                        <button id="admin-theme-toggle" type="button" class="cf-surface-interactive px-2 py-1.5 text-sm" aria-label="Toggle theme">
-                            <span data-theme-label>System</span>
                         </button>
 
                         <div class="relative">
@@ -77,8 +84,14 @@
                                 {{ strtoupper(app()->getLocale()) }}
                             </button>
                             <div data-admin-dropdown hidden class="admin-dropdown">
-                                @foreach (config('admin.locale.available', ['en' => 'English']) as $code => $label)
-                                    <button type="button" class="cf-command-item block w-full px-3 py-2 text-left text-sm" disabled>{{ $label }}</button>
+                                @foreach (config('admin.locale.available', ['th' => 'ไทย', 'en' => 'English']) as $code => $label)
+                                    <form method="POST" action="{{ route('storefront.locale') }}">
+                                        @csrf
+                                        <input type="hidden" name="locale" value="{{ $code }}">
+                                        <button type="submit" class="cf-command-item block w-full px-3 py-2 text-left text-sm @if(app()->getLocale() === $code) font-semibold text-primary @endif">
+                                            {{ $label }}
+                                        </button>
+                                    </form>
                                 @endforeach
                             </div>
                         </div>
@@ -93,7 +106,7 @@
                             <div data-admin-dropdown hidden class="admin-dropdown">
                                 <form method="POST" action="{{ route('admin.logout') }}">
                                     @csrf
-                                    <button type="submit" class="cf-command-item block w-full px-3 py-2 text-left text-sm">Sign out</button>
+                                    <button type="submit" class="cf-command-item block w-full px-3 py-2 text-left text-sm">{{ __('admin::shell.sign_out') }}</button>
                                 </form>
                             </div>
                         </div>

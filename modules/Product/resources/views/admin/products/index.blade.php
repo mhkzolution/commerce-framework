@@ -12,6 +12,14 @@
         </x-slot:breadcrumb>
 
         <x-slot:primaryActions>
+            <x-admin.button variant="secondary" :href="route('admin.products.export', request()->only(['search', 'status']))">
+                <x-admin.icon name="arrow-down-tray" class="h-4 w-4" />
+                Export CSV
+            </x-admin.button>
+            <x-admin.button variant="secondary" :href="route('admin.products.import.show')">
+                <x-admin.icon name="arrow-down-tray" class="h-4 w-4" />
+                Import CSV
+            </x-admin.button>
             <x-admin.button variant="primary" :href="route('admin.products.create')">
                 <x-admin.icon name="plus" class="h-4 w-4" />
                 New product
@@ -68,7 +76,7 @@
                         <div class="text-xs text-muted">{{ $product->type }} · {{ $product->slug }}</div>
                     </td>
                     <td class="px-4 py-3 text-muted">{{ $variant?->sku ?? '—' }}</td>
-                    <td class="px-4 py-3">{{ $variant ? number_format($variant->price / 100, 2) : '—' }}</td>
+                    <td class="px-4 py-3">{{ $variant ? number_format((float) $variant->price, 2) : '—' }}</td>
                     <td class="px-4 py-3">
                         @php
                             $statusVariant = match ($product->status) {

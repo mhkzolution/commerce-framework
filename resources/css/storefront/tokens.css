@@ -1,0 +1,50 @@
+/**
+ * Storefront-scoped design tokens.
+ * Extends semantic tokens with premium commerce values (DESIGN.md).
+ */
+.storefront {
+    --radius-store: 0.75rem;
+    --radius-store-lg: 0.75rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 0.75rem;
+    --store-max-width: 100%;
+    --store-gap: 1.5rem;
+    --store-gap-lg: 2rem;
+    --store-header-height: calc(var(--store-header-utility-height, 0px) + var(--store-header-top-height));
+    --store-header-top-height: 3.75rem;
+    --store-header-utility-height: 0px;
+    --store-gutter: 1.5rem;
+    --store-sticky-offset: calc(var(--store-header-height) + 0.75rem);
+}
+
+/* Tablet — 768px+ */
+@media (min-width: 768px) {
+    .storefront {
+        --store-gutter: 1.75rem;
+    }
+}
+
+/* Laptop — 1024px+ */
+@media (min-width: 1024px) {
+    .storefront {
+        --store-gap: var(--store-gap-lg);
+        --store-gutter: 2rem;
+        --store-max-width: 64rem;
+        --store-header-utility-height: 2.25rem;
+        --store-header-height: calc(var(--store-header-utility-height) + var(--store-header-top-height));
+    }
+}
+
+/* Desktop — 1280px+ */
+@media (min-width: 1280px) {
+    .storefront {
+        --store-max-width: 80rem;
+    }
+}
+
+/* Large desktop — 1536px+ */
+@media (min-width: 1536px) {
+    .storefront {
+        --store-max-width: 90rem;
+    }
+}

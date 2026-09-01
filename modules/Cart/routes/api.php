@@ -6,16 +6,20 @@ use Commerce\Api\Responses\ApiResponse;
 use Commerce\Cart\Contracts\CartServiceInterface;
 use Commerce\Cart\Contracts\CheckoutServiceInterface;
 use Commerce\Cart\DTO\CartLineData;
+use Commerce\Cart\Http\Middleware\ResolveCartToken;
 use Commerce\Cart\Http\Requests\AddCartLineRequest;
 use Commerce\Cart\Http\Requests\CheckoutRequest;
 use Commerce\Cart\Http\Requests\UpdateCartLineRequest;
 use Commerce\Cart\Http\Resources\CartResource;
+use Commerce\Contracts\Payment\PaymentQueryServiceInterface;
 use Commerce\Core\Exceptions\DomainException;
 use Commerce\Core\Exceptions\EntityNotFoundException;
 use Commerce\Orders\Http\Resources\OrderResource;
+use Commerce\Payment\Http\Resources\PaymentResource;
+use Commerce\Payment\Services\PaymentGatewayManager;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('api/v1')->middleware(['api', 'web'])->group(function (): void {
+Route::prefix('api/v1')->middleware(['api', ResolveCartToken::class])->group(function (): void {
     Route::get('/cart', function (CartServiceInterface $cart) {
         return ApiResponse::success(new CartResource($cart->get()));
     })->name('api.v1.cart.show');
@@ -73,11 +77,32 @@ Route::prefix('api/v1')->middleware(['api', 'web'])->group(function (): void {
         }
     })->name('api.v1.cart.currency');
 
-    Route::post('/cart/checkout', function (CheckoutRequest $request, CheckoutServiceInterface $checkout) {
+    Route::post('/cart/checkout', function (
+        CheckoutRequest $request,
+        CheckoutServiceInterface $checkout,
+        PaymentQueryServiceInterface $paymentQuery,
+        PaymentGatewayManager $gatewayManager,
+    ) {
         try {
             $order = $checkout->checkout($request->toCheckoutData());
+            $payment = $paymentQuery->findPendingByOrderUuid($order->uuid);
+            $initiation = [];
 
-            return ApiResponse::success(new OrderResource($order), status: 201);
+            if ($payment !== null) {
+                $driver = $gatewayManager->driver((string) $payment->method);
+                $initiation = $driver->initiate($payment);
+
+                if (! empty($initiation['reference'])) {
+                    $payment->update(['gateway_reference' => $initiation['reference']]);
+                    $payment = $payment->fresh();
+                }
+            }
+
+            return ApiResponse::success([
+                'order' => new OrderResource($order->load('lineItems')),
+                'payment' => $payment ? new PaymentResource($payment) : null,
+                'payment_initiation' => $initiation,
+            ], status: 201);
         } catch (DomainException|EntityNotFoundException $exception) {
             return ApiResponse::error('checkout.failed', $exception->getMessage(), status: 422);
         }

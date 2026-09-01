@@ -1,0 +1,35 @@
+{
+    "name": "WarehouseScanner",
+    "alias": "warehouse",
+    "description": "Warehouse scanner workspace for stock check, receiving, picking, and inventory counts",
+    "version": "1.0.0",
+    "priority": 27,
+    "providers": [
+        "Commerce\\WarehouseScanner\\WarehouseScannerServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "iam",
+            "product",
+            "inventory",
+            "barcode",
+            "orders"
+        ]
+    },
+    "permissions": [
+        "warehouse.scan",
+        "warehouse.receive",
+        "warehouse.count",
+        "warehouse.adjust",
+        "warehouse.transfer",
+        "warehouse.reports"
+    ],
+    "admin_menu": {
+        "label": "Warehouse Scanner",
+        "icon": "qr-code",
+        "route": "warehouse.index",
+        "order": 27,
+        "permission": "warehouse.scan"
+    }
+}

@@ -8,6 +8,6 @@ return [
         'store.name' => 'Commerce Store',
         'store.currency' => 'THB',
         'store.timezone' => 'Asia/Bangkok',
-        'store.locale' => 'en',
+        'store.locale' => 'th',
     ],
 ];

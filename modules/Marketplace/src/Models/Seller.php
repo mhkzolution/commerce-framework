@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Commerce\Marketplace\Models;
 
 use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Tenant\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Seller extends Model
 {
+    use BelongsToTenant;
     use HasUuid;
     use SoftDeletes;
 
@@ -23,5 +26,16 @@ class Seller extends Model
         'email',
         'commission_rate',
         'status',
+        'user_uuid',
     ];
+
+    public function commissions(): HasMany
+    {
+        return $this->hasMany(Commission::class, 'seller_uuid', 'uuid');
+    }
+
+    public function payouts(): HasMany
+    {
+        return $this->hasMany(Payout::class, 'seller_uuid', 'uuid');
+    }
 }

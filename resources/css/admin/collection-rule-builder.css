@@ -1,0 +1,104 @@
+.rule-builder {
+    display: grid;
+    gap: 1rem;
+}
+
+.rule-builder__match {
+    max-width: 20rem;
+}
+
+.rule-builder__cards {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.rule-builder__empty {
+    margin: 0;
+    padding: 1rem;
+    border: 1px dashed var(--color-border);
+    border-radius: 0.75rem;
+    text-align: center;
+}
+
+.rule-builder__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.rule-builder__toolbar .cf-input {
+    min-width: 12rem;
+}
+
+.rule-card {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.75rem;
+    align-items: start;
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-card);
+}
+
+.rule-card__handle,
+.rule-card__remove {
+    border: 0;
+    background: transparent;
+    color: var(--color-muted);
+    cursor: grab;
+    padding: 0.25rem;
+}
+
+.rule-card__handle:active {
+    cursor: grabbing;
+}
+
+.rule-card__remove {
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.rule-card__remove:hover {
+    color: var(--color-danger);
+}
+
+.rule-card__title {
+    margin: 0 0 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.rule-card__body {
+    min-width: 0;
+}
+
+.rule-builder__card.is-dragging,
+[data-rule-group].is-dragging {
+    opacity: 0.55;
+}
+
+[data-rule-group] {
+    cursor: default;
+}
+
+[data-rule-group-handle] {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 0;
+    background: transparent;
+    color: var(--color-muted);
+    cursor: grab;
+    padding: 0;
+    font: inherit;
+}
+
+[data-rule-group-handle]:active {
+    cursor: grabbing;
+}

@@ -8,16 +8,20 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('web')->group(function (): void {
     Route::get('/shop', [ShopController::class, 'index'])->name('storefront.shop.index');
+    Route::get('/wishlist', fn () => view('cart::storefront.wishlist'))->name('storefront.wishlist');
     Route::get('/products/{slug}', [ShopController::class, 'show'])->name('storefront.products.show');
 
     Route::get('/cart', [StorefrontCartController::class, 'index'])->name('storefront.cart.index');
     Route::post('/cart/items', [StorefrontCartController::class, 'store'])->name('storefront.cart.items.store');
     Route::patch('/cart/items/{purchasableUuid}', [StorefrontCartController::class, 'update'])->name('storefront.cart.items.update');
     Route::delete('/cart/items/{purchasableUuid}', [StorefrontCartController::class, 'destroy'])->name('storefront.cart.items.destroy');
+    Route::delete('/cart/items', [StorefrontCartController::class, 'destroyMany'])->name('storefront.cart.items.destroy-many');
+    Route::post('/cart/checkout', [StorefrontCartController::class, 'prepareCheckout'])->name('storefront.cart.checkout.prepare');
     Route::delete('/cart', [StorefrontCartController::class, 'clear'])->name('storefront.cart.clear');
     Route::post('/cart/coupon', [StorefrontCartController::class, 'applyCoupon'])->name('storefront.cart.coupon.apply');
     Route::delete('/cart/coupon', [StorefrontCartController::class, 'removeCoupon'])->name('storefront.cart.coupon.remove');
     Route::post('/cart/currency', [StorefrontCartController::class, 'setCurrency'])->name('storefront.cart.currency');
+    Route::post('/locale', [StorefrontCartController::class, 'setLocale'])->name('storefront.locale');
 
     Route::get('/checkout', [StorefrontCartController::class, 'checkoutForm'])->name('storefront.checkout');
     Route::post('/checkout', [StorefrontCartController::class, 'checkout'])->name('storefront.checkout.store');

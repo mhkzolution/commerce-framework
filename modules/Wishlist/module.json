@@ -1,0 +1,20 @@
+{
+    "name": "Wishlist",
+    "alias": "wishlist",
+    "description": "Customer wishlists with guest local storage sync",
+    "version": "1.0.0",
+    "priority": 29,
+    "providers": [
+        "Commerce\\Wishlist\\WishlistServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "customers",
+            "product"
+        ]
+    },
+    "permissions": [],
+    "settings": [],
+    "admin_menu": []
+}

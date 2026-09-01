@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Commerce\Shipping\Models;
 
 use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Tenant\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 
 class ShippingMethod extends Model
 {
+    use BelongsToTenant;
     use HasUuid;
 
     protected $fillable = [

@@ -20,7 +20,11 @@
             @csrf
             @method('PUT')
             <x-admin.form.section title="Attribute details">
-                @include('catalog::admin.attributes._form', ['attribute' => $attribute])
+                @include('catalog::admin.attributes._form', [
+                    'attribute' => $attribute,
+                    'optionValues' => $optionValues,
+                    'suggestedType' => $suggestedType,
+                ])
             </x-admin.form.section>
             <x-slot:actions>
                 <x-admin.button variant="secondary" :href="route('admin.catalog.attributes.index')">Cancel</x-admin.button>

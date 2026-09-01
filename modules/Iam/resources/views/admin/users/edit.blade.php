@@ -13,6 +13,13 @@
         </x-slot:breadcrumb>
 
         <x-slot:secondaryActions>
+            @if (auth()->id() !== $user->id && app(\Commerce\Iam\Contracts\Impersonation\ImpersonationServiceInterface::class)->canImpersonate(auth()->user(), $user))
+                <form method="POST" action="{{ route('admin.iam.users.impersonate', $user) }}" class="inline">
+                    @csrf
+                    <input type="hidden" name="reason" value="Admin support">
+                    <x-admin.button variant="secondary" type="submit">Impersonate</x-admin.button>
+                </form>
+            @endif
             <form method="POST" action="{{ route('admin.iam.users.destroy', $user) }}" onsubmit="return confirm('Delete this user?')">
                 @csrf
                 @method('DELETE')

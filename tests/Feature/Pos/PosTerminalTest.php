@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Pos;
 
+use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
 use Commerce\Orders\Models\Order;
 use Commerce\Pos\Models\Register;
@@ -19,7 +20,7 @@ final class PosTerminalTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(\Commerce\Iam\Database\Seeders\IamSeeder::class);
+        $this->seed(IamSeeder::class);
     }
 
     public function test_cashier_can_complete_pos_sale(): void
@@ -32,7 +33,16 @@ final class PosTerminalTest extends TestCase
             'is_active' => true,
         ]);
 
-        $variant = $this->createPurchasableProduct(price: 3500, stock: 10, sku: 'POS-SKU-001');
+        $variant = $this->createPurchasableProduct(price: 35, stock: 10, sku: 'POS-SKU-001');
+
+        $this->actingAs($admin)
+            ->get(route('admin.pos.terminal.show', $register))
+            ->assertOk()
+            ->assertSee('Open session');
+
+        $this->actingAs($admin)
+            ->post(route('admin.pos.terminal.open', $register), ['opening_balance' => 0])
+            ->assertRedirect(route('admin.pos.terminal.show', $register));
 
         $this->actingAs($admin)
             ->get(route('admin.pos.terminal.show', $register))

@@ -3,13 +3,15 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Login — {{ config('commerce.name', 'Commerce Framework') }}</title>
+    <title>Login — {{ app(\Commerce\Contracts\Settings\SiteIdentityServiceInterface::class)->name() }}</title>
+    <x-site.favicon />
+    <x-site.fonts />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="flex min-h-screen items-center justify-center bg-gray-100 antialiased">
+<body class="flex min-h-screen items-center justify-center bg-gray-100 font-sans antialiased">
     <div class="w-full max-w-md rounded-lg bg-white p-8 shadow-sm">
         <h1 class="text-xl font-semibold text-gray-900">Sign in</h1>
-        <p class="mt-1 text-sm text-gray-500">{{ config('commerce.name') }}</p>
+        <p class="mt-1 text-sm text-gray-500">{{ app(\Commerce\Contracts\Settings\SiteIdentityServiceInterface::class)->name() }}</p>
 
         @error('email')
             <div class="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">

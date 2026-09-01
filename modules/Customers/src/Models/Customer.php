@@ -6,15 +6,19 @@ namespace Commerce\Customers\Models;
 
 use Commerce\Core\Concerns\HasUuid;
 use Commerce\Core\Tenant\BelongsToTenant;
+use Commerce\Customers\Notifications\CustomerResetPasswordNotification;
+use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class Customer extends Authenticatable
+class Customer extends Authenticatable implements CanResetPasswordContract
 {
-    use HasUuid;
     use BelongsToTenant;
+    use CanResetPassword;
+    use HasUuid;
     use Notifiable;
     use SoftDeletes;
 
@@ -24,6 +28,7 @@ class Customer extends Authenticatable
         'email',
         'name',
         'phone',
+        'line_user_id',
         'password',
         'status',
         'meta',
@@ -45,6 +50,11 @@ class Customer extends Authenticatable
     public function addresses(): HasMany
     {
         return $this->hasMany(CustomerAddress::class);
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new CustomerResetPasswordNotification($token));
     }
 
     public function isActive(): bool

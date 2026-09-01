@@ -19,6 +19,10 @@
                             <x-admin.search-input name="search" placeholder="Search product, SKU, variant UUID" />
                         </form>
                     </x-slot:search>
+                    <x-slot:actions>
+                        <x-admin.button variant="secondary" :href="route('admin.inventory.purchase-orders.index')">Purchase orders</x-admin.button>
+                        <x-admin.button variant="secondary" :href="route('admin.inventory.suppliers.index')">Suppliers</x-admin.button>
+                    </x-slot:actions>
                 </x-admin.table.toolbar>
             </x-slot:toolbar>
 

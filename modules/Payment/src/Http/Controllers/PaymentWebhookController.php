@@ -49,6 +49,12 @@ final class PaymentWebhookController extends Controller
                 $this->paymentService->markPaid($paymentUuid, $data['data']['object']['id'] ?? null);
             } elseif (($data['type'] ?? '') === 'payment_intent.payment_failed') {
                 $this->paymentService->markFailed($paymentUuid, $data['data']['object']['last_payment_error']['message'] ?? 'Stripe payment failed');
+            } elseif (($data['type'] ?? '') === 'charge.refunded' && ! $payment->isRefunded()) {
+                $this->paymentService->markRefunded(
+                    $payment,
+                    (int) $payment->amount,
+                    $data['data']['object']['id'] ?? null,
+                );
             }
 
             return response()->json(['received' => true]);

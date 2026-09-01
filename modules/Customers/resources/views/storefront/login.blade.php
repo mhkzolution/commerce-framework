@@ -1,33 +1,28 @@
-@extends('cart::layouts.storefront')
+@extends('cart::layouts.auth')
 
-@section('title', 'Sign in')
+@section('title', __('customers::auth.login_title'))
 
 @section('content')
-    <h1 class="text-2xl font-semibold text-text">Sign in</h1>
+    <div class="storefront-auth-page" data-auth
+        @if ($authConfig->recaptchaEnabled())
+            data-recaptcha-enabled="1"
+            data-recaptcha-site-key="{{ config('customers.storefront.recaptcha.site_key') }}"
+        @endif
+    >
+        <x-storefront.auth.auth-card>
+            <x-storefront.auth.heading
+                :title="__('customers::auth.welcome')"
+                :description="__('customers::auth.welcome_description')"
+                class="storefront-auth-card__heading"
+            />
 
-    @if ($errors->any())
-        <div class="cf-flash cf-flash--danger mt-4">{{ $errors->first() }}</div>
-    @endif
+            <x-storefront.auth.login-form :auth-config="$authConfig" :login-mode="$loginMode" />
 
-    <form method="POST" action="{{ route('storefront.account.login.store') }}" class="mt-6 max-w-md space-y-4 rounded-lg border border-border bg-surface p-6 shadow-sm">
-        @csrf
-        <div>
-            <label class="block text-sm font-medium text-text" for="email">Email</label>
-            <input id="email" type="email" name="email" value="{{ old('email') }}" required class="cf-input mt-1">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-text" for="password">Password</label>
-            <input id="password" type="password" name="password" required class="cf-input mt-1">
-        </div>
-        <label class="flex items-center gap-2 text-sm text-text-secondary">
-            <input type="checkbox" name="remember" value="1" class="rounded border-border">
-            Remember me
-        </label>
-        <button type="submit" class="cf-btn cf-btn--primary w-full">Sign in</button>
-    </form>
-
-    <p class="mt-4 text-sm text-muted">
-        No account?
-        <a href="{{ route('storefront.account.register') }}" class="text-link underline">Create one</a>
-    </p>
+            <x-storefront.auth.auth-footer :auth-config="$authConfig" class="storefront-auth-card__footer" />
+        </x-storefront.auth.auth-card>
+    </div>
 @endsection
+
+@push('scripts')
+    @vite('resources/js/storefront/auth.js')
+@endpush

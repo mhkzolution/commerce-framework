@@ -9,5 +9,9 @@ return [
             'subject' => 'Order {{order_number}} confirmed',
             'view' => 'notification::mail.order-confirmation',
         ],
+        'purchase_order.supplier' => [
+            'subject' => 'Purchase Order {{reference}}',
+            'view' => 'inventory::mail.purchase-order',
+        ],
     ],
 ];

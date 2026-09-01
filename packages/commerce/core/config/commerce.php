@@ -12,6 +12,7 @@ return [
         'media' => true,
         'catalog' => true,
         'cart' => true,
+        'wishlist' => true,
         'product' => true,
         'inventory' => true,
         'customers' => true,
@@ -26,6 +27,8 @@ return [
         'currency' => true,
         'cms' => true,
         'pos' => true,
+        'barcode' => true,
+        'warehouse' => true,
         'crm' => true,
         'marketplace' => true,
     ],
@@ -43,6 +46,24 @@ return [
     'permissions' => [
         'platform.tenant.view' => 'View tenants',
         'platform.tenant.manage' => 'Manage tenants',
+    ],
+
+    'channel' => [
+        'default' => env('COMMERCE_CHANNEL_DEFAULT', 'web'),
+    ],
+
+    'outbox' => [
+        'auto_publish' => env('COMMERCE_OUTBOX_AUTO_PUBLISH', true),
+        'use_queue' => env('COMMERCE_OUTBOX_USE_QUEUE', false),
+        'schedule' => env('COMMERCE_OUTBOX_SCHEDULE', true),
+    ],
+
+    'search' => [
+        'driver' => env('SEARCH_DRIVER', 'database'),
+        'elasticsearch' => [
+            'host' => env('ELASTICSEARCH_HOST', ''),
+            'index_prefix' => env('ELASTICSEARCH_INDEX_PREFIX', 'commerce'),
+        ],
     ],
 
     'api' => [

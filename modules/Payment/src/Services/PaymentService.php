@@ -15,6 +15,7 @@ use Commerce\Orders\Models\Order;
 use Commerce\Payment\Contracts\PaymentServiceInterface;
 use Commerce\Payment\Events\PaymentFailed;
 use Commerce\Payment\Events\PaymentPaid;
+use Commerce\Payment\Events\PaymentRefunded;
 use Commerce\Payment\Models\Payment;
 use Illuminate\Support\Facades\DB;
 
@@ -23,6 +24,7 @@ final class PaymentService extends BaseService implements PaymentServiceInterfac
     public function __construct(
         private readonly OrderServiceInterface $orderService,
         private readonly EventBusInterface $eventBus,
+        private readonly PaymentGatewayManager $gatewayManager,
     ) {}
 
     public function createForOrder(string $orderUuid, int $amount, string $currency): Payment
@@ -32,7 +34,7 @@ final class PaymentService extends BaseService implements PaymentServiceInterfac
             'amount' => $amount,
             'currency' => $currency,
             'status' => PaymentStatus::Pending->value,
-            'method' => (string) config('payment.default_method', 'manual'),
+            'method' => (string) config('payment.gateway', 'simulated'),
         ]);
     }
 
@@ -47,7 +49,7 @@ final class PaymentService extends BaseService implements PaymentServiceInterfac
 
             $payment->update([
                 'status' => PaymentStatus::Paid->value,
-                'gateway_reference' => $gatewayReference ?? ('SIM-' . strtoupper(substr($payment->uuid, 0, 8))),
+                'gateway_reference' => $gatewayReference ?? ('SIM-'.strtoupper(substr($payment->uuid, 0, 8))),
                 'paid_at' => now(),
             ]);
 
@@ -104,6 +106,60 @@ final class PaymentService extends BaseService implements PaymentServiceInterfac
         });
     }
 
+    public function refund(string $uuid, ?int $amount = null): Payment
+    {
+        return DB::transaction(function () use ($uuid, $amount): Payment {
+            $payment = $this->findOrFail($uuid);
+
+            if (! $payment->isPaid()) {
+                throw new DomainException('Only paid payments can be refunded.');
+            }
+
+            $refundAmount = $amount ?? (int) $payment->amount;
+
+            if ($refundAmount <= 0 || $refundAmount > (int) $payment->amount) {
+                throw new DomainException('Invalid refund amount.');
+            }
+
+            $gateway = $this->gatewayManager->driver((string) $payment->method);
+            $result = $gateway->refund($payment, $refundAmount);
+
+            return $this->markRefunded($payment, $refundAmount, $result['reference'] ?? null);
+        });
+    }
+
+    public function markRefunded(Payment $payment, ?int $amount = null, ?string $refundReference = null): Payment
+    {
+        if ($payment->isRefunded()) {
+            return $payment;
+        }
+
+        $refundAmount = $amount ?? (int) $payment->amount;
+
+        $payment->update([
+            'status' => PaymentStatus::Refunded->value,
+            'refunded_at' => now(),
+            'refund_reference' => $refundReference,
+        ]);
+
+        $payment = $payment->fresh();
+
+        if (config('payment.cancel_order_on_refund', true)) {
+            $this->cancelOrderIfConfirmed($payment->order_uuid);
+        }
+
+        $this->eventBus->dispatch(new PaymentRefunded(
+            paymentUuid: $payment->uuid,
+            orderUuid: $payment->order_uuid,
+            amount: $refundAmount,
+            currency: $payment->currency,
+            refundReference: $payment->refund_reference,
+            tenantId: $payment->tenant_id,
+        ));
+
+        return $payment;
+    }
+
     private function confirmOrderIfPending(string $orderUuid): void
     {
         $order = Order::query()->where('uuid', $orderUuid)->first();
@@ -124,6 +180,19 @@ final class PaymentService extends BaseService implements PaymentServiceInterfac
         }
 
         $this->orderService->cancel($orderUuid);
+    }
+
+    private function cancelOrderIfConfirmed(string $orderUuid): void
+    {
+        $order = Order::query()->where('uuid', $orderUuid)->first();
+
+        if ($order === null) {
+            return;
+        }
+
+        if (in_array($order->status, [OrderStatus::Pending->value, OrderStatus::Confirmed->value], true)) {
+            $this->orderService->cancel($orderUuid);
+        }
     }
 
     private function findOrFail(string $uuid): Payment

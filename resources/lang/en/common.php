@@ -1,0 +1,36 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'save' => 'Save',
+    'cancel' => 'Cancel',
+    'create' => 'Create',
+    'edit' => 'Edit',
+    'delete' => 'Delete',
+    'view' => 'View',
+    'back' => 'Back',
+    'actions' => 'Actions',
+    'search' => 'Search',
+    'filter' => 'Filter',
+    'reset' => 'Reset',
+    'confirm' => 'Confirm',
+    'yes' => 'Yes',
+    'no' => 'No',
+    'status' => 'Status',
+    'name' => 'Name',
+    'description' => 'Description',
+    'created_at' => 'Created',
+    'updated_at' => 'Updated',
+    'none' => '— None —',
+    'loading' => 'Loading...',
+    'no_results' => 'No results found',
+    'required' => 'Required',
+    'optional' => 'Optional',
+    'active' => 'Active',
+    'inactive' => 'Inactive',
+    'draft' => 'Draft',
+    'published' => 'Published',
+    'archived' => 'Archived',
+    'configuration' => 'Configuration',
+];

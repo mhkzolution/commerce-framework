@@ -13,4 +13,8 @@ interface PaymentServiceInterface
     public function markPaid(string $uuid, ?string $gatewayReference = null): Payment;
 
     public function markFailed(string $uuid, ?string $reason = null): Payment;
+
+    public function refund(string $uuid, ?int $amount = null): Payment;
+
+    public function markRefunded(Payment $payment, ?int $amount = null, ?string $refundReference = null): Payment;
 }

@@ -23,6 +23,8 @@ final class PaymentResource extends JsonResource
             'gateway_reference' => $this->gateway_reference,
             'paid_at' => $this->paid_at?->toIso8601String(),
             'failed_at' => $this->failed_at?->toIso8601String(),
+            'refunded_at' => $this->refunded_at?->toIso8601String(),
+            'refund_reference' => $this->refund_reference,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

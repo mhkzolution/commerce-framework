@@ -18,6 +18,10 @@ Route::prefix('api/v1')->middleware(['api', 'auth'])->group(function (): void {
         ->post('/media', [MediaController::class, 'store'])
         ->name('api.v1.media.store');
 
+    Route::middleware('permission:media.media.upload')
+        ->post('/media/import', [MediaController::class, 'import'])
+        ->name('api.v1.media.import');
+
     Route::middleware('permission:media.media.update')
         ->put('/media/{uuid}', [MediaController::class, 'update'])
         ->name('api.v1.media.update');

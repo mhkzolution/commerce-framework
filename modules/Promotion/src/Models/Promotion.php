@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace Commerce\Promotion\Models;
 
 use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Tenant\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 
 class Promotion extends Model
 {
+    use BelongsToTenant;
     use HasUuid;
 
     public const TYPE_PERCENTAGE = 'percentage';
+
     public const TYPE_FIXED = 'fixed';
 
     protected $fillable = [

@@ -22,4 +22,18 @@ return [
         'won' => 'Won',
         'lost' => 'Lost',
     ],
+    'deal_stage_order' => [
+        'prospecting',
+        'proposal',
+        'negotiation',
+        'closed_won',
+        'closed_lost',
+    ],
+    'deal_stage_transitions' => [
+        'prospecting' => ['proposal', 'closed_lost'],
+        'proposal' => ['negotiation', 'closed_lost'],
+        'negotiation' => ['closed_won', 'closed_lost'],
+        'closed_won' => [],
+        'closed_lost' => [],
+    ],
 ];

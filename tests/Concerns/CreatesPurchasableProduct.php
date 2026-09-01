@@ -4,20 +4,24 @@ declare(strict_types=1);
 
 namespace Tests\Concerns;
 
+use Commerce\Currency\Database\Seeders\CurrencySeeder;
 use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Product\Contracts\ProductServiceInterface;
 use Commerce\Product\DTO\CreateProductData;
 use Commerce\Product\Models\ProductVariant;
+use Commerce\Shipping\Database\Seeders\ShippingMethodSeeder;
+use Commerce\Shipping\Models\ShippingMethod;
+use Commerce\Tax\Database\Seeders\TaxRateSeeder;
 
 trait CreatesPurchasableProduct
 {
-    protected function createPurchasableProduct(int $price = 2500, int $stock = 100, ?string $sku = null): ProductVariant
+    protected function createPurchasableProduct(float $price = 25, int $stock = 100, ?string $sku = null): ProductVariant
     {
         $product = app(ProductServiceInterface::class)->create(new CreateProductData(
-            name: 'Test Product ' . uniqid(),
+            name: 'Test Product '.uniqid(),
             status: 'published',
             visibility: 'public',
-            sku: $sku ?? 'TEST-' . strtoupper(substr(uniqid(), -6)),
+            sku: $sku ?? 'TEST-'.strtoupper(substr(uniqid(), -6)),
             price: $price,
         ));
 
@@ -30,9 +34,9 @@ trait CreatesPurchasableProduct
     protected function seedCheckoutDependencies(): void
     {
         $this->seed([
-            \Commerce\Shipping\Database\Seeders\ShippingMethodSeeder::class,
-            \Commerce\Tax\Database\Seeders\TaxRateSeeder::class,
-            \Commerce\Currency\Database\Seeders\CurrencySeeder::class,
+            ShippingMethodSeeder::class,
+            TaxRateSeeder::class,
+            CurrencySeeder::class,
         ]);
     }
 
@@ -41,7 +45,7 @@ trait CreatesPurchasableProduct
      */
     protected function checkoutPayload(?string $shippingMethodUuid = null): array
     {
-        $shippingMethodUuid ??= \Commerce\Shipping\Models\ShippingMethod::query()
+        $shippingMethodUuid ??= ShippingMethod::query()
             ->where('code', 'standard')
             ->value('uuid');
 

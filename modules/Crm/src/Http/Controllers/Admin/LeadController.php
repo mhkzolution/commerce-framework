@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Commerce\Crm\Http\Controllers\Admin;
 
 use Commerce\Crm\Models\Lead;
+use Commerce\Crm\Services\DealService;
+use Commerce\Crm\Services\LeadService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -13,6 +15,8 @@ use Illuminate\View\View;
 
 final class LeadController extends Controller
 {
+    public function __construct(private readonly LeadService $leads) {}
+
     public function index(): View
     {
         return view('crm::admin.leads.index', [
@@ -29,7 +33,7 @@ final class LeadController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $item = Lead::query()->create($this->validated($request));
+        $item = $this->leads->create($this->validated($request));
 
         return redirect()->route('admin.crm.leads.edit', $item)->with('status', 'Lead created.');
     }
@@ -44,14 +48,33 @@ final class LeadController extends Controller
 
     public function update(Request $request, Lead $lead): RedirectResponse
     {
-        $lead->update($this->validated($request));
+        $this->leads->update($lead, $this->validated($request));
 
         return redirect()->route('admin.crm.leads.edit', $lead)->with('status', 'Lead saved.');
     }
 
+    public function qualify(Lead $lead): RedirectResponse
+    {
+        $this->leads->qualify($lead);
+
+        return redirect()->route('admin.crm.leads.edit', $lead)->with('status', 'Lead qualified.');
+    }
+
+    public function convert(Request $request, Lead $lead): RedirectResponse
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'amount' => ['required', 'integer', 'min:0'],
+        ]);
+
+        $deal = app(DealService::class)->createFromLead($lead, $data['title'], (int) $data['amount']);
+
+        return redirect()->route('admin.crm.deals.edit', $deal)->with('status', 'Lead converted to deal.');
+    }
+
     public function destroy(Lead $lead): RedirectResponse
     {
-        $lead->delete();
+        $this->leads->delete($lead);
 
         return redirect()->route('admin.crm.leads.index')->with('status', 'Lead deleted.');
     }

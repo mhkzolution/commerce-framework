@@ -1,3 +1,7 @@
+@php
+    $user = $user ?? null;
+@endphp
+
 <div class="grid gap-4 md:grid-cols-2">
     <div>
         <label class="block text-sm font-medium text-text" for="name">Name</label>
@@ -34,14 +38,14 @@
 <div class="grid gap-4 md:grid-cols-2">
     <div>
         <label class="block text-sm font-medium text-text" for="password">Password</label>
-        <input id="password" type="password" name="password" @if (! isset($user)) required @endif class="cf-input mt-1">
-        @if (isset($user))
+        <input id="password" type="password" name="password" @if ($user === null) required @endif class="cf-input mt-1">
+        @if ($user !== null)
             <p class="mt-1 text-xs text-muted">Leave blank to keep the current password.</p>
         @endif
     </div>
     <div>
         <label class="block text-sm font-medium text-text" for="password_confirmation">Confirm password</label>
-        <input id="password_confirmation" type="password" name="password_confirmation" @if (! isset($user)) required @endif class="cf-input mt-1">
+        <input id="password_confirmation" type="password" name="password_confirmation" @if ($user === null) required @endif class="cf-input mt-1">
     </div>
 </div>
 
@@ -53,7 +57,7 @@
         @enderror
         <div class="mt-2 grid gap-2 sm:grid-cols-2">
             @php
-                $selectedRoles = old('role_codes', isset($user) ? $user->roles->pluck('code')->all() : []);
+                $selectedRoles = old('role_codes', $user ? $user->roles->pluck('code')->all() : []);
             @endphp
             @foreach ($roles as $role)
                 <label class="flex items-center gap-2 text-sm text-text-secondary">

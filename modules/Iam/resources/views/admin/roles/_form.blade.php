@@ -1,9 +1,13 @@
+@php
+    $role = $role ?? null;
+@endphp
+
 <div class="grid gap-4 md:grid-cols-2">
     <div>
         <label class="block text-sm font-medium text-text" for="name">Name</label>
         <input id="name" name="name" value="{{ old('name', $role?->name) }}" required class="cf-input mt-1">
     </div>
-    @if (! isset($role))
+    @if ($role === null)
         <div>
             <label class="block text-sm font-medium text-text" for="code">Code</label>
             <input id="code" name="code" value="{{ old('code') }}" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" class="cf-input mt-1">
@@ -26,7 +30,7 @@
     <div>
         <p class="text-sm font-medium text-text">Permissions</p>
         @php
-            $selectedPermissions = old('permissions', isset($role) ? $role->permissions->pluck('name')->all() : []);
+            $selectedPermissions = old('permissions', $role ? $role->permissions->pluck('name')->all() : []);
         @endphp
         <div class="mt-3 space-y-4">
             @foreach ($permissionsByModule as $module => $permissions)

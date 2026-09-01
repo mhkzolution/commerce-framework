@@ -23,43 +23,16 @@
         "iam.role.update",
         "iam.role.delete",
         "iam.permission.view",
-        "iam.audit.view"
+        "iam.audit.view",
+        "iam.team.view",
+        "iam.team.manage"
     ],
     "settings": [],
-    "admin_navigation": [
-        {
-            "type": "group",
-            "label": "Users & Access",
-            "icon": "shield",
-            "order": 5,
-            "permission": "iam.user.view",
-            "default_open": true,
-            "children": [
-                {
-                    "label": "Users",
-                    "route": "admin.iam.users.index",
-                    "permission": "iam.user.view"
-                },
-                {
-                    "label": "Roles",
-                    "route": "admin.iam.roles.index",
-                    "permission": "iam.role.view"
-                },
-                {
-                    "label": "Permissions",
-                    "route": "admin.iam.permissions.index",
-                    "permission": "iam.permission.view"
-                },
-                {
-                    "label": "Audit log",
-                    "route": "admin.iam.audit-logs.index",
-                    "permission": "iam.audit.view"
-                },
-                {
-                    "label": "My security",
-                    "route": "admin.iam.security.show"
-                }
-            ]
-        }
-    ]
+    "admin_menu": {
+        "label": "Users",
+        "icon": "shield",
+        "route": "admin.iam.users.index",
+        "order": 70,
+        "permission": "iam.user.view"
+    }
 }

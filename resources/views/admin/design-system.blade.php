@@ -14,12 +14,6 @@
             ]" />
         </x-slot:breadcrumb>
 
-        <x-slot:secondaryActions>
-            <x-admin.button variant="ghost" type="button" onclick="document.getElementById('admin-theme-toggle')?.click()">
-                Toggle theme
-            </x-admin.button>
-        </x-slot:secondaryActions>
-
         {{-- Philosophy --}}
         <x-admin.card title="Design philosophy">
             <div class="grid gap-4 text-sm text-text-secondary lg:grid-cols-2">
@@ -58,7 +52,7 @@
 
             <x-admin.card title="Primary color — Enterprise Blue">
                 <p class="mb-4 text-sm text-muted">
-                    <strong class="text-text">#2563eb</strong> (light) / <strong class="text-text">#3b82f6</strong> (dark).
+                    <strong class="text-text">#2563eb</strong>.
                     Chosen for trust, positive action, low fatigue, and universal context (ecommerce → POS → CMS).
                     Red is reserved for destructive actions only.
                 </p>
@@ -217,7 +211,6 @@
                 <li>Primary on white: contrast ratio ≥ 4.5:1 for text, ≥ 3:1 for large UI elements (WCAG AA).</li>
                 <li>Never rely on color alone — pair status badges with labels; destructive actions use both red and clear copy.</li>
                 <li>Focus states use <code class="text-xs">--color-ring</code> with 2px offset ring on all interactive elements.</li>
-                <li>Dark mode re-tunes luminance — semantic names stay identical; only token values change under <code class="text-xs">.dark</code>.</li>
                 <li>Disabled state: 50% opacity + <code class="text-xs">pointer-events: none</code> on buttons.</li>
             </ul>
         </x-admin.card>

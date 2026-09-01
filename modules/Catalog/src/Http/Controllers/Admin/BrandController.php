@@ -12,6 +12,7 @@ use Commerce\Catalog\Http\Requests\UpdateBrandRequest;
 use Commerce\Catalog\Models\Brand;
 use Commerce\Catalog\Services\BrandQueryService;
 use Commerce\Contracts\Media\MediaQueryServiceInterface;
+use Commerce\Contracts\Seo\SeoServiceInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\View\View;
@@ -22,6 +23,7 @@ final class BrandController extends Controller
         private readonly BrandQueryService $queryService,
         private readonly BrandServiceInterface $brandService,
         private readonly MediaQueryServiceInterface $mediaQueryService,
+        private readonly SeoServiceInterface $seoService,
     ) {}
 
     public function index(): View
@@ -55,6 +57,7 @@ final class BrandController extends Controller
             description: $request->validated('description'),
             logoMediaUuid: $request->validated('logo_media_uuid'),
             isActive: (bool) $request->validated('is_active', true),
+            seo: $request->validated('seo'),
         ));
 
         return redirect()->route('admin.catalog.brands.index')->with('status', 'Brand created.');
@@ -64,6 +67,7 @@ final class BrandController extends Controller
     {
         return view('catalog::admin.brands.edit', [
             'brand' => Brand::query()->where('uuid', $brand)->firstOrFail(),
+            'seo' => $this->seoService->getForEntity(Brand::SEO_ENTITY_TYPE, $brand),
         ]);
     }
 
@@ -75,6 +79,7 @@ final class BrandController extends Controller
             description: $request->validated('description'),
             logoMediaUuid: $request->validated('logo_media_uuid'),
             isActive: (bool) $request->validated('is_active', true),
+            seo: $request->validated('seo'),
         ));
 
         return redirect()->route('admin.catalog.brands.index')->with('status', 'Brand updated.');

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Commerce\Settings\Database\Seeders;
 
 use Commerce\Contracts\Settings\SettingRegistryServiceInterface;
-use Commerce\Settings\DTO\RegisterSettingData;
 use Illuminate\Database\Seeder;
 
 final class SettingsSeeder extends Seeder
@@ -22,8 +21,8 @@ final class SettingsSeeder extends Seeder
             'store.name' => ['type' => 'string', 'label' => 'Store Name', 'group' => 'store', 'default' => 'Commerce Store', 'is_public' => true],
             'store.currency' => ['type' => 'string', 'label' => 'Currency', 'group' => 'store', 'default' => 'THB', 'is_public' => true],
             'store.timezone' => ['type' => 'string', 'label' => 'Timezone', 'group' => 'store', 'default' => 'Asia/Bangkok'],
-            'store.locale' => ['type' => 'string', 'label' => 'Locale', 'group' => 'store', 'default' => 'en', 'is_public' => true],
-            'store.email' => ['type' => 'string', 'label' => 'Store Email', 'group' => 'store', 'default' => 'superadmin@example.com'],
+            'store.locale' => ['type' => 'string', 'label' => 'Locale', 'group' => 'store', 'default' => 'th', 'is_public' => true],
+            'store.email' => ['type' => 'string', 'label' => 'Store Email', 'group' => 'store', 'default' => 'superadmin@example.com', 'validation' => ['nullable', 'email', 'max:255']],
         ];
 
         foreach ($definitions as $key => $schema) {
@@ -40,7 +39,7 @@ final class SettingsSeeder extends Seeder
                 continue;
             }
 
-            $manifestFile = $path . '/' . $entry . '/module.json';
+            $manifestFile = $path.'/'.$entry.'/module.json';
 
             if (! is_file($manifestFile)) {
                 continue;
@@ -61,6 +60,8 @@ final class SettingsSeeder extends Seeder
                     'default' => $setting['default'] ?? null,
                     'is_public' => $setting['is_public'] ?? false,
                     'validation' => $setting['validation'] ?? [],
+                    'input' => $setting['input'] ?? null,
+                    'help' => $setting['help'] ?? null,
                     'module' => $module,
                 ]);
             }

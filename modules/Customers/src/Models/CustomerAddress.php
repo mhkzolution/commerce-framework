@@ -6,11 +6,13 @@ namespace Commerce\Customers\Models;
 
 use Commerce\Contracts\ValueObject\AddressInterface;
 use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Tenant\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CustomerAddress extends Model implements AddressInterface
 {
+    use BelongsToTenant;
     use HasUuid;
 
     protected $fillable = [
