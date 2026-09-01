@@ -13,6 +13,7 @@ final class AdminNavigationBuilder implements AdminNavigationBuilderInterface
 {
     public function __construct(
         private readonly ModuleRegistry $registry,
+        private readonly AdminNavigationLabelResolver $labelResolver,
     ) {}
 
     public function build(?object $user = null): array
@@ -105,18 +106,28 @@ final class AdminNavigationBuilder implements AdminNavigationBuilderInterface
         $routes = [];
 
         foreach ($items as $item) {
-            if ($item->route !== null) {
-                $routes[] = $item->route;
-            }
-
-            foreach ($item->children as $child) {
-                if ($child->route !== null) {
-                    $routes[] = $child->route;
-                }
-            }
+            $routes = [...$routes, ...$this->routesFromItem($item)];
         }
 
         return array_values(array_unique($routes));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function routesFromItem(AdminNavigationItem $item): array
+    {
+        $routes = [];
+
+        if ($item->route !== null) {
+            $routes[] = $item->route;
+        }
+
+        foreach ($item->children as $child) {
+            $routes = [...$routes, ...$this->routesFromItem($child)];
+        }
+
+        return $routes;
     }
 
     /**
@@ -124,6 +135,25 @@ final class AdminNavigationBuilder implements AdminNavigationBuilderInterface
      */
     private function shouldSkipModuleItem(AdminNavigationItem $item, array $dedupedRoutes): bool
     {
+        if ($item->isGroup()) {
+            $descendantRoutes = array_values(array_filter(
+                $this->routesFromItem($item),
+                static fn (string $route): bool => $route !== '',
+            ));
+
+            if ($descendantRoutes === []) {
+                return false;
+            }
+
+            foreach ($descendantRoutes as $route) {
+                if (! in_array($route, $dedupedRoutes, true)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         return $item->route !== null && in_array($item->route, $dedupedRoutes, true);
     }
 
@@ -151,7 +181,7 @@ final class AdminNavigationBuilder implements AdminNavigationBuilderInterface
 
         return new AdminNavigationItem(
             id: $id,
-            label: (string) ($entry['label'] ?? 'Untitled'),
+            label: $this->labelResolver->resolve($entry),
             type: $type,
             icon: isset($entry['icon']) ? (string) $entry['icon'] : null,
             route: isset($entry['route']) ? (string) $entry['route'] : null,
