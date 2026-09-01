@@ -26,5 +26,20 @@ class Page extends Model
         'slug',
         'content',
         'status',
+        'published_at',
+        'unpublish_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'published_at' => 'datetime',
+            'unpublish_at' => 'datetime',
+        ];
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->status === 'published';
+    }
 }
