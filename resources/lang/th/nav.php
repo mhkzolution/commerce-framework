@@ -109,6 +109,7 @@ return [
         'admin_products_settings_show' => 'ตั้งค่าสินค้า',
         'pos_index' => 'POS',
         'admin_pos_index' => 'POS',
+        'admin_pos_registers_index' => 'POS',
         'warehouse_index' => 'Warehouse Scanner',
         'admin_barcode_index' => 'Barcode Center',
         'admin_marketplace_sellers_index' => 'Marketplace',

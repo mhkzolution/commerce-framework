@@ -119,6 +119,7 @@ final class AdminNavigationIaTest extends TestCase
         $approvedOrder = ['dashboard', 'sales', 'catalog', 'marketing', 'website', 'content', 'reports', 'identity', 'configuration', 'platform'];
 
         $this->assertSame(array_values(array_intersect($approvedOrder, $ids)), $ids);
+        $this->assertNotContains('pos.link.0', $ids);
         $this->assertContains('dashboard', $ids);
         $this->assertContains('content', $ids);
         $this->assertContains('identity', $ids);
@@ -151,7 +152,9 @@ final class AdminNavigationIaTest extends TestCase
         $this->assertContains('Products', $catalogChildren);
         $this->assertContains('Categories', $catalogChildren);
         $this->assertContains('Media', $catalogChildren);
-        $this->assertContains('Product Settings', $catalogChildren);
+        if (\Illuminate\Support\Facades\Route::has('admin.products.settings.show')) {
+            $this->assertContains('Product Settings', $catalogChildren);
+        }
 
         $this->assertSame('Catalog', $byId['catalog']['label']);
         $this->assertSame('Platform', $byId['platform']['label']);

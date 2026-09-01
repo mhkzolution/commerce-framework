@@ -56,7 +56,7 @@ return [
                 ['type' => 'link', 'label' => 'Orders', 'route' => 'admin.orders.index', 'permission' => 'orders.order.view'],
                 ['type' => 'link', 'label' => 'Customers', 'route' => 'admin.customers.index', 'permission' => 'customers.customer.view'],
                 ['type' => 'link', 'label' => 'Payments', 'route' => 'admin.payments.index', 'permission' => 'payment.payment.view'],
-                ['type' => 'link', 'label' => 'POS', 'route' => 'pos.index', 'permission' => 'pos.terminal.use'],
+                ['type' => 'link', 'label' => 'POS', 'route' => 'admin.pos.registers.index', 'permission' => 'pos.register.view'],
             ],
         ],
         [
