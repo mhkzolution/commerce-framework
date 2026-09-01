@@ -23,6 +23,7 @@ final class PostService extends BaseService
         private readonly CmsSeoSync $cmsSeo,
         private readonly BlogContentFormatter $contentFormatter,
         private readonly EditorPipeline $editorPipeline,
+        private readonly PublishStateResolver $publishState,
     ) {}
 
     public function create(CreatePostData $data): Post
@@ -30,19 +31,21 @@ final class PostService extends BaseService
         return DB::transaction(function () use ($data): Post {
             $slug = $this->resolveSlug($data->slug, $data->title);
             $content = $this->editorPipeline->sanitize($data->content);
-            $payload = $this->applyPublishState([
+            $state = $this->publishState->resolve($data->status, $data->publishedAt, $data->unpublishAt);
+            $payload = [
                 'title' => $data->title,
                 'slug' => $slug,
                 'excerpt' => $data->excerpt,
                 'content' => $content,
-                'status' => $data->status,
-                'published_at' => $data->publishedAt,
+                'status' => $state->status,
+                'published_at' => $state->publishedAt,
+                'unpublish_at' => $state->unpublishAt,
                 'category_id' => $data->categoryId,
                 'author_uuid' => $data->authorUuid,
                 'featured_image_media_uuid' => $data->featuredImageMediaUuid,
                 'is_featured' => $data->isFeatured,
                 'meta' => ['reading_time_minutes' => $this->contentFormatter->readingTimeMinutes($content)],
-            ]);
+            ];
 
             $post = Post::query()->create($payload);
             $post->tags()->sync($data->tagIds);
@@ -59,13 +62,15 @@ final class PostService extends BaseService
             $previousSlug = $post->slug;
             $slug = $this->resolveSlug($data->slug, $data->title, $post->uuid);
             $content = $this->editorPipeline->sanitize($data->content);
-            $payload = $this->applyPublishState([
+            $state = $this->publishState->resolve($data->status, $data->publishedAt, $data->unpublishAt);
+            $payload = [
                 'title' => $data->title,
                 'slug' => $slug,
                 'excerpt' => $data->excerpt,
                 'content' => $content,
-                'status' => $data->status,
-                'published_at' => $data->publishedAt,
+                'status' => $state->status,
+                'published_at' => $state->publishedAt,
+                'unpublish_at' => $state->unpublishAt,
                 'category_id' => $data->categoryId,
                 'author_uuid' => $data->authorUuid,
                 'featured_image_media_uuid' => $data->featuredImageMediaUuid,
@@ -73,7 +78,7 @@ final class PostService extends BaseService
                 'meta' => array_merge($post->meta ?? [], [
                     'reading_time_minutes' => $this->contentFormatter->readingTimeMinutes($content),
                 ]),
-            ], $post);
+            ];
 
             $post->update($payload);
             $post->tags()->sync($data->tagIds);
@@ -114,18 +119,5 @@ final class PostService extends BaseService
                 ->when($ignoreUuid, static fn ($query) => $query->where('uuid', '!=', $ignoreUuid))
                 ->exists();
         });
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    private function applyPublishState(array $data, ?Post $post = null): array
-    {
-        if (($data['status'] ?? '') === 'published' && empty($data['published_at']) && ($post === null || $post->published_at === null)) {
-            $data['published_at'] = now();
-        }
-
-        return $data;
     }
 }

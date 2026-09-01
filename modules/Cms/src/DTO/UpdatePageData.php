@@ -14,6 +14,8 @@ final readonly class UpdatePageData extends DataTransferObject
         public ?string $slug = null,
         public ?string $content = null,
         public string $status = 'draft',
+        public ?string $publishedAt = null,
+        public ?string $unpublishAt = null,
         public ?array $seo = null,
     ) {}
 }

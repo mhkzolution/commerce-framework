@@ -43,6 +43,8 @@ final class PageController extends Controller
             slug: $request->validated('slug'),
             content: $request->validated('content'),
             status: $request->validated('status'),
+            publishedAt: $request->validated('published_at'),
+            unpublishAt: $request->validated('unpublish_at'),
             seo: $request->validated('seo'),
         ));
 
@@ -65,6 +67,8 @@ final class PageController extends Controller
             slug: $request->validated('slug'),
             content: $request->validated('content'),
             status: $request->validated('status'),
+            publishedAt: $request->validated('published_at'),
+            unpublishAt: $request->validated('unpublish_at'),
             seo: $request->validated('seo'),
         ));
 

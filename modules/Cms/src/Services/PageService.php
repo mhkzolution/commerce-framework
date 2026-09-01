@@ -21,18 +21,22 @@ final class PageService extends BaseService
         private readonly UrlRedirectServiceInterface $urlRedirectService,
         private readonly CmsSeoSync $cmsSeo,
         private readonly EditorPipeline $editorPipeline,
+        private readonly PublishStateResolver $publishState,
     ) {}
 
     public function create(CreatePageData $data): Page
     {
         return DB::transaction(function () use ($data): Page {
             $slug = $this->resolveSlug($data->slug, $data->title);
+            $state = $this->publishState->resolve($data->status, $data->publishedAt, $data->unpublishAt);
 
             $page = Page::query()->create([
                 'title' => $data->title,
                 'slug' => $slug,
                 'content' => $this->editorPipeline->sanitize($data->content),
-                'status' => $data->status,
+                'status' => $state->status,
+                'published_at' => $state->publishedAt,
+                'unpublish_at' => $state->unpublishAt,
             ]);
 
             $this->slugService->register($slug, Page::SEO_ENTITY_TYPE, $page->uuid, $page->tenant_id);
@@ -47,12 +51,15 @@ final class PageService extends BaseService
         return DB::transaction(function () use ($page, $data): Page {
             $previousSlug = $page->slug;
             $slug = $this->resolveSlug($data->slug, $data->title, $page->uuid);
+            $state = $this->publishState->resolve($data->status, $data->publishedAt, $data->unpublishAt);
 
             $page->update([
                 'title' => $data->title,
                 'slug' => $slug,
                 'content' => $this->editorPipeline->sanitize($data->content),
-                'status' => $data->status,
+                'status' => $state->status,
+                'published_at' => $state->publishedAt,
+                'unpublish_at' => $state->unpublishAt,
             ]);
 
             if ($previousSlug !== $slug) {
