@@ -36,5 +36,11 @@ final class CmsServiceProvider extends BaseModuleServiceProvider
         $this->loadRoutesFrom($this->modulePath('routes/web.php'));
         $this->loadViewsFrom($this->modulePath('resources/views'), 'cms');
         $this->loadTranslationsFrom($this->modulePath('resources/lang'), 'cms');
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                Console\PublishScheduledContentCommand::class,
+            ]);
+        }
     }
 }
