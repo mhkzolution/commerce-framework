@@ -13,6 +13,8 @@ return [
     'content' => 'Content',
     'excerpt' => 'Excerpt',
     'published_at' => 'Published at',
+    'unpublish_at' => 'Unpublish at',
+    'schedule_helper' => 'If status is Published and the publish date is in the future, this will be saved as Scheduled.',
     'author' => 'Author',
     'categories' => 'Post categories',
     'category' => 'Category',
