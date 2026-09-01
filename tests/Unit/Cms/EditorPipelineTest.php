@@ -44,6 +44,17 @@ final class EditorPipelineTest extends TestCase
         $this->assertStringNotContainsString('javascript:', $sanitized);
     }
 
+    public function test_it_strips_img_onerror_while_keeping_src(): void
+    {
+        $html = '<img src="x" onerror="alert(1)">';
+
+        $sanitized = $this->pipeline->sanitize($html);
+
+        $this->assertStringNotContainsString('onerror', $sanitized);
+        $this->assertStringNotContainsString('alert(1)', $sanitized);
+        $this->assertStringContainsString('src="x"', $sanitized);
+    }
+
     public function test_empty_content_is_preserved(): void
     {
         $this->assertNull($this->pipeline->sanitize(null));
