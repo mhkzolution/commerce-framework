@@ -17,19 +17,6 @@ function initBlogSearch() {
     });
 }
 
-function initNewsletter() {
-    document.querySelectorAll('[data-newsletter-form]').forEach((form) => {
-        form.addEventListener('submit', (event) => {
-            event.preventDefault();
-            const success = form.parentElement?.querySelector('[data-newsletter-success]');
-            form.hidden = true;
-            if (success) {
-                success.hidden = false;
-            }
-        });
-    });
-}
-
 function initTableOfContents() {
     const article = document.querySelector('[data-article]');
     if (!article) {
@@ -57,10 +44,37 @@ function initTableOfContents() {
     headings.forEach((heading) => observer.observe(heading));
 }
 
+function initShareLinks() {
+    document.querySelectorAll('[data-copy-link]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const url = button.dataset.copyLink;
+            const label = button.querySelector('[data-copy-label]');
+            const original = label?.textContent;
+
+            try {
+                await navigator.clipboard.writeText(url);
+            } catch {
+                window.prompt('Copy link:', url);
+            }
+
+            button.classList.add('is-copied');
+            if (label) {
+                label.textContent = label.dataset.copiedLabel || 'Copied';
+            }
+            window.setTimeout(() => {
+                button.classList.remove('is-copied');
+                if (label && original) {
+                    label.textContent = original;
+                }
+            }, 1600);
+        });
+    });
+}
+
 function initBlog() {
     initBlogSearch();
-    initNewsletter();
     initTableOfContents();
+    initShareLinks();
 }
 
 if (document.readyState === 'loading') {

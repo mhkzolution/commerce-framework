@@ -1,4 +1,6 @@
-export function createMediaProvider(pickerUrl) {
+export function createMediaProvider(pickerUrl, uploadUrl) {
+    const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
     return {
         pickImage() {
             if (!pickerUrl) {
@@ -75,6 +77,32 @@ export function createMediaProvider(pickerUrl) {
                 document.body.appendChild(overlay);
                 load();
             });
+        },
+
+        async uploadImage(file) {
+            if (!uploadUrl || !file) {
+                return null;
+            }
+
+            const body = new FormData();
+            body.append('file', file);
+
+            const response = await fetch(uploadUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body,
+            });
+
+            if (!response.ok) {
+                return null;
+            }
+
+            const payload = await response.json();
+            return payload.data || payload;
         },
     };
 }

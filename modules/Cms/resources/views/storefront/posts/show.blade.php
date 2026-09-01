@@ -1,6 +1,7 @@
 @extends('cart::layouts.storefront')
 
 @section('title', $seo['title'] ?? $post->title)
+@section('main_class', 'storefront-blog-shell')
 
 @push('head')
     <x-storefront.seo-meta :meta="$seo" />
@@ -18,31 +19,39 @@
         @endif
 
         <article class="storefront-article" data-article>
-            <x-storefront.breadcrumb :items="[
-                ['label' => __('cms::blog.title'), 'url' => route('storefront.cms.posts.index')],
-                ['label' => $post->title],
-            ]" />
-
-            <header class="storefront-article__header">
-                <x-storefront.blog.article-meta
-                    :category="$blogService->categoryLabel($post)"
-                    :category-url="$blogService->categoryUrl($post)"
-                    :author="$blogService->authorName($post)"
-                    :author-url="$blogService->authorUrl($post)"
-                    :published-at="$post->published_at"
-                    :reading-time="$blogService->readingTime($post)"
-                />
-
-                <h1 class="storefront-article__title">{{ $post->title }}</h1>
-
-                @if ($post->excerpt)
-                    <p class="storefront-article__dek">{{ $post->excerpt }}</p>
-                @endif
-
-                <div class="storefront-article__actions">
-                    <x-storefront.share-button :url="url()->current()" :title="$post->title" />
+            <div class="storefront-article__header-band">
+                <div class="storefront-article__breadcrumb">
+                    <x-storefront.breadcrumb :items="array_values(array_filter([
+                        ['label' => __('cms::blog.home'), 'url' => route('storefront.shop.index')],
+                        ['label' => __('cms::blog.title'), 'url' => route('storefront.cms.posts.index')],
+                        $blogService->categoryLabel($post) ? [
+                            'label' => $blogService->categoryLabel($post),
+                            'url' => $blogService->categoryUrl($post),
+                        ] : null,
+                    ]))" />
                 </div>
-            </header>
+
+                <header class="storefront-article__header">
+                    @if ($blogService->categoryLabel($post))
+                        <a href="{{ $blogService->categoryUrl($post) }}" class="storefront-article__category">
+                            {{ $blogService->categoryLabel($post) }}
+                        </a>
+                    @endif
+
+                    <h1 class="storefront-article__title">{{ $post->title }}</h1>
+
+                    @if ($post->excerpt)
+                        <p class="storefront-article__dek">{{ $post->excerpt }}</p>
+                    @endif
+
+                    <x-storefront.blog.article-meta
+                        :author="$blogService->authorName($post)"
+                        :author-url="$blogService->authorUrl($post)"
+                        :published-at="$post->published_at"
+                        :reading-time="$blogService->readingTime($post)"
+                    />
+                </header>
+            </div>
 
             @if ($image = $blogService->featuredImageUrl($post, 'large'))
                 <figure class="storefront-article__hero">
@@ -50,7 +59,7 @@
                 </figure>
             @endif
 
-            <div class="storefront-article__layout">
+            <div class="storefront-article__body">
                 @if (count($formatted['toc']) > 1)
                     <x-storefront.blog.table-of-contents :items="$formatted['toc']" class="storefront-article__toc" />
                 @endif
@@ -58,17 +67,18 @@
                 <div class="storefront-article__content storefront-prose" data-article-content>
                     {!! $formatted['html'] !!}
                 </div>
-            </div>
 
-            <x-storefront.blog.related-articles :posts="$relatedPosts" :blog-service="$blogService" />
+                <x-storefront.blog.share :url="url()->current()" :title="$post->title" />
+            </div>
         </article>
 
-        <x-storefront.blog.sidebar
-            class="storefront-blog-sidebar--article"
-            :recent-posts="$recentPosts"
-            :popular-tags="$popularTags"
-            :blog-service="$blogService"
-        />
+        <x-storefront.blog.related-articles :posts="$relatedPosts" :blog-service="$blogService" />
+
+        <div class="storefront-article-end">
+            <a href="{{ route('storefront.cms.posts.index') }}" class="storefront-article-end__cta">
+                {{ __('cms::blog.browse_more') }}
+            </a>
+        </div>
     </div>
 @endsection
 
