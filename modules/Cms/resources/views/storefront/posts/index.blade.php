@@ -1,32 +1,48 @@
 @extends('cart::layouts.storefront')
 
-@section('title', 'Blog')
+@section('title', $archiveTitle ?? __('cms::blog.title'))
+
+@push('head')
+    <x-storefront.json-ld :data="$structuredData ?? null" />
+@endpush
 
 @section('content')
-    <div class="mb-8">
-        <h1 class="text-3xl font-semibold text-text">Blog</h1>
-        <p class="mt-2 text-sm text-muted">Latest news and updates.</p>
-    </div>
+    <div class="storefront-blog" data-blog>
+        <x-storefront.blog.toolbar
+            :filters="$filters"
+            :categories="$categories"
+            :archive-title="$archiveTitle ?? null"
+        />
 
-    <div class="grid gap-6 md:grid-cols-2">
-        @forelse ($posts as $post)
-            <article class="rounded-lg border border-border bg-surface p-6 shadow-sm">
-                <h2 class="text-xl font-medium text-text">
-                    <a href="{{ route('storefront.cms.posts.show', $post->slug) }}" class="hover:underline">{{ $post->title }}</a>
-                </h2>
-                @if ($post->published_at)
-                    <p class="mt-1 text-xs text-muted">{{ $post->published_at->format('M j, Y') }}</p>
+        <div class="storefront-blog__layout">
+            <div class="storefront-blog__main" data-blog-results>
+                @if ($featured)
+                    <x-storefront.blog.featured-article :post="$featured" :blog-service="$blogService" />
                 @endif
-                @if ($post->excerpt)
-                    <p class="mt-3 text-sm text-text-secondary">{{ $post->excerpt }}</p>
-                @endif
-            </article>
-        @empty
-            <p class="text-muted">No posts published yet.</p>
-        @endforelse
-    </div>
 
-    @if ($posts->hasPages())
-        <div class="mt-8">{{ $posts->links() }}</div>
-    @endif
+                <x-storefront.blog.article-grid>
+                    @forelse ($posts as $post)
+                        <x-storefront.blog.article-card :post="$post" :blog-service="$blogService" />
+                    @empty
+                        <x-storefront.empty-state :title="__('cms::blog.no_posts')" class="storefront-blog__empty" />
+                    @endforelse
+                </x-storefront.blog.article-grid>
+
+                @if ($posts->hasPages())
+                    <div class="storefront-blog__pagination">{{ $posts->withQueryString()->links() }}</div>
+                @endif
+            </div>
+
+            <x-storefront.blog.sidebar
+                :recent-posts="$recentPosts"
+                :popular-tags="$popularTags"
+                :filters="$filters"
+                :blog-service="$blogService"
+            />
+        </div>
+    </div>
 @endsection
+
+@push('scripts')
+    @vite('resources/js/storefront/blog.js')
+@endpush

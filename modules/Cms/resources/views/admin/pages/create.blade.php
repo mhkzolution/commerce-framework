@@ -13,6 +13,7 @@
             <label class="mt-4 block text-sm font-medium text-text">Status</label>
             <select name="status" class="cf-input mt-1">@foreach($statuses as $k=>$v)<option value="{{ $k }}" @selected(old('status', 'draft')==$k)>{{ $v }}</option>@endforeach</select>
         </x-admin.form.section>
+        @include('catalog::admin.partials.seo-fields', ['seo' => $seo ?? null])
         <x-slot:actions><x-admin.button variant="primary" type="submit">Create page</x-admin.button></x-slot:actions>
     </x-admin.form.shell>
 @endsection

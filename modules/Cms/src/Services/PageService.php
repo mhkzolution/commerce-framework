@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Commerce\Cms\Services;
 
+use Commerce\Cms\DTO\CreatePageData;
+use Commerce\Cms\DTO\UpdatePageData;
+use Commerce\Cms\Models\Page;
+use Commerce\Cms\Support\CmsSeoSync;
 use Commerce\Contracts\Seo\SlugServiceInterface;
 use Commerce\Contracts\Seo\UrlRedirectServiceInterface;
 use Commerce\Core\Base\BaseService;
-use Commerce\Cms\Models\Page;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -16,42 +19,47 @@ final class PageService extends BaseService
     public function __construct(
         private readonly SlugServiceInterface $slugService,
         private readonly UrlRedirectServiceInterface $urlRedirectService,
+        private readonly CmsSeoSync $cmsSeo,
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public function create(array $data): Page
+    public function create(CreatePageData $data): Page
     {
         return DB::transaction(function () use ($data): Page {
-            $slug = $this->resolveSlug($data['slug'] ?? null, $data['title']);
-            $data['slug'] = $slug;
-            $data = $this->applyPublishState($data);
+            $slug = $this->resolveSlug($data->slug, $data->title);
 
-            $page = Page::query()->create($data);
+            $page = Page::query()->create([
+                'title' => $data->title,
+                'slug' => $slug,
+                'content' => $data->content,
+                'status' => $data->status,
+            ]);
+
             $this->slugService->register($slug, Page::SEO_ENTITY_TYPE, $page->uuid, $page->tenant_id);
+            $this->cmsSeo->sync(Page::SEO_ENTITY_TYPE, $page->uuid, $data->seo);
 
             return $page->fresh();
         });
     }
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public function update(Page $page, array $data): Page
+    public function update(Page $page, UpdatePageData $data): Page
     {
         return DB::transaction(function () use ($page, $data): Page {
             $previousSlug = $page->slug;
-            $slug = $this->resolveSlug($data['slug'] ?? null, $data['title'], $page->uuid);
-            $data['slug'] = $slug;
-            $data = $this->applyPublishState($data, $page);
+            $slug = $this->resolveSlug($data->slug, $data->title, $page->uuid);
 
-            $page->update($data);
+            $page->update([
+                'title' => $data->title,
+                'slug' => $slug,
+                'content' => $data->content,
+                'status' => $data->status,
+            ]);
 
             if ($previousSlug !== $slug) {
                 $this->urlRedirectService->createRedirect("/pages/{$previousSlug}", "/pages/{$slug}");
                 $this->slugService->register($slug, Page::SEO_ENTITY_TYPE, $page->uuid, $page->tenant_id);
             }
+
+            $this->cmsSeo->sync(Page::SEO_ENTITY_TYPE, $page->uuid, $data->seo);
 
             return $page->fresh();
         });
@@ -77,24 +85,13 @@ final class PageService extends BaseService
         if ($ignoreUuid !== null) {
             $existing = Page::query()->where('slug', $candidate)->where('uuid', '!=', $ignoreUuid)->exists();
 
-            if ($existing) {
-                return $this->slugService->generate($title, Page::SEO_ENTITY_TYPE);
-            }
-
-            return $candidate;
+            return $existing
+                ? $this->slugService->generate($title, Page::SEO_ENTITY_TYPE)
+                : $candidate;
         }
 
         return $this->slugService->isAvailable($candidate, Page::SEO_ENTITY_TYPE)
             ? $candidate
             : $this->slugService->generate($title, Page::SEO_ENTITY_TYPE);
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    private function applyPublishState(array $data, ?Page $page = null): array
-    {
-        return $data;
     }
 }

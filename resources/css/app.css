@@ -4,9 +4,11 @@
 @import './tokens/tailwind-theme.css';
 @import './admin/components.css';
 @import './storefront/shell.css';
+@import './storefront/blog.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../resources/views/components/admin/**/*.blade.php';
+@source '../../resources/views/components/storefront/**/*.blade.php';
 @source '../../resources/views/layouts/**/*.blade.php';
 @source '../../modules/**/resources/views/storefront/**/*.blade.php';
 @source '../../modules/**/resources/views/layouts/storefront.blade.php';

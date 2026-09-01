@@ -1,6 +1,11 @@
 @extends('cart::layouts.storefront')
 
-@section('title', $page->title)
+@section('title', $seo['title'] ?? $page->title)
+
+@push('head')
+    <x-storefront.seo-meta :meta="$seo ?? null" />
+    <x-storefront.json-ld :data="$structuredData ?? null" />
+@endpush
 
 @section('content')
     <article class="prose max-w-none">

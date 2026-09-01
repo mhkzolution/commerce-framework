@@ -1,22 +1,26 @@
 {
     "name": "Cms",
     "alias": "cms",
-    "description": "Content management — pages and posts",
+    "description": "Content management — pages, posts, taxonomies and SEO",
     "version": "1.0.0",
     "priority": 30,
     "providers": ["Commerce\\Cms\\CmsServiceProvider"],
-    "dependencies": {"hard": [], "soft": ["iam"]},
+    "dependencies": {"hard": [], "soft": ["iam", "media"]},
     "permissions": [
-    "cms.page.view",
-    "cms.page.manage",
-    "cms.post.view",
-    "cms.post.manage"
-],
+        "cms.page.view",
+        "cms.page.manage",
+        "cms.post.view",
+        "cms.post.manage",
+        "cms.category.view",
+        "cms.category.manage",
+        "cms.tag.view",
+        "cms.tag.manage"
+    ],
     "admin_menu": {
-    "label": "CMS",
-    "icon": "document-text",
-    "route": "admin.cms.pages.index",
-    "permission": "cms.page.view",
-    "order": 35
-}
+        "label": "Pages",
+        "icon": "document-text",
+        "route": "admin.cms.pages.index",
+        "permission": "cms.page.view",
+        "order": 35
+    }
 }

@@ -11,8 +11,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Page extends Model
 {
-    use HasUuid;
     use BelongsToTenant;
+    use HasUuid;
     use SoftDeletes;
 
     public const SEO_ENTITY_TYPE = 'cms_page';

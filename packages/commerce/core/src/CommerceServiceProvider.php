@@ -27,6 +27,7 @@ use Commerce\Core\Search\DatabaseSearchIndex;
 use Commerce\Core\Search\DatabaseSearchQuery;
 use Commerce\Core\Seo\SeoService;
 use Commerce\Core\Seo\SlugService;
+use Commerce\Core\Seo\SitemapGenerator;
 use Commerce\Core\Seo\UrlRedirectService;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Support\ServiceProvider;
@@ -45,6 +46,9 @@ class CommerceServiceProvider extends ServiceProvider
         $this->app->bind(SlugServiceInterface::class, SlugService::class);
         $this->app->singleton(UrlRedirectService::class);
         $this->app->bind(UrlRedirectServiceInterface::class, UrlRedirectService::class);
+        $this->app->singleton(SitemapGenerator::class, function ($app): SitemapGenerator {
+            return new SitemapGenerator($app->tagged('commerce.sitemap'));
+        });
         $this->app->singleton(DatabaseSearchIndex::class);
         $this->app->bind(SearchIndexInterface::class, DatabaseSearchIndex::class);
         $this->app->singleton(DatabaseSearchQuery::class);

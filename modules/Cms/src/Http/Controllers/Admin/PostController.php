@@ -4,50 +4,66 @@ declare(strict_types=1);
 
 namespace Commerce\Cms\Http\Controllers\Admin;
 
+use Commerce\Cms\DTO\CreatePostData;
+use Commerce\Cms\DTO\UpdatePostData;
+use Commerce\Cms\Http\Requests\StorePostRequest;
+use Commerce\Cms\Http\Requests\UpdatePostRequest;
+use Commerce\Cms\Models\Category;
 use Commerce\Cms\Models\Post;
+use Commerce\Cms\Models\Tag;
 use Commerce\Cms\Services\PostService;
+use Commerce\Contracts\Seo\SeoServiceInterface;
+use Commerce\Iam\Models\User;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\URL;
 use Illuminate\View\View;
 
 final class PostController extends Controller
 {
-    public function __construct(private readonly PostService $posts) {}
+    public function __construct(
+        private readonly PostService $posts,
+        private readonly SeoServiceInterface $seoService,
+    ) {}
 
     public function index(): View
     {
         return view('cms::admin.posts.index', [
-            'items' => Post::query()->latest()->paginate(25),
+            'items' => Post::query()->with(['category', 'author'])->latest()->paginate(25),
         ]);
     }
 
     public function create(): View
     {
-        return view('cms::admin.posts.create', [
-            'statuses' => config('cms.statuses', []),
-        ]);
+        return view('cms::admin.posts.create', $this->formData());
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StorePostRequest $request): RedirectResponse
     {
-        $item = $this->posts->create($this->validated($request));
+        $item = $this->posts->create($this->toCreateData($request));
 
         return redirect()->route('admin.cms.posts.edit', $item)->with('status', 'Post created.');
     }
 
     public function edit(Post $post): View
     {
+        $post->load(['tags']);
+
         return view('cms::admin.posts.edit', [
+            ...$this->formData(),
             'item' => $post,
-            'statuses' => config('cms.statuses', []),
+            'seo' => $this->seoService->getForEntity(Post::SEO_ENTITY_TYPE, $post->uuid),
+            'previewUrl' => URL::temporarySignedRoute(
+                'storefront.cms.posts.preview',
+                now()->addHours(12),
+                ['post' => $post->uuid],
+            ),
         ]);
     }
 
-    public function update(Request $request, Post $post): RedirectResponse
+    public function update(UpdatePostRequest $request, Post $post): RedirectResponse
     {
-        $this->posts->update($post, $this->validated($request, $post->uuid));
+        $this->posts->update($post, $this->toUpdateData($request));
 
         return redirect()->route('admin.cms.posts.edit', $post)->with('status', 'Post saved.');
     }
@@ -62,15 +78,49 @@ final class PostController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function validated(Request $request, ?string $uuid = null): array
+    private function formData(): array
     {
-        return $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', Rule::unique('cms_posts', 'slug')->ignore($uuid, 'uuid')],
-            'excerpt' => ['nullable', 'string', 'max:500'],
-            'content' => ['nullable', 'string'],
-            'status' => ['required', 'string', Rule::in(array_keys(config('cms.statuses', [])))],
-            'published_at' => ['nullable', 'date'],
-        ]);
+        return [
+            'statuses' => config('cms.statuses', []),
+            'categories' => Category::query()->orderBy('name')->get(),
+            'tags' => Tag::query()->orderBy('name')->get(),
+            'authors' => User::query()->orderBy('name')->get(['uuid', 'name', 'email']),
+        ];
+    }
+
+    private function toCreateData(StorePostRequest $request): CreatePostData
+    {
+        return new CreatePostData(
+            title: $request->validated('title'),
+            slug: $request->validated('slug'),
+            excerpt: $request->validated('excerpt'),
+            content: $request->validated('content'),
+            status: $request->validated('status'),
+            publishedAt: $request->validated('published_at'),
+            categoryId: $request->validated('category_id') !== null ? (int) $request->validated('category_id') : null,
+            tagIds: array_map('intval', $request->validated('tag_ids') ?? []),
+            authorUuid: $request->validated('author_uuid') ?: $request->user()?->uuid,
+            featuredImageMediaUuid: $request->validated('featured_image_media_uuid'),
+            isFeatured: $request->boolean('is_featured'),
+            seo: $request->validated('seo'),
+        );
+    }
+
+    private function toUpdateData(UpdatePostRequest $request): UpdatePostData
+    {
+        return new UpdatePostData(
+            title: $request->validated('title'),
+            slug: $request->validated('slug'),
+            excerpt: $request->validated('excerpt'),
+            content: $request->validated('content'),
+            status: $request->validated('status'),
+            publishedAt: $request->validated('published_at'),
+            categoryId: $request->validated('category_id') !== null ? (int) $request->validated('category_id') : null,
+            tagIds: array_map('intval', $request->validated('tag_ids') ?? []),
+            authorUuid: $request->validated('author_uuid'),
+            featuredImageMediaUuid: $request->validated('featured_image_media_uuid'),
+            isFeatured: $request->boolean('is_featured'),
+            seo: $request->validated('seo'),
+        );
     }
 }

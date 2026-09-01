@@ -92,6 +92,19 @@ return [
         ],
         [
             'type' => 'group',
+            'id' => 'website',
+            'label' => 'Website',
+            'icon' => 'document-text',
+            'order' => 50,
+            'children' => [
+                ['type' => 'link', 'label' => 'Pages', 'route' => 'admin.cms.pages.index', 'permission' => 'cms.page.view'],
+                ['type' => 'link', 'label' => 'Posts', 'route' => 'admin.cms.posts.index', 'permission' => 'cms.post.view'],
+                ['type' => 'link', 'label' => 'Post categories', 'route' => 'admin.cms.categories.index', 'permission' => 'cms.category.view'],
+                ['type' => 'link', 'label' => 'Post tags', 'route' => 'admin.cms.tags.index', 'permission' => 'cms.tag.view'],
+            ],
+        ],
+        [
+            'type' => 'group',
             'id' => 'configuration',
             'label' => 'Configuration',
             'icon' => 'cog',

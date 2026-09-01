@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace Commerce\Cms\Http\Controllers\Admin;
 
+use Commerce\Cms\DTO\CreatePageData;
+use Commerce\Cms\DTO\UpdatePageData;
+use Commerce\Cms\Http\Requests\StorePageRequest;
+use Commerce\Cms\Http\Requests\UpdatePageRequest;
 use Commerce\Cms\Models\Page;
 use Commerce\Cms\Services\PageService;
+use Commerce\Contracts\Seo\SeoServiceInterface;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 final class PageController extends Controller
 {
-    public function __construct(private readonly PageService $pages) {}
+    public function __construct(
+        private readonly PageService $pages,
+        private readonly SeoServiceInterface $seoService,
+    ) {}
 
     public function index(): View
     {
@@ -30,9 +36,15 @@ final class PageController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StorePageRequest $request): RedirectResponse
     {
-        $item = $this->pages->create($this->validated($request));
+        $item = $this->pages->create(new CreatePageData(
+            title: $request->validated('title'),
+            slug: $request->validated('slug'),
+            content: $request->validated('content'),
+            status: $request->validated('status'),
+            seo: $request->validated('seo'),
+        ));
 
         return redirect()->route('admin.cms.pages.edit', $item)->with('status', 'Page created.');
     }
@@ -42,12 +54,19 @@ final class PageController extends Controller
         return view('cms::admin.pages.edit', [
             'item' => $page,
             'statuses' => config('cms.statuses', []),
+            'seo' => $this->seoService->getForEntity(Page::SEO_ENTITY_TYPE, $page->uuid),
         ]);
     }
 
-    public function update(Request $request, Page $page): RedirectResponse
+    public function update(UpdatePageRequest $request, Page $page): RedirectResponse
     {
-        $this->pages->update($page, $this->validated($request, $page->uuid));
+        $this->pages->update($page, new UpdatePageData(
+            title: $request->validated('title'),
+            slug: $request->validated('slug'),
+            content: $request->validated('content'),
+            status: $request->validated('status'),
+            seo: $request->validated('seo'),
+        ));
 
         return redirect()->route('admin.cms.pages.edit', $page)->with('status', 'Page saved.');
     }
@@ -57,18 +76,5 @@ final class PageController extends Controller
         $this->pages->delete($page);
 
         return redirect()->route('admin.cms.pages.index')->with('status', 'Page deleted.');
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function validated(Request $request, ?string $uuid = null): array
-    {
-        return $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', Rule::unique('cms_pages', 'slug')->ignore($uuid, 'uuid')],
-            'content' => ['nullable', 'string'],
-            'status' => ['required', 'string', Rule::in(array_keys(config('cms.statuses', [])))],
-        ]);
     }
 }
