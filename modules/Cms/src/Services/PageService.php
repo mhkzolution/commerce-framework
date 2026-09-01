@@ -20,6 +20,7 @@ final class PageService extends BaseService
         private readonly SlugServiceInterface $slugService,
         private readonly UrlRedirectServiceInterface $urlRedirectService,
         private readonly CmsSeoSync $cmsSeo,
+        private readonly EditorPipeline $editorPipeline,
     ) {}
 
     public function create(CreatePageData $data): Page
@@ -30,7 +31,7 @@ final class PageService extends BaseService
             $page = Page::query()->create([
                 'title' => $data->title,
                 'slug' => $slug,
-                'content' => $data->content,
+                'content' => $this->editorPipeline->sanitize($data->content),
                 'status' => $data->status,
             ]);
 
@@ -50,7 +51,7 @@ final class PageService extends BaseService
             $page->update([
                 'title' => $data->title,
                 'slug' => $slug,
-                'content' => $data->content,
+                'content' => $this->editorPipeline->sanitize($data->content),
                 'status' => $data->status,
             ]);
 

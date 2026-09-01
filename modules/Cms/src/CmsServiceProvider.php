@@ -21,6 +21,7 @@ final class CmsServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(Services\CategoryService::class);
         $this->app->singleton(Services\TagService::class);
         $this->app->singleton(Services\BlogContentFormatter::class);
+        $this->app->singleton(Services\EditorPipeline::class);
         $this->app->singleton(Services\StorefrontBlogService::class);
         $this->app->singleton(Services\CmsStructuredDataBuilder::class);
         $this->app->singleton(Support\CmsSeoSync::class);

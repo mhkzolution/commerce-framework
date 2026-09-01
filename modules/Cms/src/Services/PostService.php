@@ -22,24 +22,26 @@ final class PostService extends BaseService
         private readonly UrlRedirectServiceInterface $urlRedirectService,
         private readonly CmsSeoSync $cmsSeo,
         private readonly BlogContentFormatter $contentFormatter,
+        private readonly EditorPipeline $editorPipeline,
     ) {}
 
     public function create(CreatePostData $data): Post
     {
         return DB::transaction(function () use ($data): Post {
             $slug = $this->resolveSlug($data->slug, $data->title);
+            $content = $this->editorPipeline->sanitize($data->content);
             $payload = $this->applyPublishState([
                 'title' => $data->title,
                 'slug' => $slug,
                 'excerpt' => $data->excerpt,
-                'content' => $data->content,
+                'content' => $content,
                 'status' => $data->status,
                 'published_at' => $data->publishedAt,
                 'category_id' => $data->categoryId,
                 'author_uuid' => $data->authorUuid,
                 'featured_image_media_uuid' => $data->featuredImageMediaUuid,
                 'is_featured' => $data->isFeatured,
-                'meta' => ['reading_time_minutes' => $this->contentFormatter->readingTimeMinutes($data->content)],
+                'meta' => ['reading_time_minutes' => $this->contentFormatter->readingTimeMinutes($content)],
             ]);
 
             $post = Post::query()->create($payload);
@@ -56,11 +58,12 @@ final class PostService extends BaseService
         return DB::transaction(function () use ($post, $data): Post {
             $previousSlug = $post->slug;
             $slug = $this->resolveSlug($data->slug, $data->title, $post->uuid);
+            $content = $this->editorPipeline->sanitize($data->content);
             $payload = $this->applyPublishState([
                 'title' => $data->title,
                 'slug' => $slug,
                 'excerpt' => $data->excerpt,
-                'content' => $data->content,
+                'content' => $content,
                 'status' => $data->status,
                 'published_at' => $data->publishedAt,
                 'category_id' => $data->categoryId,
@@ -68,7 +71,7 @@ final class PostService extends BaseService
                 'featured_image_media_uuid' => $data->featuredImageMediaUuid,
                 'is_featured' => $data->isFeatured,
                 'meta' => array_merge($post->meta ?? [], [
-                    'reading_time_minutes' => $this->contentFormatter->readingTimeMinutes($data->content),
+                    'reading_time_minutes' => $this->contentFormatter->readingTimeMinutes($content),
                 ]),
             ], $post);
 
