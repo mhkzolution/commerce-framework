@@ -361,4 +361,198 @@ final class CmsBlogV1Test extends TestCase
             ->assertSee('<link rel="canonical" href="'.route('storefront.cms.posts.show', 'og-post').'">', false)
             ->assertSee('<meta property="og:image" content="https://cdn.example.test/og-featured.jpg">', false);
     }
+
+    public function test_blog_archive_is_editorial_and_omits_sidebar(): void
+    {
+        $admin = User::query()->first();
+        $category = Category::query()->create(['name' => 'Guides', 'slug' => 'guides', 'is_active' => true]);
+
+        Post::query()->create([
+            'title' => 'Hero insight',
+            'slug' => 'hero-insight',
+            'excerpt' => 'A featured story.',
+            'content' => str_repeat('word ', 200),
+            'status' => 'published',
+            'published_at' => now()->subHour(),
+            'is_featured' => true,
+            'category_id' => $category->id,
+            'author_uuid' => $admin->uuid,
+        ]);
+
+        $this->get(route('storefront.cms.posts.index'))
+            ->assertOk()
+            ->assertSee('Insights, guides, tutorials, announcements, and updates.', false)
+            ->assertSee('Read Article', false)
+            ->assertSee('Latest', false)
+            ->assertSee('Popular', false)
+            ->assertSee('storefront-blog-shell', false)
+            ->assertDontSee('Stay informed', false)
+            ->assertDontSee('Recent posts', false);
+    }
+
+    public function test_single_post_uses_reading_column_share_and_related_articles(): void
+    {
+        $admin = User::query()->first();
+        $category = Category::query()->create(['name' => 'Guides', 'slug' => 'guides', 'is_active' => true]);
+
+        Post::query()->create([
+            'title' => 'Primary article',
+            'slug' => 'primary-article',
+            'excerpt' => 'Editorial excerpt.',
+            'content' => '<h2>One</h2><p>Body copy for the primary article.</p>',
+            'status' => 'published',
+            'published_at' => now()->subDay(),
+            'category_id' => $category->id,
+            'author_uuid' => $admin->uuid,
+        ]);
+
+        Post::query()->create([
+            'title' => 'Related story',
+            'slug' => 'related-story',
+            'excerpt' => 'Another guide.',
+            'content' => 'Related body.',
+            'status' => 'published',
+            'published_at' => now()->subHours(2),
+            'category_id' => $category->id,
+        ]);
+
+        $this->get(route('storefront.cms.posts.show', 'primary-article'))
+            ->assertOk()
+            ->assertSee('Home', false)
+            ->assertSee('Blog', false)
+            ->assertSee('Guides')
+            ->assertSee('Share this article', false)
+            ->assertSee('Facebook', false)
+            ->assertSee('<span>X</span>', false)
+            ->assertSee('LinkedIn', false)
+            ->assertSee('Copy Link', false)
+            ->assertSee('Related Articles', false)
+            ->assertSee('Related story')
+            ->assertSee('Browse More Articles', false)
+            ->assertDontSee('storefront::storefront.share', false)
+            ->assertDontSee('Stay informed', false)
+            ->assertDontSee('Recent posts', false);
+    }
+
+    public function test_popular_sort_keeps_remaining_featured_posts_ahead_of_regular_posts(): void
+    {
+        $category = Category::query()->create(['name' => 'News', 'slug' => 'news', 'is_active' => true]);
+
+        Post::query()->create([
+            'title' => 'Older featured',
+            'slug' => 'older-featured',
+            'content' => 'Older featured body.',
+            'status' => 'published',
+            'published_at' => now()->subDays(2),
+            'is_featured' => true,
+            'category_id' => $category->id,
+        ]);
+
+        Post::query()->create([
+            'title' => 'Newest featured',
+            'slug' => 'newest-featured',
+            'content' => 'Newest featured body.',
+            'status' => 'published',
+            'published_at' => now()->subHour(),
+            'is_featured' => true,
+            'category_id' => $category->id,
+        ]);
+
+        Post::query()->create([
+            'title' => 'Regular update',
+            'slug' => 'regular-update',
+            'content' => 'Regular body.',
+            'status' => 'published',
+            'published_at' => now()->subDay(),
+            'category_id' => $category->id,
+        ]);
+
+        $popular = $this->get(route('storefront.cms.posts.index', ['sort' => 'popular']))
+            ->assertOk()
+            ->assertSee('Newest featured')
+            ->assertSee('Older featured')
+            ->assertSee('Regular update');
+
+        $this->assertTrue(
+            strpos($popular->getContent(), 'Older featured') < strpos($popular->getContent(), 'Regular update'),
+        );
+    }
+
+    public function test_post_editor_uses_full_width_writing_workspace(): void
+    {
+        $admin = User::query()->first();
+        $this->withoutVite();
+
+        $this->actingAs($admin)
+            ->get(route('admin.cms.posts.create'))
+            ->assertOk()
+            ->assertSee('cms-workspace-form', false)
+            ->assertSee('cms-writing-title', false)
+            ->assertSee('data-cms-editor-inspector', false)
+            ->assertSee('data-media-upload-url="'.route('admin.media.store').'"', false)
+            ->assertDontSee('max-w-6xl', false);
+    }
+
+    public function test_html_article_body_is_rendered_instead_of_escaped(): void
+    {
+        Post::query()->create([
+            'title' => 'Rendered HTML',
+            'slug' => 'rendered-html',
+            'excerpt' => 'A visual story.',
+            'content' => '<p>Lead paragraph.</p><img src="/media/hero.jpg" alt="Hero photo"><ul><li>First item</li></ul><blockquote><p>A quote</p></blockquote>',
+            'status' => 'published',
+            'published_at' => now()->subHour(),
+        ]);
+
+        $this->get(route('storefront.cms.posts.show', 'rendered-html'))
+            ->assertOk()
+            ->assertSee('<p>Lead paragraph.</p>', false)
+            ->assertSee('<img src="/media/hero.jpg" alt="Hero photo">', false)
+            ->assertSee('<ul>', false)
+            ->assertSee('<blockquote>', false)
+            ->assertDontSee('&lt;p&gt;', false)
+            ->assertDontSee('&lt;img', false)
+            ->assertSee('Browse More Articles', false);
+    }
+
+    public function test_related_articles_fall_back_from_category_to_tags_then_latest(): void
+    {
+        $guides = Category::query()->create(['name' => 'Guides', 'slug' => 'guides', 'is_active' => true]);
+        $news = Category::query()->create(['name' => 'News', 'slug' => 'news', 'is_active' => true]);
+        $tips = Tag::query()->create(['name' => 'Tips', 'slug' => 'tips']);
+
+        $primary = Post::query()->create([
+            'title' => 'Primary guide',
+            'slug' => 'primary-guide',
+            'content' => '<p>Primary body.</p>',
+            'status' => 'published',
+            'published_at' => now()->subDay(),
+            'category_id' => $guides->id,
+        ]);
+        $primary->tags()->attach($tips->id);
+
+        $sharedTag = Post::query()->create([
+            'title' => 'Tagged news',
+            'slug' => 'tagged-news',
+            'content' => '<p>News body.</p>',
+            'status' => 'published',
+            'published_at' => now()->subHours(3),
+            'category_id' => $news->id,
+        ]);
+        $sharedTag->tags()->attach($tips->id);
+
+        Post::query()->create([
+            'title' => 'Latest unrelated',
+            'slug' => 'latest-unrelated',
+            'content' => '<p>Other body.</p>',
+            'status' => 'published',
+            'published_at' => now()->subHour(),
+        ]);
+
+        $this->get(route('storefront.cms.posts.show', 'primary-guide'))
+            ->assertOk()
+            ->assertSee('Related Articles', false)
+            ->assertSee('Tagged news')
+            ->assertSee('Latest unrelated');
+    }
 }

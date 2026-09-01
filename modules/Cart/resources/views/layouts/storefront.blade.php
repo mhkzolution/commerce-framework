@@ -8,7 +8,7 @@
     <x-admin.design-tokens />
     @stack('head')
 </head>
-<body class="min-h-screen bg-background text-text antialiased">
+<body class="storefront min-h-screen bg-background text-text antialiased">
     <header class="storefront-header">
         <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
             <a href="{{ route('storefront.shop.index') }}" class="storefront-brand">{{ config('commerce.name', 'Commerce Framework') }}</a>
@@ -42,7 +42,7 @@
             </nav>
         </div>
     </header>
-    <main class="mx-auto max-w-5xl px-6 py-8">
+    <main class="@yield('main_class', 'mx-auto w-full max-w-5xl px-6 py-8')">
         @yield('content')
     </main>
     @stack('scripts')

@@ -17,7 +17,7 @@ final class BlogContentFormatter
             return ['html' => '', 'toc' => []];
         }
 
-        if (str_contains($content, '<h2') || str_contains($content, '<h3')) {
+        if ($this->looksLikeHtml($content)) {
             return $this->formatHtml($content);
         }
 
@@ -33,6 +33,14 @@ final class BlogContentFormatter
         $words = str_word_count(strip_tags($content));
 
         return max(1, (int) ceil($words / $wordsPerMinute));
+    }
+
+    private function looksLikeHtml(string $content): bool
+    {
+        return preg_match(
+            '/<(p|br|h[1-6]|img|ul|ol|li|blockquote|pre|code|table|thead|tbody|tr|th|td|strong|b|em|i|a|hr|figure|figcaption)\b/i',
+            $content,
+        ) === 1;
     }
 
     /**

@@ -57,9 +57,13 @@ final class StorefrontBlogService
             $query->where('author_uuid', $filters->authorUuid);
         }
 
-        return $query
-            ->latest('published_at')
-            ->paginate($filters->perPage, ['*'], 'page', $filters->page);
+        if ($filters->sort === StorefrontBlogFilters::SORT_POPULAR) {
+            $query->orderByDesc('is_featured')->latest('published_at');
+        } else {
+            $query->latest('published_at');
+        }
+
+        return $query->paginate($filters->perPage, ['*'], 'page', $filters->page);
     }
 
     public function featuredPost(?Post $excludeFromGrid = null): ?Post
@@ -133,34 +137,76 @@ final class StorefrontBlogService
      */
     public function relatedPosts(Post $post, int $limit = 3): Collection
     {
+        $selected = collect();
+        $excludeIds = collect([$post->id]);
+
+        $append = function (Collection $candidates) use (&$selected, &$excludeIds, $limit): void {
+            foreach ($candidates as $candidate) {
+                if (! $candidate instanceof Post || $selected->count() >= $limit) {
+                    continue;
+                }
+
+                if ($excludeIds->contains($candidate->id)) {
+                    continue;
+                }
+
+                $selected->push($candidate);
+                $excludeIds->push($candidate->id);
+            }
+        };
+
         $uuids = data_get($post->meta, 'related_post_uuids', []);
 
         if (is_array($uuids) && $uuids !== []) {
-            $posts = $this->publishedQuery()
+            $explicit = $this->publishedQuery()
                 ->with(['category', 'author'])
                 ->whereIn('uuid', $uuids)
                 ->where('id', '!=', $post->id)
                 ->get()
                 ->keyBy('uuid');
 
-            return collect($uuids)
-                ->map(static fn (string $uuid) => $posts->get($uuid))
-                ->filter()
-                ->take($limit)
-                ->values();
+            $append(
+                collect($uuids)
+                    ->map(static fn (mixed $uuid) => is_string($uuid) ? $explicit->get($uuid) : null)
+                    ->filter()
+                    ->values(),
+            );
         }
 
-        if ($post->category_id === null) {
-            return collect();
+        if ($selected->count() < $limit && $post->category_id !== null) {
+            $append($this->publishedQuery()
+                ->with(['category', 'author'])
+                ->whereNotIn('id', $excludeIds->all())
+                ->where('category_id', $post->category_id)
+                ->latest('published_at')
+                ->limit($limit)
+                ->get());
         }
 
-        return $this->publishedQuery()
-            ->with(['category', 'author'])
-            ->where('id', '!=', $post->id)
-            ->where('category_id', $post->category_id)
-            ->latest('published_at')
-            ->limit($limit)
-            ->get();
+        if ($selected->count() < $limit) {
+            $tagIds = $post->tags->pluck('id');
+
+            if ($tagIds->isNotEmpty()) {
+                $append($this->publishedQuery()
+                    ->with(['category', 'author'])
+                    ->whereNotIn('id', $excludeIds->all())
+                    ->whereHas('tags', static fn (Builder $query) => $query->whereIn('cms_tags.id', $tagIds))
+                    ->latest('published_at')
+                    ->limit($limit)
+                    ->get());
+            }
+        }
+
+        if ($selected->count() < $limit) {
+            $append($this->publishedQuery()
+                ->with(['category', 'author'])
+                ->whereNotIn('id', $excludeIds->all())
+                ->latest('published_at')
+                ->limit($limit)
+                ->get());
+        }
+
+        return $selected->values();
     }
 
     public function featuredImageUrl(Post $post, ?string $variant = 'large'): ?string

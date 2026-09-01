@@ -7,11 +7,12 @@
     class="cms-editor"
     data-cms-editor
     data-media-picker-url="{{ route('admin.media.picker') }}"
+    data-media-upload-url="{{ route('admin.media.store') }}"
 >
     <div data-cms-editor-toolbar></div>
     <div class="cms-editor-chrome">
-        <div class="cms-editor-canvas" data-cms-editor-canvas></div>
-        <aside data-cms-editor-inspector></aside>
+        <div class="cms-editor-canvas" data-cms-editor-canvas data-placeholder="Write, or type / for commands"></div>
+        <aside data-cms-editor-inspector hidden></aside>
     </div>
     <textarea name="{{ $name }}" hidden data-cms-editor-input>{{ old($name, $value) }}</textarea>
 </div>

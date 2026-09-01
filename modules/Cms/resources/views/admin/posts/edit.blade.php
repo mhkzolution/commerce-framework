@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('title', 'Edit Post')
 @section('page')
-    <x-admin.form.shell action="{{ route('admin.cms.posts.update', $item) }}" method="POST" class="max-w-6xl">
+    <x-admin.form.shell action="{{ route('admin.cms.posts.update', $item) }}" method="POST" class="cms-workspace-form">
         @csrf @method('PUT')
         @include('cms::admin.posts._form')
         <x-slot:actions>

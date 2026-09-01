@@ -24,16 +24,25 @@ export function mountInspector(container, editor, media) {
         return;
     }
 
-    const render = () => {
+    const hide = () => {
+        container.hidden = true;
+        container.innerHTML = '';
+        container.classList.remove('cms-editor-inspector');
+    };
+
+    const show = (title) => {
+        container.hidden = false;
         container.innerHTML = '';
         container.classList.add('cms-editor-inspector');
-
         const heading = document.createElement('h3');
         heading.className = 'cms-editor-inspector__title';
+        heading.textContent = title;
+        container.append(heading);
+    };
 
+    const render = () => {
         if (editor.isActive('image')) {
-            heading.textContent = 'Image';
-            container.append(heading);
+            show('Image');
             const attrs = editor.getAttributes('image');
             container.append(field('Alt text', attrs.alt, (value) => {
                 editor.chain().focus().updateAttributes('image', { alt: value }).run();
@@ -52,8 +61,7 @@ export function mountInspector(container, editor, media) {
         }
 
         if (editor.isActive('link')) {
-            heading.textContent = 'Link';
-            container.append(heading);
+            show('Link');
             const href = editor.getAttributes('link').href || '';
             container.append(field('URL', href, (value) => {
                 if (value === '') {
@@ -69,20 +77,19 @@ export function mountInspector(container, editor, media) {
         }
 
         if (editor.isActive('table')) {
-            heading.textContent = 'Table';
-            container.append(heading);
+            show('Table');
             container.append(action('Add row', () => editor.chain().focus().addRowAfter().run()));
             container.append(action('Add column', () => editor.chain().focus().addColumnAfter().run()));
             container.append(action('Delete table', () => editor.chain().focus().deleteTable().run()));
             return;
         }
 
-        heading.textContent = 'Inspector';
-        container.append(heading);
-        const empty = document.createElement('p');
-        empty.className = 'cms-editor-inspector__empty';
-        empty.textContent = 'Select an image, link, or table to edit it.';
-        container.append(empty);
+        if (editor.isActive('iframe') || editor.isActive('youtube') || editor.isActive('embed')) {
+            show('Embed');
+            return;
+        }
+
+        hide();
     };
 
     editor.on('selectionUpdate', render);

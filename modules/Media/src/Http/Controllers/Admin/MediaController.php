@@ -9,9 +9,10 @@ use Commerce\Media\Contracts\MediaServiceInterface;
 use Commerce\Media\DTO\UpdateMediaData;
 use Commerce\Media\Http\Requests\UpdateMediaRequest;
 use Commerce\Media\Http\Requests\UploadMediaRequest;
-use Commerce\Media\Models\MediaFolder;
+use Commerce\Media\Http\Resources\MediaResource;
 use Commerce\Media\Services\MediaFolderQueryService;
 use Commerce\Media\Services\MediaQueryService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -45,12 +46,18 @@ final class MediaController extends Controller
         ]);
     }
 
-    public function store(UploadMediaRequest $request): RedirectResponse
+    public function store(UploadMediaRequest $request): RedirectResponse|JsonResponse
     {
-        $this->uploadService->upload(
+        $media = $this->uploadService->upload(
             $request->file('file'),
             $request->validated('folder_uuid'),
         );
+
+        if ($request->expectsJson()) {
+            return (new MediaResource($media))
+                ->response()
+                ->setStatusCode(201);
+        }
 
         return redirect()
             ->route('admin.media.index', array_filter([

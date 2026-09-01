@@ -86,7 +86,8 @@ final class CmsAdminTest extends TestCase
             ->assertOk()
             ->assertSee('data-cms-editor', false)
             ->assertSee('data-cms-editor-toolbar', false)
-            ->assertSee('data-cms-editor-inspector', false);
+            ->assertSee('data-cms-editor-inspector', false)
+            ->assertSee('cms-workspace-form', false);
 
         $this->actingAs($admin)
             ->get(route('admin.cms.pages.create'))
