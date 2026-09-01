@@ -28,6 +28,5 @@ return Application::configure(basePath: dirname(__DIR__))
         );
     })
     ->withSchedule(function (Schedule $schedule): void {
-        $schedule->command('commerce:outbox:publish')->everyMinute();
         $schedule->command('cms:publish-scheduled')->everyMinute();
     })->create();

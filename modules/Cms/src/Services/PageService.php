@@ -26,9 +26,10 @@ final class PageService extends BaseService
 
     public function create(CreatePageData $data): Page
     {
-        return DB::transaction(function () use ($data): Page {
+        $state = $this->publishState->resolve($data->status, $data->publishedAt, $data->unpublishAt);
+
+        return DB::transaction(function () use ($data, $state): Page {
             $slug = $this->resolveSlug($data->slug, $data->title);
-            $state = $this->publishState->resolve($data->status, $data->publishedAt, $data->unpublishAt);
 
             $page = Page::query()->create([
                 'title' => $data->title,
@@ -48,10 +49,11 @@ final class PageService extends BaseService
 
     public function update(Page $page, UpdatePageData $data): Page
     {
-        return DB::transaction(function () use ($page, $data): Page {
+        $state = $this->publishState->resolve($data->status, $data->publishedAt, $data->unpublishAt);
+
+        return DB::transaction(function () use ($page, $data, $state): Page {
             $previousSlug = $page->slug;
             $slug = $this->resolveSlug($data->slug, $data->title, $page->uuid);
-            $state = $this->publishState->resolve($data->status, $data->publishedAt, $data->unpublishAt);
 
             $page->update([
                 'title' => $data->title,

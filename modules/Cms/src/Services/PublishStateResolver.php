@@ -21,7 +21,7 @@ final class PublishStateResolver
     ): PublishState {
         $publishedAt = $this->parseTimestamp($publishedAt);
         $unpublishAt = $this->parseTimestamp($unpublishAt);
-        $now = now();
+        $now = CarbonImmutable::now();
 
         if ($status === 'archived') {
             return new PublishState('archived', $publishedAt, $unpublishAt);
@@ -65,7 +65,7 @@ final class PublishStateResolver
             }
         }
 
-        if ($unpublishAt !== null && $status !== 'archived' && $publishedAt !== null && $unpublishAt->lte($publishedAt)) {
+        if ($unpublishAt !== null && $publishedAt !== null && $unpublishAt->lte($publishedAt)) {
             throw ValidationException::withMessages([
                 'unpublish_at' => 'Unpublish date must be after the publish date.',
             ]);

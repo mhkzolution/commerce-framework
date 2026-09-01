@@ -29,7 +29,7 @@
                 @endforeach
             </select>
 
-            <label class="mt-4 block text-sm font-medium text-text">Published at</label>
+            <label class="mt-4 block text-sm font-medium text-text">{{ __('cms::admin.published_at') }}</label>
             <input name="published_at" type="datetime-local" value="{{ old('published_at', optional($item?->published_at)->format('Y-m-d\TH:i')) }}" class="cf-input mt-1">
             <p class="mt-1 text-xs text-text-secondary">{{ __('cms::admin.schedule_helper') }}</p>
 

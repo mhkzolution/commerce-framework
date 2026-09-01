@@ -77,7 +77,7 @@ final class CmsScheduledPublishingTest extends TestCase
         $this->assertNull($post->unpublish_at);
     }
 
-    public function test_creating_scheduled_post_without_date_returns_422(): void
+    public function test_creating_scheduled_post_without_date_fails_validation(): void
     {
         $this->actingAs($this->admin())
             ->from(route('admin.cms.posts.create'))
@@ -155,7 +155,7 @@ final class CmsScheduledPublishingTest extends TestCase
         $this->assertNull($page->unpublish_at);
     }
 
-    public function test_creating_scheduled_page_without_date_returns_422(): void
+    public function test_creating_scheduled_page_without_date_fails_validation(): void
     {
         $this->actingAs($this->admin())
             ->from(route('admin.cms.pages.create'))
@@ -191,6 +191,53 @@ final class CmsScheduledPublishingTest extends TestCase
         $this->assertSame('scheduled', $page->status);
         $this->assertTrue($page->published_at->equalTo(CarbonImmutable::parse(self::FUTURE_PUBLISH_AT)));
         $this->assertNull($page->unpublish_at);
+    }
+
+    public function test_migration_remaps_published_future_published_at_to_scheduled_and_keeps_null_published_at(): void
+    {
+        $future = CarbonImmutable::parse(self::FUTURE_PUBLISH_AT);
+
+        $futurePost = Post::query()->create([
+            'title' => 'Remap future post',
+            'slug' => 'remap-future-post',
+            'content' => 'Published with a future date.',
+            'status' => 'published',
+            'published_at' => $future,
+        ]);
+        $nullPost = Post::query()->create([
+            'title' => 'Remap null post',
+            'slug' => 'remap-null-post',
+            'content' => 'Published with no date.',
+            'status' => 'published',
+            'published_at' => null,
+        ]);
+        $futurePage = Page::query()->create([
+            'title' => 'Remap future page',
+            'slug' => 'remap-future-page',
+            'content' => 'Published with a future date.',
+            'status' => 'published',
+            'published_at' => $future,
+        ]);
+        $nullPage = Page::query()->create([
+            'title' => 'Remap null page',
+            'slug' => 'remap-null-page',
+            'content' => 'Published with no date.',
+            'status' => 'published',
+            'published_at' => null,
+        ]);
+
+        $migration = require base_path('modules/Cms/database/migrations/2026_09_01_200000_add_cms_scheduled_publishing_columns.php');
+        $migration->up();
+
+        $this->assertSame('scheduled', $futurePost->fresh()->status);
+        $this->assertTrue($futurePost->fresh()->published_at->equalTo($future));
+        $this->assertSame('published', $nullPost->fresh()->status);
+        $this->assertNull($nullPost->fresh()->published_at);
+
+        $this->assertSame('scheduled', $futurePage->fresh()->status);
+        $this->assertTrue($futurePage->fresh()->published_at->equalTo($future));
+        $this->assertSame('published', $nullPage->fresh()->status);
+        $this->assertNull($nullPage->fresh()->published_at);
     }
 
     public function test_scheduled_post_and_page_are_hidden_on_storefront_and_excluded_from_sitemap(): void
