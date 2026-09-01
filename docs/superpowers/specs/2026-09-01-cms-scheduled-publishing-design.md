@@ -2,7 +2,7 @@
 
 **Branch:** `feat/cms-scheduled-publishing` (from `main` only)  
 **Date:** 2026-09-01  
-**Status:** Design approved (Parts 1–3)
+**Status:** Approved for implementation plan
 
 ## Goal
 
@@ -106,9 +106,13 @@ Timezone is application `now()`. No per-author timezone.
 
 ### Precedence
 
-Archived decisions win over published/scheduled decisions.
+Archived decisions win over published/scheduled decisions. Evaluate expired `unpublish_at` (`<= now()`) before publish/schedule coercion.
 
 Example: status Published, `published_at` in 2030, `unpublish_at` yesterday → persist **archived**. Do not persist scheduled.
+
+Example: status Scheduled, `published_at=2026-10-01`, `unpublish_at=2026-09-01` (already due) → persist **archived**. Do not validation-error and do not persist scheduled.
+
+Archiving does not modify `published_at`. Never null it on archive.
 
 ### Coercion must keep the submitted publish time
 
@@ -128,17 +132,18 @@ Persist: status=scheduled, published_at=2026-10-01 09:00
 | Published | past         | null or future                        | `published`, keep submitted `published_at` |
 | Published | future       | null or after that `published_at`     | `scheduled`, keep submitted `published_at` |
 | Published | any          | past or now                          | `archived`                                   |
+| Scheduled | future       | past or now                          | `archived` (precedence; keep `published_at`) |
 | Scheduled | future       | null or after `published_at`          | `scheduled`                                  |
 | Scheduled | null         | any                                  | validation error                             |
 | Scheduled | past         | any                                  | validation error                             |
-| Scheduled | future       | ≤ `published_at`                     | validation error                             |
+| Scheduled | future       | future and ≤ `published_at`         | validation error                             |
 | Archived  | any          | any                                  | `archived`                                   |
 
 Scheduled errors:
 
 - missing `published_at` → “Published date is required for scheduled content.”
 - past `published_at` → “Scheduled publish date must be in the future.”
-- `unpublish_at` ≤ `published_at` → validation error
+- `unpublish_at` is still in the future and ≤ `published_at` → validation error
 
 `PostService` and `PageService` call the resolver on create/update. They do not duplicate the matrix.
 
@@ -160,7 +165,9 @@ Scheduled errors:
 
 Order is required. A row whose `published_at` and `unpublish_at` are both due in the same run must end **archived**.
 
-The command is idempotent: a second run does not change rows that are no longer in the due sets.
+The command is idempotent: a second run does not change rows that are no longer in the due sets. `archiveExpired()` updates `status` only. It does not modify `published_at`.
+
+Process due rows in chunks (`chunkById`). Do not `get()` the full due set.
 
 No queue. One-minute drift is acceptable. Log counts with `Log::info`, not a runs table.
 
@@ -215,7 +222,7 @@ Do not add page preview in this epic.
 
 Unit:
 
-- `PublishStateResolver` covers the matrix, including kept future `published_at` and archived precedence.
+- `PublishStateResolver` covers the matrix, including kept future `published_at`, archived precedence, and scheduled + expired `unpublish_at` → archived.
 - `CmsPublishScheduler` covers posts and pages, idempotency, and same-run publish-then-archive → archived.
 
 Feature:
