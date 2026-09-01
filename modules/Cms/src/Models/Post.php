@@ -35,6 +35,7 @@ class Post extends Model
         'status',
         'is_featured',
         'published_at',
+        'unpublish_at',
         'meta',
     ];
 
@@ -42,6 +43,7 @@ class Post extends Model
     {
         return [
             'published_at' => 'datetime',
+            'unpublish_at' => 'datetime',
             'is_featured' => 'boolean',
             'meta' => 'array',
         ];
@@ -49,9 +51,7 @@ class Post extends Model
 
     public function isPublished(): bool
     {
-        return $this->status === 'published'
-            && $this->published_at !== null
-            && $this->published_at->lte(now());
+        return $this->status === 'published';
     }
 
     public function category(): BelongsTo
