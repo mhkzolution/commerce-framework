@@ -57,6 +57,20 @@ final class FeatureServiceTest extends TestCase
         $this->assertSame('Schedule CMS content for future publish', $feature->description);
     }
 
+    public function test_seeder_clears_cached_and_memoized_definitions(): void
+    {
+        SystemFeature::query()
+            ->where('code', 'scheduled-publishing')
+            ->update(['name' => 'Stale name']);
+        FeatureService::clearCache();
+
+        $this->assertSame('Stale name', FeatureService::get('scheduled-publishing')?->name);
+
+        $this->seed(SystemFeatureSeeder::class);
+
+        $this->assertSame('Scheduled Publishing', FeatureService::get('scheduled-publishing')?->name);
+    }
+
     public function test_all_returns_catalog_codes_in_sort_order(): void
     {
         $this->assertSame(
@@ -210,6 +224,35 @@ final class FeatureServiceTest extends TestCase
         FeatureService::all();
 
         $this->assertSame([], DB::getQueryLog());
+    }
+
+    public function test_cached_definitions_do_not_check_schema_after_memo_reset(): void
+    {
+        FeatureService::all();
+        app(FeatureService::class)->resetMemo();
+
+        DB::enableQueryLog();
+
+        $this->assertCount(4, FeatureService::all());
+        $this->assertSame([], DB::getQueryLog());
+    }
+
+    public function test_legacy_cached_list_is_treated_as_an_available_catalog(): void
+    {
+        $attributes = SystemFeature::query()
+            ->where('code', 'scheduled-publishing')
+            ->firstOrFail()
+            ->getAttributes();
+
+        Cache::put(FeatureService::CACHE_KEY, [$attributes]);
+        Schema::dropIfExists('system_features');
+        app(FeatureService::class)->resetMemo();
+        Event::fake([MessageLogged::class]);
+
+        $this->assertTrue(FeatureService::enabled('scheduled-publishing'));
+        Event::assertNotDispatched(MessageLogged::class, function (MessageLogged $event): bool {
+            return $event->message === 'System feature registry unavailable.';
+        });
     }
 
     public function test_cache_is_cleared_after_status_update(): void

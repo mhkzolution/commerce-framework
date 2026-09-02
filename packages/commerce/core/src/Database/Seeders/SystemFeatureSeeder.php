@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Commerce\Core\Database\Seeders;
 
 use Commerce\Core\Enums\FeatureStatus;
+use Commerce\Core\Features\FeatureService;
 use Commerce\Core\Features\SystemFeatureCatalog;
 use Commerce\Core\Models\SystemFeature;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Cache;
 
 final class SystemFeatureSeeder extends Seeder
 {
@@ -42,6 +42,6 @@ final class SystemFeatureSeeder extends Seeder
             ]);
         }
 
-        Cache::forget('commerce.system_features');
+        FeatureService::clearCache();
     }
 }

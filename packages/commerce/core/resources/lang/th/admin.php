@@ -31,6 +31,7 @@ return [
     'feature_confirm' => 'เปลี่ยนสถานะ :name เป็น :status? การดำเนินการนี้จะไม่ลบข้อมูล',
     'feature_updated' => 'บันทึกสถานะ :name แล้ว',
     'feature_core_locked' => 'ไม่สามารถปิดฟีเจอร์หลักของระบบได้',
+    'feature_parent_disabled_badge' => 'ไม่ทำงาน (โมดูลถูกปิด)',
     'feature_parent_disabled_hint' => 'โมดูลหลักถูกปิดใช้งาน',
     'status_ACTIVE' => 'ACTIVE',
     'status_HIDDEN' => 'HIDDEN',

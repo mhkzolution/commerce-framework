@@ -64,7 +64,7 @@ final class SystemFeatureAdminTest extends TestCase
             ->get(route('admin.system.features.index'))
             ->assertOk()
             ->assertSee('ENABLED', false)
-            ->assertSee('INACTIVE (MODULE DISABLED)', false)
+            ->assertSee(__('commerce::admin.feature_parent_disabled_badge'), false)
             ->assertSee('Parent module is disabled.', false);
 
         $this->assertSame(FeatureStatus::Enabled, $feature->fresh()?->status);

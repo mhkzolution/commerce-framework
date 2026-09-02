@@ -63,7 +63,7 @@
                                 {{ $feature->status->value }}
                             </x-admin.badge>
                             @if (($disabledModules[$feature->module_code] ?? false) && $feature->status === \Commerce\Core\Enums\FeatureStatus::Enabled)
-                                <x-admin.badge variant="warning">INACTIVE (MODULE DISABLED)</x-admin.badge>
+                                <x-admin.badge variant="warning">{{ __('commerce::admin.feature_parent_disabled_badge') }}</x-admin.badge>
                             @endif
                         </div>
                         @if (($disabledModules[$feature->module_code] ?? false) && $feature->status === \Commerce\Core\Enums\FeatureStatus::Enabled)

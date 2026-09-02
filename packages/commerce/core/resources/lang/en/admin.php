@@ -31,6 +31,7 @@ return [
     'feature_confirm' => 'Change :name status to :status? This does not delete any data.',
     'feature_updated' => ':name status saved.',
     'feature_core_locked' => 'Core features cannot be disabled.',
+    'feature_parent_disabled_badge' => 'INACTIVE (MODULE DISABLED)',
     'feature_parent_disabled_hint' => 'Parent module is disabled.',
     'status_ACTIVE' => 'ACTIVE',
     'status_HIDDEN' => 'HIDDEN',

@@ -120,28 +120,42 @@ final class FeatureService extends BaseService
         }
 
         try {
-            if (! Schema::hasTable('system_features')) {
-                $this->registryAvailable = false;
-                $this->memoized = collect();
-
-                return $this->memoized;
-            }
-
-            $this->registryAvailable = true;
-
-            /** @var list<array<string, mixed>> $rows */
-            $rows = Cache::remember(
+            /** @var array{available: bool, rows: list<array<string, mixed>>}|list<array<string, mixed>> $payload */
+            $payload = Cache::remember(
                 self::CACHE_KEY,
                 now()->addSeconds(self::CACHE_TTL_SECONDS),
-                static fn (): array => SystemFeature::query()
-                    ->orderBy('sort_order')
-                    ->orderBy('name')
-                    ->get()
-                    ->map(static fn (SystemFeature $feature): array => $feature->getAttributes())
-                    ->all(),
+                static function (): array {
+                    if (! Schema::hasTable('system_features')) {
+                        return ['available' => false, 'rows' => []];
+                    }
+
+                    return [
+                        'available' => true,
+                        'rows' => SystemFeature::query()
+                            ->orderBy('sort_order')
+                            ->orderBy('name')
+                            ->get()
+                            ->map(static fn (SystemFeature $feature): array => $feature->getAttributes())
+                            ->all(),
+                    ];
+                },
             );
+
+            if (array_is_list($payload)) {
+                $this->registryAvailable = true;
+                $rows = $payload;
+            } else {
+                $this->registryAvailable = $payload['available'];
+                $rows = $payload['rows'];
+            }
         } catch (Throwable) {
             $this->registryAvailable = false;
+            $this->memoized = collect();
+
+            return $this->memoized;
+        }
+
+        if (! $this->registryAvailable) {
             $this->memoized = collect();
 
             return $this->memoized;
