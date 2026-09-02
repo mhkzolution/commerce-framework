@@ -10,6 +10,7 @@ use Commerce\Core\Models\SystemFeature;
 use Commerce\Core\Models\SystemModule;
 use Commerce\Core\Modules\ModuleService;
 use Commerce\Iam\Database\Seeders\IamSeeder;
+use Commerce\Iam\Models\IamAuditLog;
 use Commerce\Iam\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -80,6 +81,54 @@ final class SystemFeatureAdminTest extends TestCase
             ->assertRedirect(route('admin.system.features.index'));
 
         $this->assertSame(FeatureStatus::Disabled, $feature->fresh()?->status);
+    }
+
+    public function test_status_change_writes_an_audit_log(): void
+    {
+        $feature = SystemFeature::query()->where('code', 'advanced-seo')->firstOrFail();
+        $admin = User::query()->first();
+
+        $this->actingAs($admin)
+            ->put(route('admin.system.features.update', $feature), [
+                'status' => FeatureStatus::Disabled->value,
+            ])
+            ->assertRedirect(route('admin.system.features.index'));
+
+        $entry = IamAuditLog::query()
+            ->where('action', 'system.feature.status_changed')
+            ->latest('id')
+            ->first();
+
+        $this->assertNotNull($entry);
+        $this->assertSame($admin->id, $entry->user_id);
+        $this->assertSame(SystemFeature::class, $entry->subject_type);
+        $this->assertSame($feature->id, $entry->subject_id);
+        $this->assertSame('advanced-seo', $entry->meta['code'] ?? null);
+        $this->assertSame('Advanced SEO', $entry->meta['feature_name'] ?? null);
+        $this->assertSame('cms', $entry->meta['module_code'] ?? null);
+        $this->assertSame('CMS', $entry->meta['module_name'] ?? null);
+        $this->assertSame(FeatureStatus::Enabled->value, $entry->meta['old_status'] ?? null);
+        $this->assertSame(FeatureStatus::Disabled->value, $entry->meta['new_status'] ?? null);
+    }
+
+    public function test_unchanged_status_does_not_write_an_audit_log(): void
+    {
+        $feature = SystemFeature::query()->where('code', 'advanced-seo')->firstOrFail();
+        $auditCount = IamAuditLog::query()
+            ->where('action', 'system.feature.status_changed')
+            ->count();
+
+        $this->actingAs(User::query()->first())
+            ->put(route('admin.system.features.update', $feature), [
+                'status' => FeatureStatus::Enabled->value,
+            ])
+            ->assertRedirect(route('admin.system.features.index'));
+
+        $this->assertSame(FeatureStatus::Enabled, $feature->fresh()?->status);
+        $this->assertSame(
+            $auditCount,
+            IamAuditLog::query()->where('action', 'system.feature.status_changed')->count(),
+        );
     }
 
     public function test_invalid_status_is_rejected(): void

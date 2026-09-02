@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Commerce\Core\Features;
 
+use Commerce\Contracts\Event\EventBusInterface;
 use Commerce\Core\Base\BaseService;
 use Commerce\Core\Enums\FeatureStatus;
+use Commerce\Core\Events\SystemFeatureStatusChanged;
 use Commerce\Core\Models\SystemFeature;
 use Commerce\Core\Modules\ModuleService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -31,6 +34,8 @@ final class FeatureService extends BaseService
 
     /** @var array<string, true> */
     private array $warnedParentMissing = [];
+
+    public function __construct(private readonly EventBusInterface $events) {}
 
     public static function enabled(string $code): bool
     {
@@ -163,13 +168,24 @@ final class FeatureService extends BaseService
             ]);
         }
 
-        if ($feature->status === $status) {
+        $oldStatus = $feature->status;
+
+        if ($oldStatus === $status) {
             return $feature;
         }
 
         $feature->update(['status' => $status]);
+        $fresh = $feature->fresh() ?? $feature;
 
-        return $feature->fresh() ?? $feature;
+        $this->events->dispatch(new SystemFeatureStatusChanged(
+            feature: $fresh,
+            oldStatus: $oldStatus,
+            newStatus: $fresh->status,
+            moduleName: ModuleService::get($fresh->module_code)?->name,
+            userId: self::actorId(),
+        ));
+
+        return $fresh;
     }
 
     public function resetMemo(): void
@@ -205,6 +221,13 @@ final class FeatureService extends BaseService
             'code' => $feature->code,
             'module_code' => $feature->module_code,
         ]);
+    }
+
+    private static function actorId(): ?int
+    {
+        $id = Auth::id();
+
+        return is_numeric($id) ? (int) $id : null;
     }
 
     private static function instance(): self

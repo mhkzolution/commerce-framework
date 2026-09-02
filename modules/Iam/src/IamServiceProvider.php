@@ -7,6 +7,7 @@ namespace Commerce\Iam;
 use Commerce\Contracts\Authorization\AuthorizationServiceInterface;
 use Commerce\Contracts\Authorization\PermissionRegistryInterface;
 use Commerce\Core\Base\BaseModuleServiceProvider;
+use Commerce\Core\Events\SystemFeatureStatusChanged;
 use Commerce\Core\Events\SystemModuleStatusChanged;
 use Commerce\Iam\Contracts\Activity\IamAuditServiceInterface;
 use Commerce\Iam\Contracts\Authentication\AuthenticationServiceInterface;
@@ -22,6 +23,7 @@ use Commerce\Iam\Contracts\TwoFactor\TwoFactorServiceInterface;
 use Commerce\Iam\Contracts\User\UserServiceInterface;
 use Commerce\Iam\Http\Middleware\AuthenticateApiToken;
 use Commerce\Iam\Http\Middleware\PermissionMiddleware;
+use Commerce\Iam\Listeners\LogSystemFeatureStatusChanged;
 use Commerce\Iam\Listeners\LogSystemModuleStatusChanged;
 use Commerce\Iam\OAuth\GitHubOAuthProvider;
 use Commerce\Iam\OAuth\GoogleOAuthProvider;
@@ -91,5 +93,6 @@ final class IamServiceProvider extends BaseModuleServiceProvider
         $router->aliasMiddleware('api.token', AuthenticateApiToken::class);
 
         Event::listen(SystemModuleStatusChanged::class, LogSystemModuleStatusChanged::class);
+        Event::listen(SystemFeatureStatusChanged::class, LogSystemFeatureStatusChanged::class);
     }
 }
