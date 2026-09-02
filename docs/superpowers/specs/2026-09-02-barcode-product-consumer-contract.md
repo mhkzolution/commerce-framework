@@ -132,7 +132,7 @@ Never throw. Never block queue or print. Empty or missing Marketplace is normal 
 
 It is **not** a Product catalog snapshot: no `barcode_products` table, no copied product rows, no Product writes.
 
-Reprint reads the job payload. It does not re-fetch Product.
+Reprint re-renders the **same job** from stored payload (ADR-004). It does not re-fetch Product, clone the row, or mutate lines.
 
 Manual print (no product) must keep working.
 
