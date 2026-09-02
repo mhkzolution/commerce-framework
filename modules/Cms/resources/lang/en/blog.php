@@ -12,6 +12,7 @@ return [
     'sort_latest' => 'Latest',
     'sort_popular' => 'Popular',
     'home' => 'Home',
+    'breadcrumb' => 'Breadcrumb',
     'read_article' => 'Read Article',
     'share_heading' => 'Share this article',
     'share_facebook' => 'Facebook',

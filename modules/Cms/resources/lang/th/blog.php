@@ -12,6 +12,7 @@ return [
     'sort_latest' => 'ล่าสุด',
     'sort_popular' => 'ยอดนิยม',
     'home' => 'หน้าแรก',
+    'breadcrumb' => 'เส้นทางนำทาง',
     'read_article' => 'อ่านบทความ',
     'share_heading' => 'แชร์บทความนี้',
     'share_facebook' => 'Facebook',
