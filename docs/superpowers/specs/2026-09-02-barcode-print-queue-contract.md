@@ -52,7 +52,7 @@ This is **not** a Product catalog copy: no `barcode_products` table, no Product 
 
 ## Template contract
 
-`BarcodeTemplate` is **layout and label style** (paper, grid, margins, orientation, `show_*`). It is not a Product-aware engine and not a stored HTML/PHP template.
+`BarcodeTemplate` is **preset-based layout** (archive columns + `preset_code` + `show_*`). It is not a millimetre CAD row, not a Product-aware engine, and not a stored HTML/PHP template.
 
 See ADR-006: `docs/superpowers/specs/2026-09-02-barcode-template-layout-contract.md`.
 
@@ -84,20 +84,31 @@ Owner resolution happens **before** the job is created (search / manual enqueue)
 ## Renderer boundary
 
 ```text
-BarcodeTemplateService     # paper / grid / style
+BarcodeTemplateService     # preset catalog → archive columns + show_*
         ↓
 stored LabelPayload        # job.payload.lines
+stored job.settings        # template snapshot (not live row)
         ↓
 BarcodeLabelExpansionService
         ↓
 BarcodePrintService
-  → BarcodeLayoutCalculator
-  → BarcodeLabelRenderer   # SVG from barcode_value only
+  → BarcodeLayoutCalculator → ResolvedBarcodeLayout
+  → BarcodeLabelRenderer      # SVG from barcode_value only
         ↓
 HTML / PDF
 ```
 
 Controllers pass a `BarcodePrintJob`. Blade receives computed cells, not Eloquent Product/Media models.
+
+```text
+Renderer MUST read layout from job.settings snapshot.
+Renderer MUST NOT read barcode_templates.
+Renderer MUST NOT replace snapshotted millimetres from the preset catalog.
+```
+
+Required `job.settings` keys (written at create, never updated): see ADR-006 “Job settings snapshot” (`preset_code`, derived `paper_size`, `paper_width_mm` / `paper_height_mm`, grid, margins, gaps, `show_*`, padding, fonts, orientation).
+
+Catalog edits and live template edits do not change historical jobs. Snapshot wins.
 
 `dompdf` is used by archive `BarcodePrintService` but is **absent on main** and absent from archive `modules/Barcode/composer.json`. Phase 1: add `dompdf/dompdf` on the Barcode module (and root require). Do not copy archive root `composer.json`.
 
@@ -140,7 +151,8 @@ history.reprint
 ```
 
 - Do not `INSERT` a clone row
-- Do not `UPDATE` payload
+- Do not `UPDATE` payload or settings
+- Do not load `barcode_templates` for layout
 - Do not re-query Product / Seller / Media / Settings
 - Do not send lines back to the client for editing
 
@@ -153,7 +165,7 @@ A future reprint audit log (v1.5+) is out of scope.
 Same paths, not byte-for-byte from `84e905c`:
 
 ```text
-modules/Barcode/src/Services/BarcodePrintJobService.php      # queued → printed|failed
+modules/Barcode/src/Services/BarcodePrintJobService.php      # queued → printed|failed; full settings snapshot at create
 modules/Barcode/src/Http/Controllers/Admin/HistoryController.php
 modules/Barcode/src/Services/BarcodeQueueItemNormalizer.php  # no live owner on stored lines
 modules/Barcode/database/migrations/...print_jobs...         # default queued
@@ -172,8 +184,9 @@ Green:
 ```text
 Print Now creates a job before render
 payload JSON frozen at insert
-Template / renderer read payload only
-Reprint uses the same job payload
+settings JSON frozen at insert (ADR-006 snapshot keys)
+Renderer reads job.settings, not barcode_templates
+Reprint uses the same job payload + settings
 No Product query during reprint
 status ∈ {queued, printed, failed}
 ```
@@ -185,6 +198,7 @@ Reprint → Product::find()
 Template / Blade → Product model
 Queue expand → Seller query
 Renderer → MediaQueryServiceInterface
+Renderer → BarcodeTemplate::find (for layout)
 status = completed
-reprint clones a new row or mutates payload
+reprint clones a new row or mutates payload or settings
 ```

@@ -61,6 +61,12 @@ BarcodeLabelStyleTest
 BarcodeQueueArchitectureTest   # drop SiteIdentityServiceInterface mock
 ```
 
+Add:
+
+```text
+tests/Unit/Barcode/BarcodeLayoutCalculatorTest.php   # ADR-006: a4_40=40 cells, a4_65=65, no Product
+```
+
 Add (or extend):
 
 | Case | Locks |
@@ -111,7 +117,7 @@ all missing            → 'Store', POST print still creates a job
 
 Manual print without a product stays (already in archive).
 
-Templates (ADR-006): seeded `preset_code`s are `a4-24`, `a4-40`, `a4-65`, `thermal-50x30`; default `a4-40`; `show_owner = false` omits owner on print HTML.
+Templates (ADR-006): seeded `preset_code`s are `a4_40`, `a4_24`, `a4_65`, `thermal_50x30`; default `a4_40`; `show_owner = false` omits owner on print HTML. No `Thermal 40×30` row. Calculator for `a4_65` yields 65 cells inside A4. `paper_size` is derived from `preset_code` (client `thermal` + `a4_40` still stores `a4`). Edit may change `preset_code` and must overwrite frozen millimetres. Reprint after live-template or catalog change still matches the job.settings snapshot.
 
 ### New `tests/Feature/Barcode/BarcodePrintJobTest.php`
 
@@ -121,7 +127,8 @@ Templates (ADR-006): seeded `preset_code`s are `a4-24`, `a4-40`, `a4-65`, `therm
 | renderer throws | status `failed` |
 | reprint after `product.name` change | HTML/PDF still shows stored `product_name` |
 | reprint after Product row deleted | still 200 from payload |
-| reprint | same job UUID; payload JSON unchanged; no clone row |
+| reprint | same job UUID; payload and settings JSON unchanged; no clone row |
+| reprint after template preset change | HTML still uses original `job.settings` millimetres |
 
 Do **not** require a global `Product::query()` mock. Deleting or renaming the Product after insert is the contract. A query listener is optional extra, not the gate.
 
@@ -166,11 +173,12 @@ tests/Feature/Cms/CmsAdminTest.php
 tests/Feature/Barcode/BarcodeCenterAdminTest.php
 tests/Feature/Barcode/BarcodePrintJobTest.php
 tests/Unit/Barcode/BarcodeLabelStyleTest.php
+tests/Unit/Barcode/BarcodeLayoutCalculatorTest.php
 tests/Unit/Barcode/BarcodeQueueArchitectureTest.php
 tests/Unit/Barcode/NumericSequenceGeneratorTest.php
 ```
 
-C2 must fail if reprint follows live Product, status is `completed`, or SiteIdentity is required.
+C2 must fail if reprint follows live Product, status is `completed`, SiteIdentity is required, or templates seed millimetre-CAD columns / `Thermal 40×30`.
 
 No browser E2E in v1.4. Print HTML/PDF assertions stay in PHPUnit Feature tests.
 
@@ -178,4 +186,4 @@ No browser E2E in v1.4. Print HTML/PDF assertions stay in PHPUnit Feature tests.
 
 ## Manifest
 
-New tests live under `tests/Feature/Barcode/**` and `tests/Unit/Barcode/**` (already allowlisted). Create `BarcodePrintJobTest.php` on the branch; it is not in `84e905c`.
+New tests live under `tests/Feature/Barcode/**` and `tests/Unit/Barcode/**` (already allowlisted). Create `BarcodePrintJobTest.php` and `BarcodeLayoutCalculatorTest.php` on the branch; they are not in `84e905c`.
