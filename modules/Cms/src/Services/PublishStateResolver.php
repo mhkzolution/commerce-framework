@@ -7,6 +7,7 @@ namespace Commerce\Cms\Services;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Commerce\Cms\DTO\PublishState;
+use Commerce\Cms\Support\ScheduledPublishing;
 use Illuminate\Validation\ValidationException;
 
 final class PublishStateResolver
@@ -22,6 +23,10 @@ final class PublishStateResolver
         $publishedAt = $this->parseTimestamp($publishedAt);
         $unpublishAt = $this->parseTimestamp($unpublishAt);
         $now = CarbonImmutable::now();
+
+        if (! ScheduledPublishing::enabled()) {
+            return $this->resolveWithoutScheduling($status, $publishedAt, $unpublishAt, $now);
+        }
 
         if ($status === 'archived') {
             return new PublishState('archived', $publishedAt, $unpublishAt);
@@ -69,6 +74,30 @@ final class PublishStateResolver
             throw ValidationException::withMessages([
                 'unpublish_at' => 'Unpublish date must be after the publish date.',
             ]);
+        }
+
+        return new PublishState($status, $publishedAt, $unpublishAt);
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function resolveWithoutScheduling(
+        string $status,
+        ?CarbonInterface $publishedAt,
+        ?CarbonInterface $unpublishAt,
+        CarbonImmutable $now,
+    ): PublishState {
+        if ($status === 'archived') {
+            return new PublishState('archived', $publishedAt, $unpublishAt);
+        }
+
+        if ($status === 'draft' || $status === 'scheduled') {
+            return new PublishState($status, $publishedAt, $unpublishAt);
+        }
+
+        if ($status === 'published' && $publishedAt === null) {
+            $publishedAt = $now;
         }
 
         return new PublishState($status, $publishedAt, $unpublishAt);

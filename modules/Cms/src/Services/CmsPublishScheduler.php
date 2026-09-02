@@ -6,6 +6,7 @@ namespace Commerce\Cms\Services;
 
 use Commerce\Cms\Models\Page;
 use Commerce\Cms\Models\Post;
+use Commerce\Cms\Support\ScheduledPublishing;
 use Illuminate\Database\Eloquent\Model;
 
 final class CmsPublishScheduler
@@ -15,6 +16,10 @@ final class CmsPublishScheduler
      */
     public function run(): array
     {
+        if (! ScheduledPublishing::enabled()) {
+            return ['published' => 0, 'archived' => 0];
+        }
+
         $published = $this->publishDue();
         $archived = $this->archiveExpired();
 

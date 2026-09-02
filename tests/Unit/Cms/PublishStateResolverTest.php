@@ -6,11 +6,17 @@ namespace Tests\Unit\Cms;
 
 use Carbon\CarbonImmutable;
 use Commerce\Cms\Services\PublishStateResolver;
+use Commerce\Core\Enums\FeatureStatus;
+use Commerce\Core\Features\FeatureService;
+use Commerce\Core\Models\SystemFeature;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 final class PublishStateResolverTest extends TestCase
 {
+    use RefreshDatabase;
+
     private PublishStateResolver $resolver;
 
     protected function setUp(): void
@@ -183,5 +189,49 @@ final class PublishStateResolverTest extends TestCase
                 $exception->errors()['unpublish_at'],
             );
         }
+    }
+
+    public function test_disabled_flag_keeps_published_with_future_date_instead_of_scheduling(): void
+    {
+        $this->disableScheduledPublishing();
+
+        $publishedAt = '2026-10-01 09:00:00';
+        $state = $this->resolver->resolve('published', $publishedAt, null);
+
+        $this->assertSame('published', $state->status);
+        $this->assertTrue($state->publishedAt?->equalTo(CarbonImmutable::parse($publishedAt)));
+        $this->assertNull($state->unpublishAt);
+    }
+
+    public function test_disabled_flag_does_not_archive_from_expired_unpublish_at(): void
+    {
+        $this->disableScheduledPublishing();
+
+        $publishedAt = '2026-08-01 09:00:00';
+        $unpublishAt = '2026-08-15 09:00:00';
+        $state = $this->resolver->resolve('published', $publishedAt, $unpublishAt);
+
+        $this->assertSame('published', $state->status);
+        $this->assertTrue($state->publishedAt?->equalTo(CarbonImmutable::parse($publishedAt)));
+        $this->assertTrue($state->unpublishAt?->equalTo(CarbonImmutable::parse($unpublishAt)));
+    }
+
+    public function test_disabled_flag_keeps_existing_scheduled_status_and_timestamps(): void
+    {
+        $this->disableScheduledPublishing();
+
+        $publishedAt = '2026-10-01 09:00:00';
+        $unpublishAt = '2026-11-01 09:00:00';
+        $state = $this->resolver->resolve('scheduled', $publishedAt, $unpublishAt);
+
+        $this->assertSame('scheduled', $state->status);
+        $this->assertTrue($state->publishedAt?->equalTo(CarbonImmutable::parse($publishedAt)));
+        $this->assertTrue($state->unpublishAt?->equalTo(CarbonImmutable::parse($unpublishAt)));
+    }
+
+    private function disableScheduledPublishing(): void
+    {
+        $feature = SystemFeature::query()->where('code', 'scheduled-publishing')->firstOrFail();
+        app(FeatureService::class)->updateStatus($feature, FeatureStatus::Disabled);
     }
 }

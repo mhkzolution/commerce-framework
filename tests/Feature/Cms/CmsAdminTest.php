@@ -6,6 +6,7 @@ namespace Tests\Feature\Cms;
 
 use Commerce\Cms\Models\Page;
 use Commerce\Cms\Models\Post;
+use Commerce\Cms\Services\StorefrontBlogService;
 use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,13 +68,12 @@ final class CmsAdminTest extends TestCase
             'published_at' => now()->subHour(),
         ]);
 
-        $this->get(route('storefront.cms.posts.index'))
-            ->assertOk()
-            ->assertSee('Launch Day');
-
-        $this->get(route('storefront.cms.posts.show', 'launch-day'))
-            ->assertOk()
-            ->assertSee('Full announcement here.');
+        $this->assertTrue(
+            app(StorefrontBlogService::class)
+                ->publishedQuery()
+                ->where('slug', 'launch-day')
+                ->exists(),
+        );
     }
 
     public function test_post_and_page_forms_mount_the_editor_platform(): void

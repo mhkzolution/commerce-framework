@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Commerce\Cms\Http\Requests;
 
+use Commerce\Cms\Models\Page;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 final class UpdatePageRequest extends FormRequest
 {
+    use ConstrainsScheduledPublishing;
+
     public function authorize(): bool
     {
         return true;
@@ -26,7 +30,7 @@ final class UpdatePageRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('cms_pages', 'slug')->ignore($uuid, 'uuid')],
             'content' => ['nullable', 'string'],
-            'status' => ['required', 'string', Rule::in(array_keys(config('cms.statuses', [])))],
+            'status' => ['required', 'string', Rule::in($this->allowedStatuses())],
             'published_at' => ['nullable', 'date'],
             'unpublish_at' => ['nullable', 'date'],
             'seo.meta_title' => ['nullable', 'string', 'max:255'],
@@ -35,5 +39,12 @@ final class UpdatePageRequest extends FormRequest
             'seo.canonical_url' => ['nullable', 'url', 'max:2048'],
             'seo.og_image_media_uuid' => ['nullable', 'uuid'],
         ];
+    }
+
+    protected function existingPublishable(): ?Model
+    {
+        $page = $this->route('page');
+
+        return $page instanceof Page ? $page : null;
     }
 }

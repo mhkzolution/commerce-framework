@@ -12,6 +12,7 @@ use Commerce\Cms\Models\Category;
 use Commerce\Cms\Models\Post;
 use Commerce\Cms\Models\Tag;
 use Commerce\Cms\Services\PostService;
+use Commerce\Cms\Support\ScheduledPublishing;
 use Commerce\Contracts\Seo\SeoServiceInterface;
 use Commerce\Iam\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -50,7 +51,7 @@ final class PostController extends Controller
         $post->load(['tags']);
 
         return view('cms::admin.posts.edit', [
-            ...$this->formData(),
+            ...$this->formData($post),
             'item' => $post,
             'seo' => $this->seoService->getForEntity(Post::SEO_ENTITY_TYPE, $post->uuid),
             'previewUrl' => URL::temporarySignedRoute(
@@ -78,10 +79,10 @@ final class PostController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function formData(): array
+    private function formData(?Post $item = null): array
     {
         return [
-            'statuses' => config('cms.statuses', []),
+            'statuses' => ScheduledPublishing::editorStatuses($item?->status),
             'categories' => Category::query()->orderBy('name')->get(),
             'tags' => Tag::query()->orderBy('name')->get(),
             'authors' => User::query()->orderBy('name')->get(['uuid', 'name', 'email']),

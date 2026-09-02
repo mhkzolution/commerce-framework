@@ -10,6 +10,7 @@ use Commerce\Cms\Http\Requests\StorePageRequest;
 use Commerce\Cms\Http\Requests\UpdatePageRequest;
 use Commerce\Cms\Models\Page;
 use Commerce\Cms\Services\PageService;
+use Commerce\Cms\Support\ScheduledPublishing;
 use Commerce\Contracts\Seo\SeoServiceInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controller;
@@ -32,7 +33,7 @@ final class PageController extends Controller
     public function create(): View
     {
         return view('cms::admin.pages.create', [
-            'statuses' => config('cms.statuses', []),
+            'statuses' => ScheduledPublishing::editorStatuses(),
         ]);
     }
 
@@ -55,7 +56,7 @@ final class PageController extends Controller
     {
         return view('cms::admin.pages.edit', [
             'item' => $page,
-            'statuses' => config('cms.statuses', []),
+            'statuses' => ScheduledPublishing::editorStatuses($page->status),
             'seo' => $this->seoService->getForEntity(Page::SEO_ENTITY_TYPE, $page->uuid),
         ]);
     }

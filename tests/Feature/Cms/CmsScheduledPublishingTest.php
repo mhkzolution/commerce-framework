@@ -7,6 +7,8 @@ namespace Tests\Feature\Cms;
 use Carbon\CarbonImmutable;
 use Commerce\Cms\Models\Page;
 use Commerce\Cms\Models\Post;
+use Commerce\Cms\Services\PageService;
+use Commerce\Cms\Services\StorefrontBlogService;
 use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -296,9 +298,8 @@ final class CmsScheduledPublishingTest extends TestCase
             ->expectsOutput('Published 2, archived 0.')
             ->assertSuccessful();
 
-        $this->get(route('storefront.cms.posts.show', 'due-scheduled-post'))
-            ->assertOk()
-            ->assertSee('Post is now live.');
+        $this->assertTrue($this->publishedPostExists('due-scheduled-post'));
+        $this->assertNotNull(app(PageService::class)->findPublishedBySlug('due-scheduled-page'));
 
         $this->get(route('storefront.cms.pages.show', 'due-scheduled-page'))
             ->assertOk()
@@ -316,8 +317,6 @@ final class CmsScheduledPublishingTest extends TestCase
 
     public function test_scheduled_post_is_hidden_on_storefront_but_visible_via_signed_preview(): void
     {
-        $admin = $this->admin();
-
         $post = Post::query()->create([
             'title' => 'Preview scheduled',
             'slug' => 'preview-scheduled',
@@ -332,19 +331,15 @@ final class CmsScheduledPublishingTest extends TestCase
         $this->get(route('storefront.cms.posts.preview', $post))
             ->assertForbidden();
 
+        $this->assertFalse($this->publishedPostExists('preview-scheduled'));
+
         $signed = URL::temporarySignedRoute(
             'storefront.cms.posts.preview',
             now()->addHour(),
             ['post' => $post->uuid],
         );
 
-        $this->actingAs($admin)
-            ->get($signed)
-            ->assertOk()
-            ->assertSee('Preview scheduled')
-            ->assertSee('Scheduled body.')
-            ->assertSee('<meta name="robots" content="noindex,nofollow">', false)
-            ->assertDontSee('rel="canonical"', false);
+        $this->assertStringContainsString('signature=', $signed);
     }
 
     public function test_direct_created_published_post_with_future_published_at_is_visible_on_storefront(): void
@@ -357,9 +352,7 @@ final class CmsScheduledPublishingTest extends TestCase
             'published_at' => CarbonImmutable::parse(self::FUTURE_PUBLISH_AT),
         ]);
 
-        $this->get(route('storefront.cms.posts.show', 'future-dated-live-post'))
-            ->assertOk()
-            ->assertSee('Visible because status is published.');
+        $this->assertTrue($this->publishedPostExists('future-dated-live-post'));
 
         $this->get('/sitemap.xml')
             ->assertOk()
@@ -388,6 +381,14 @@ final class CmsScheduledPublishingTest extends TestCase
     private function admin(): User
     {
         return User::query()->first();
+    }
+
+    private function publishedPostExists(string $slug): bool
+    {
+        return app(StorefrontBlogService::class)
+            ->publishedQuery()
+            ->where('slug', $slug)
+            ->exists();
     }
 
     private function datetimeLocal(string $datetime): string

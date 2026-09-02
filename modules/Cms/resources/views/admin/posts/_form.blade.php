@@ -29,12 +29,14 @@
                 @endforeach
             </select>
 
-            <label class="mt-4 block text-sm font-medium text-text">{{ __('cms::admin.published_at') }}</label>
-            <input name="published_at" type="datetime-local" value="{{ old('published_at', optional($item?->published_at)->format('Y-m-d\TH:i')) }}" class="cf-input mt-1">
-            <p class="mt-1 text-xs text-text-secondary">{{ __('cms::admin.schedule_helper') }}</p>
+            @if (feature('scheduled-publishing'))
+                <label class="mt-4 block text-sm font-medium text-text">{{ __('cms::admin.published_at') }}</label>
+                <input name="published_at" type="datetime-local" value="{{ old('published_at', optional($item?->published_at)->format('Y-m-d\TH:i')) }}" class="cf-input mt-1">
+                <p class="mt-1 text-xs text-text-secondary">{{ __('cms::admin.schedule_helper') }}</p>
 
-            <label class="mt-4 block text-sm font-medium text-text">{{ __('cms::admin.unpublish_at') }}</label>
-            <input name="unpublish_at" type="datetime-local" value="{{ old('unpublish_at', optional($item?->unpublish_at)->format('Y-m-d\TH:i')) }}" class="cf-input mt-1">
+                <label class="mt-4 block text-sm font-medium text-text">{{ __('cms::admin.unpublish_at') }}</label>
+                <input name="unpublish_at" type="datetime-local" value="{{ old('unpublish_at', optional($item?->unpublish_at)->format('Y-m-d\TH:i')) }}" class="cf-input mt-1">
+            @endif
 
             <label class="mt-4 inline-flex items-center gap-2 text-sm text-text-secondary">
                 <input type="hidden" name="is_featured" value="0">

@@ -8,7 +8,11 @@ use Carbon\CarbonImmutable;
 use Commerce\Cms\Models\Page;
 use Commerce\Cms\Models\Post;
 use Commerce\Cms\Services\CmsPublishScheduler;
+use Commerce\Core\Enums\FeatureStatus;
+use Commerce\Core\Features\FeatureService;
+use Commerce\Core\Models\SystemFeature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 final class CmsPublishSchedulerTest extends TestCase
@@ -184,6 +188,56 @@ final class CmsPublishSchedulerTest extends TestCase
         $this->assertSame(['published' => 0, 'archived' => 0], $result);
         $this->assertSame('scheduled', $page->status);
         $this->assertTrue($page->published_at->equalTo($publishedAt));
+    }
+
+    public function test_disabled_flag_skips_due_publish_and_unpublish(): void
+    {
+        $this->disableScheduledPublishing();
+
+        $publishedAt = CarbonImmutable::parse('2026-08-01 09:00:00');
+        $unpublishAt = CarbonImmutable::parse('2026-08-15 09:00:00');
+        $scheduled = $this->createPost('scheduled', $publishedAt);
+        $expired = $this->createPage('published', $publishedAt, $unpublishAt);
+
+        $cmsQueries = [];
+        $listening = true;
+        DB::listen(static function ($query) use (&$cmsQueries, &$listening): void {
+            if (! $listening) {
+                return;
+            }
+
+            if (str_contains($query->sql, 'cms_posts') || str_contains($query->sql, 'cms_pages')) {
+                $cmsQueries[] = $query->sql;
+            }
+        });
+
+        $result = $this->scheduler->run();
+        $listening = false;
+
+        $scheduled->refresh();
+        $expired->refresh();
+
+        $this->assertSame(['published' => 0, 'archived' => 0], $result);
+        $this->assertSame([], $cmsQueries);
+        $this->assertSame('scheduled', $scheduled->status);
+        $this->assertSame('published', $expired->status);
+    }
+
+    public function test_disabled_flag_makes_publish_command_a_no_op(): void
+    {
+        $this->disableScheduledPublishing();
+
+        $this->createPost('scheduled', CarbonImmutable::parse('2026-08-01 09:00:00'));
+
+        $this->artisan('cms:publish-scheduled')
+            ->expectsOutput('Published 0, archived 0.')
+            ->assertSuccessful();
+    }
+
+    private function disableScheduledPublishing(): void
+    {
+        $feature = SystemFeature::query()->where('code', 'scheduled-publishing')->firstOrFail();
+        app(FeatureService::class)->updateStatus($feature, FeatureStatus::Disabled);
     }
 
     private function createPost(
