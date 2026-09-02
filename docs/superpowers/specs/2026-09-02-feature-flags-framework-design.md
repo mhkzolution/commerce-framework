@@ -2,7 +2,7 @@
 
 **Branch:** `feat/feature-flags` (from `main` at `v1.0.0-module-management`)  
 **Date:** 2026-09-02  
-**Status:** Ready for spec review (architecture approved in chat; four review notes applied)
+**Status:** Approved with minor recommendations (applied below)
 
 ## Goal
 
@@ -64,11 +64,13 @@ Table `system_features`:
 | `code` | string unique | kebab-case |
 | `name` | string | admin primary label |
 | `description` | text nullable | |
-| `module_code` | string | parent `system_modules.code`, no FK |
+| `module_code` | string | parent `system_modules.code`, **no foreign key** |
 | `status` | string(20) | `ENABLED` or `DISABLED` |
 | `is_core` | boolean | column present; Phase 2 catalog all `false` |
 | `sort_order` | unsigned int | catalog order for `all()` |
 | `created_at` / `updated_at` | timestamps | |
+
+Foreign keys are intentionally omitted because catalog seeding and module registry recovery must remain possible even when parent modules are temporarily absent. Do not add an FK in a later “cleanup” refactor.
 
 `default_enabled` is **catalog-only**. It is not a database column. The seeder maps `true → ENABLED`, `false → DISABLED` **only when inserting a new row**.
 
@@ -105,8 +107,8 @@ Public API:
 
 ```php
 FeatureService::enabled(string $code): bool
-FeatureService::get(string $code): ?SystemFeature   // silent, no unknown warning
-FeatureService::all(): Collection                   // silent
+FeatureService::get(string $code): ?SystemFeature
+FeatureService::all(): Collection
 FeatureService::clearCache(): void
 ```
 
@@ -118,6 +120,8 @@ feature_enabled('advanced-seo')
 ```
 
 `feature()` is an alias of `feature_enabled()`. Both call `FeatureService::enabled()`.
+
+`get($code)` returns a hydrated `SystemFeature` from the same cache/memo snapshot as `all()`. It may return `null`. It never queries the database itself and does not log unknown codes. `definitions()` is the only reader (via `Cache::remember`).
 
 ### Order of checks for `enabled()`
 
@@ -225,10 +229,13 @@ Meta / payload:
   "code": "advanced-seo",
   "feature_name": "Advanced SEO",
   "module_code": "cms",
+  "module_name": "CMS",
   "old_status": "ENABLED",
   "new_status": "DISABLED"
 }
 ```
+
+`module_name` is the parent module's `name` at event time (from `ModuleService::get`), or `null` if the parent row is missing.
 
 IAM listener `LogSystemFeatureStatusChanged` registered next to the module listener. No-op when status is unchanged (do not write an audit row).
 
@@ -253,9 +260,14 @@ No product CMS/Reviews assertions. Middleware uses a route registered inside the
 
 ### Feature
 
-- `SystemFeatureAdminTest`: index visible; search; ENABLED→DISABLED persists; invalid status rejected; audit row includes `code`, `feature_name`, `module_code`, statuses
+- `SystemFeatureAdminTest`: index visible; search; ENABLED→DISABLED persists; invalid status rejected; audit row includes `code`, `feature_name`, `module_code`, `module_name`, statuses
 - `EnsureFeatureEnabledTest`: test route 200 when enabled; 404 not 403 when feature DISABLED; 404 when parent DISABLED even if feature ENABLED; 200 when parent HIDDEN and feature ENABLED
-- `SystemFeatureRouteCacheTest`: alias registered; cached routes contain `feature:ai-writer`; enforcement still 404 after disable
+- `SystemFeatureRouteCacheTest`:
+  1. Alias `feature` is registered as `EnsureFeatureEnabled`
+  2. After `php artisan route:cache`, the compiled file contains `feature:ai-writer`
+  3. After route cache, the testing probe is **200 when ENABLED** and **404 when DISABLED** (not 403). Do not assert only the cache file — Module Management already saw “cache passes, middleware dead.”
+
+The probe route is registered only when `app()->runningUnitTests()`. It is not a product `/feature-demo` page and must not ship in production route lists.
 - `AdminNavigationIaTest`: System children are Modules then Features; English label `Features`; Thai label `ฟีเจอร์`
 
 ## Files (expected)
