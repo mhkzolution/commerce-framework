@@ -17,6 +17,7 @@ use Commerce\Core\Console\PublishOutboxCommand;
 use Commerce\Core\Events\EventBus;
 use Commerce\Core\Features\FeatureService;
 use Commerce\Core\Hooks\HookRegistry;
+use Commerce\Core\Http\Middleware\EnsureFeatureEnabled;
 use Commerce\Core\Http\Middleware\EnsureModuleEnabled;
 use Commerce\Core\Http\Middleware\ResolveTenant;
 use Commerce\Core\Http\Middleware\ResolveUrlRedirect;
@@ -80,6 +81,13 @@ class CommerceServiceProvider extends ServiceProvider
         /** @var Router $router */
         $router = $this->app->make(Router::class);
         $router->aliasMiddleware('module', EnsureModuleEnabled::class);
+        $router->aliasMiddleware('feature', EnsureFeatureEnabled::class);
+
+        if ($this->app->runningUnitTests() && ! $this->app->routesAreCached()) {
+            $router->get('/__testing/feature-probe', static fn () => response('ok', 200))
+                ->middleware(['web', 'feature:ai-writer'])
+                ->name('testing.feature.probe');
+        }
 
         /** @var HttpKernel $kernel */
         $kernel = $this->app->make(HttpKernel::class);
