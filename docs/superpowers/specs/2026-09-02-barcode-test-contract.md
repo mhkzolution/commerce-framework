@@ -111,6 +111,8 @@ all missing            → 'Store', POST print still creates a job
 
 Manual print without a product stays (already in archive).
 
+Templates (ADR-006): seeded `preset_code`s are `a4-24`, `a4-40`, `a4-65`, `thermal-50x30`; default `a4-40`; `show_owner = false` omits owner on print HTML.
+
 ### New `tests/Feature/Barcode/BarcodePrintJobTest.php`
 
 | Case | Expect |

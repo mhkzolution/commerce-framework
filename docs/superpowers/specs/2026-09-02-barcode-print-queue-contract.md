@@ -52,7 +52,9 @@ This is **not** a Product catalog copy: no `barcode_products` table, no Product 
 
 ## Template contract
 
-`BarcodeTemplate` is **layout and label style** (paper, grid, margins, orientation). It is not a Product-aware engine and not a new `{{ }}` language in v1.4.
+`BarcodeTemplate` is **layout and label style** (paper, grid, margins, orientation, `show_*`). It is not a Product-aware engine and not a stored HTML/PHP template.
+
+See ADR-006: `docs/superpowers/specs/2026-09-02-barcode-template-layout-contract.md`.
 
 Renderer fields (user-facing placeholders → stored payload):
 
