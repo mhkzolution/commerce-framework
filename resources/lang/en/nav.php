@@ -15,6 +15,7 @@ return [
         'website_content' => 'Content',
         'reports' => 'Reports',
         'configuration' => 'Settings',
+        'system' => 'System',
         'platform' => 'Platform',
     ],
     'items' => [
@@ -61,6 +62,7 @@ return [
         'webhooks' => 'Webhooks',
         'settings' => 'System Settings',
         'system_settings' => 'System Settings',
+        'modules' => 'Modules',
         'pos' => 'POS',
         'marketplace' => 'Marketplace',
         'cms' => 'Content',
@@ -121,6 +123,7 @@ return [
         'admin_notification_templates_index' => 'Notifications',
         'admin_notifications_index' => 'Notifications',
         'admin_platform_tenants_index' => 'Tenants',
+        'admin_system_modules_index' => 'Modules',
         'admin_storefront_navigation_show' => 'Navigation',
         'admin_settings_customer-experience_show' => 'Customer Experience',
         'admin_settings_footer_show' => 'Footer',

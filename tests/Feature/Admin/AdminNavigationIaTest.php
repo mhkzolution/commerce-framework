@@ -8,6 +8,7 @@ use Commerce\Contracts\Admin\AdminNavigationBuilderInterface;
 use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 final class AdminNavigationIaTest extends TestCase
@@ -27,7 +28,7 @@ final class AdminNavigationIaTest extends TestCase
 
         $ids = array_column($navigation, 'id');
         $this->assertSame(
-            ['dashboard', 'sales', 'catalog', 'marketing', 'website', 'content', 'reports', 'identity', 'configuration', 'platform'],
+            ['dashboard', 'sales', 'catalog', 'marketing', 'website', 'content', 'reports', 'identity', 'configuration', 'system', 'platform'],
             $ids,
         );
 
@@ -80,6 +81,9 @@ final class AdminNavigationIaTest extends TestCase
             array_column($byId['configuration']['children'], 'label'),
         );
         $this->assertSame(['Tenants'], array_column($byId['platform']['children'], 'label'));
+        $this->assertSame(['Modules'], array_column($byId['system']['children'], 'label'));
+        $this->assertSame('admin.system.modules.index', $byId['system']['children'][0]['route']);
+        $this->assertSame('system.module.view', $byId['system']['children'][0]['permission']);
 
         $this->assertSame('chart-bar', $byId['dashboard']['icon']);
         $this->assertSame('cube', $byId['catalog']['icon']);
@@ -89,6 +93,7 @@ final class AdminNavigationIaTest extends TestCase
         $this->assertSame('presentation-chart-line', $byId['reports']['icon']);
         $this->assertSame('users', $byId['identity']['icon']);
         $this->assertSame('cog', $byId['configuration']['icon']);
+        $this->assertSame('squares-2x2', $byId['system']['icon']);
         $this->assertSame('building-office-2', $byId['platform']['icon']);
 
         $contentRoutes = array_column($byId['content']['children'], 'route');
@@ -116,18 +121,21 @@ final class AdminNavigationIaTest extends TestCase
         $nav = app(AdminNavigationBuilderInterface::class)->build(User::query()->first());
         $byId = $this->indexById($nav);
         $ids = array_column($nav, 'id');
-        $approvedOrder = ['dashboard', 'sales', 'catalog', 'marketing', 'website', 'content', 'reports', 'identity', 'configuration', 'platform'];
+        $approvedOrder = ['dashboard', 'sales', 'catalog', 'marketing', 'website', 'content', 'reports', 'identity', 'configuration', 'system', 'platform'];
 
         $this->assertSame(array_values(array_intersect($approvedOrder, $ids)), $ids);
         $this->assertNotContains('pos.link.0', $ids);
         $this->assertContains('dashboard', $ids);
         $this->assertContains('content', $ids);
         $this->assertContains('identity', $ids);
+        $this->assertContains('system', $ids);
 
         $this->assertSame('แดชบอร์ด', $byId['dashboard']['label']);
         $this->assertSame('สินค้า', $byId['catalog']['label']);
         $this->assertSame('เนื้อหา', $byId['content']['label']);
         $this->assertSame('ผู้ใช้และการเข้าถึง', $byId['identity']['label']);
+        $this->assertSame('ระบบ', $byId['system']['label']);
+        $this->assertSame('โมดูล', $byId['system']['children'][0]['label']);
         $this->assertNotContains('แคตตาล็อก', array_column($nav, 'label'));
         $this->assertNotContains('ระบบกลาง', array_column($nav, 'label'));
         $this->assertCount(1, array_filter(array_column($nav, 'label'), static fn (string $label): bool => $label === 'ผู้ใช้และการเข้าถึง'));
@@ -152,7 +160,7 @@ final class AdminNavigationIaTest extends TestCase
         $this->assertContains('Products', $catalogChildren);
         $this->assertContains('Categories', $catalogChildren);
         $this->assertContains('Media', $catalogChildren);
-        if (\Illuminate\Support\Facades\Route::has('admin.products.settings.show')) {
+        if (Route::has('admin.products.settings.show')) {
             $this->assertContains('Product Settings', $catalogChildren);
         }
 

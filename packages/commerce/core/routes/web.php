@@ -2,12 +2,23 @@
 
 declare(strict_types=1);
 
+use Commerce\Core\Http\Controllers\Admin\SystemModuleController;
 use Commerce\Core\Http\Controllers\Admin\TenantController;
 use Commerce\Core\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('web')->group(function (): void {
     Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
+
+    Route::middleware(['auth', 'permission:system.module.view'])
+        ->prefix('admin/system/modules')
+        ->name('admin.system.modules.')
+        ->group(function (): void {
+            Route::get('/', [SystemModuleController::class, 'index'])->name('index');
+            Route::put('/{systemModule}', [SystemModuleController::class, 'update'])
+                ->middleware('permission:system.module.update')
+                ->name('update');
+        });
 
     Route::middleware(['auth', 'permission:platform.tenant.view'])
         ->prefix('admin/platform/tenants')

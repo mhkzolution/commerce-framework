@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Commerce\Core;
 
+use Commerce\Contracts\Authorization\PermissionRegistryInterface;
 use Commerce\Contracts\Event\EventBusInterface;
 use Commerce\Contracts\Hook\HookRegistryInterface;
 use Commerce\Contracts\Pricing\PriceResolverInterface;
@@ -12,31 +13,36 @@ use Commerce\Contracts\Search\SearchQueryInterface;
 use Commerce\Contracts\Seo\SeoServiceInterface;
 use Commerce\Contracts\Seo\SlugServiceInterface;
 use Commerce\Contracts\Seo\UrlRedirectServiceInterface;
-use Commerce\Contracts\Authorization\PermissionRegistryInterface;
 use Commerce\Core\Console\PublishOutboxCommand;
 use Commerce\Core\Events\EventBus;
 use Commerce\Core\Hooks\HookRegistry;
-use Commerce\Core\Outbox\OutboxPublisher;
-use Commerce\Core\Outbox\OutboxRecorder;
+use Commerce\Core\Http\Middleware\EnsureModuleEnabled;
 use Commerce\Core\Http\Middleware\ResolveTenant;
 use Commerce\Core\Http\Middleware\ResolveUrlRedirect;
-use Commerce\Core\Tenant\TenantContext;
-use Commerce\Core\Tenant\TenantService;
+use Commerce\Core\Models\SystemModule;
+use Commerce\Core\Modules\ModuleService;
+use Commerce\Core\Outbox\OutboxPublisher;
+use Commerce\Core\Outbox\OutboxRecorder;
+use Commerce\Core\Policies\SystemModulePolicy;
 use Commerce\Core\Pricing\CompositePriceResolver;
 use Commerce\Core\Search\DatabaseSearchIndex;
 use Commerce\Core\Search\DatabaseSearchQuery;
 use Commerce\Core\Seo\SeoService;
-use Commerce\Core\Seo\SlugService;
 use Commerce\Core\Seo\SitemapGenerator;
+use Commerce\Core\Seo\SlugService;
 use Commerce\Core\Seo\UrlRedirectService;
+use Commerce\Core\Tenant\TenantContext;
+use Commerce\Core\Tenant\TenantService;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
+use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class CommerceServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/commerce.php', 'commerce');
+        $this->mergeConfigFrom(__DIR__.'/../config/commerce.php', 'commerce');
 
         $this->app->singleton(EventBusInterface::class, EventBus::class);
         $this->app->singleton(HookRegistryInterface::class, HookRegistry::class);
@@ -59,11 +65,19 @@ class CommerceServiceProvider extends ServiceProvider
         $this->app->singleton(TenantService::class);
         $this->app->singleton(OutboxRecorder::class);
         $this->app->singleton(OutboxPublisher::class);
+        $this->app->singleton(ModuleService::class);
     }
 
     public function boot(): void
     {
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'commerce');
+
+        Gate::policy(SystemModule::class, SystemModulePolicy::class);
+
+        /** @var Router $router */
+        $router = $this->app->make(Router::class);
+        $router->aliasMiddleware('module', EnsureModuleEnabled::class);
 
         /** @var HttpKernel $kernel */
         $kernel = $this->app->make(HttpKernel::class);
@@ -71,9 +85,9 @@ class CommerceServiceProvider extends ServiceProvider
         $kernel->prependMiddlewareToGroup('web', ResolveTenant::class);
         $kernel->prependMiddlewareToGroup('api', ResolveTenant::class);
 
-        $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
-        $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'commerce');
+        $this->loadRoutesFrom(__DIR__.'/../routes/api.php');
+        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'commerce');
 
         if ($this->app->runningInConsole()) {
             $this->commands([PublishOutboxCommand::class]);
@@ -82,7 +96,7 @@ class CommerceServiceProvider extends ServiceProvider
         $this->registerPlatformPermissions();
 
         $this->publishes([
-            __DIR__ . '/../config/commerce.php' => config_path('commerce.php'),
+            __DIR__.'/../config/commerce.php' => config_path('commerce.php'),
         ], 'commerce-config');
     }
 
@@ -96,7 +110,7 @@ class CommerceServiceProvider extends ServiceProvider
 
         foreach (config('commerce.permissions', []) as $permission => $label) {
             $registry->register($permission, [
-                'module' => 'platform',
+                'module' => str_starts_with((string) $permission, 'system.') ? 'system' : 'platform',
                 'label' => $label,
             ]);
         }

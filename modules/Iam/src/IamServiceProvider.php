@@ -7,6 +7,7 @@ namespace Commerce\Iam;
 use Commerce\Contracts\Authorization\AuthorizationServiceInterface;
 use Commerce\Contracts\Authorization\PermissionRegistryInterface;
 use Commerce\Core\Base\BaseModuleServiceProvider;
+use Commerce\Core\Events\SystemModuleStatusChanged;
 use Commerce\Iam\Contracts\Activity\IamAuditServiceInterface;
 use Commerce\Iam\Contracts\Authentication\AuthenticationServiceInterface;
 use Commerce\Iam\Contracts\Impersonation\ImpersonationServiceInterface;
@@ -21,6 +22,7 @@ use Commerce\Iam\Contracts\TwoFactor\TwoFactorServiceInterface;
 use Commerce\Iam\Contracts\User\UserServiceInterface;
 use Commerce\Iam\Http\Middleware\AuthenticateApiToken;
 use Commerce\Iam\Http\Middleware\PermissionMiddleware;
+use Commerce\Iam\Listeners\LogSystemModuleStatusChanged;
 use Commerce\Iam\OAuth\GitHubOAuthProvider;
 use Commerce\Iam\OAuth\GoogleOAuthProvider;
 use Commerce\Iam\Services\ApiTokenService;
@@ -39,6 +41,7 @@ use Commerce\Iam\Services\UserPreferenceService;
 use Commerce\Iam\Services\UserService;
 use Commerce\Iam\Support\TotpGenerator;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Event;
 
 final class IamServiceProvider extends BaseModuleServiceProvider
 {
@@ -86,5 +89,7 @@ final class IamServiceProvider extends BaseModuleServiceProvider
         $router = $this->app->make(Router::class);
         $router->aliasMiddleware('permission', PermissionMiddleware::class);
         $router->aliasMiddleware('api.token', AuthenticateApiToken::class);
+
+        Event::listen(SystemModuleStatusChanged::class, LogSystemModuleStatusChanged::class);
     }
 }

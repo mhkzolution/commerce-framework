@@ -61,6 +61,13 @@
                 :value="number_format($summary['average_order_value'] / 100, 2) . ' ' . $summary['currency']"
                 hint="Paid orders in selected period"
             />
+            @if (module_active('blog') && isset($blogStats))
+                <x-admin.stat-card
+                    label="Blog posts"
+                    :value="(string) $blogStats['published']"
+                    :hint="$blogStats['posts'] . ' total'"
+                />
+            @endif
         </div>
 
         <div class="mt-6">

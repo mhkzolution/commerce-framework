@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Commerce\Reports\Http\Controllers\Admin;
 
+use Commerce\Core\Modules\ModuleService;
 use Commerce\Reports\Services\DashboardQueryService;
 use Commerce\Reports\Support\DashboardDateRange;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -27,7 +30,29 @@ final class DashboardController extends Controller
             'recentOrders' => $this->dashboard->recentOrders(range: $range),
             'orderStatuses' => config('orders.statuses', []),
             'range' => $range,
+            'blogStats' => $this->blogStats(),
         ]);
+    }
+
+    /**
+     * @return array{posts: int, published: int}|null
+     */
+    private function blogStats(): ?array
+    {
+        if (! ModuleService::isActive('blog') || ! Schema::hasTable('cms_posts')) {
+            return null;
+        }
+
+        $query = DB::table('cms_posts');
+
+        if (Schema::hasColumn('cms_posts', 'deleted_at')) {
+            $query->whereNull('deleted_at');
+        }
+
+        return [
+            'posts' => (int) (clone $query)->count(),
+            'published' => (int) (clone $query)->where('status', 'published')->count(),
+        ];
     }
 
     public function export(): StreamedResponse
@@ -53,7 +78,7 @@ final class DashboardController extends Controller
             }
 
             fclose($handle);
-        }, 'orders-' . $range->from->format('Y-m-d') . '-to-' . $range->to->format('Y-m-d') . '.csv', [
+        }, 'orders-'.$range->from->format('Y-m-d').'-to-'.$range->to->format('Y-m-d').'.csv', [
             'Content-Type' => 'text/csv',
         ]);
     }

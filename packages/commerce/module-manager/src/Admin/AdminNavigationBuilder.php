@@ -6,6 +6,8 @@ namespace Commerce\ModuleManager\Admin;
 
 use Commerce\Contracts\Admin\AdminNavigationBuilderInterface;
 use Commerce\Contracts\Authorization\AuthorizationServiceInterface;
+use Commerce\Core\Enums\ModuleStatus;
+use Commerce\Core\Modules\ModuleService;
 use Commerce\ModuleManager\ModuleRegistry;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +22,7 @@ final class AdminNavigationBuilder implements AdminNavigationBuilderInterface
     {
         $items = $this->itemsFromConfig();
         $dedupedRoutes = $this->collectRoutes($items);
+        $dedupedLabels = $this->collectLabels($items);
 
         foreach ($this->registry->all() as $alias => $manifest) {
             if (! $this->registry->isEnabled($alias)) {
@@ -33,7 +36,7 @@ final class AdminNavigationBuilder implements AdminNavigationBuilderInterface
                     }
 
                     $item = $this->parseEntry($entry, $alias, (int) $index);
-                    if ($item !== null && ! $this->shouldSkipModuleItem($item, $dedupedRoutes)) {
+                    if ($item !== null && ! $this->shouldSkipModuleItem($item, $dedupedRoutes, $dedupedLabels)) {
                         $items[] = $item;
                     }
                 }
@@ -43,7 +46,7 @@ final class AdminNavigationBuilder implements AdminNavigationBuilderInterface
 
             if (isset($manifest['admin_menu']) && is_array($manifest['admin_menu'])) {
                 $item = $this->parseEntry($manifest['admin_menu'] + ['type' => 'link'], $alias, 0);
-                if ($item !== null && ! $this->shouldSkipModuleItem($item, $dedupedRoutes)) {
+                if ($item !== null && ! $this->shouldSkipModuleItem($item, $dedupedRoutes, $dedupedLabels)) {
                     $items[] = $item;
                 }
             }
@@ -131,10 +134,44 @@ final class AdminNavigationBuilder implements AdminNavigationBuilderInterface
     }
 
     /**
-     * @param  list<string>  $dedupedRoutes
+     * @param  list<AdminNavigationItem>  $items
+     * @return list<string>
      */
-    private function shouldSkipModuleItem(AdminNavigationItem $item, array $dedupedRoutes): bool
+    private function collectLabels(array $items): array
     {
+        $labels = [];
+
+        foreach ($items as $item) {
+            $labels = [...$labels, ...$this->labelsFromItem($item)];
+        }
+
+        return array_values(array_unique($labels));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function labelsFromItem(AdminNavigationItem $item): array
+    {
+        $labels = [$item->label];
+
+        foreach ($item->children as $child) {
+            $labels = [...$labels, ...$this->labelsFromItem($child)];
+        }
+
+        return $labels;
+    }
+
+    /**
+     * @param  list<string>  $dedupedRoutes
+     * @param  list<string>  $dedupedLabels
+     */
+    private function shouldSkipModuleItem(AdminNavigationItem $item, array $dedupedRoutes, array $dedupedLabels): bool
+    {
+        if (in_array($item->label, $dedupedLabels, true)) {
+            return true;
+        }
+
         if ($item->isGroup()) {
             $descendantRoutes = array_values(array_filter(
                 $this->routesFromItem($item),
@@ -193,12 +230,16 @@ final class AdminNavigationBuilder implements AdminNavigationBuilderInterface
             collapsible: (bool) ($entry['collapsible'] ?? true),
             defaultOpen: (bool) ($entry['default_open'] ?? false),
             children: $children,
-            module: $module,
+            module: isset($entry['module']) ? (string) $entry['module'] : $module,
         );
     }
 
     private function filterItem(AdminNavigationItem $item, ?object $user): ?AdminNavigationItem
     {
+        if ($this->shouldHideForSystemModule($item->module)) {
+            return null;
+        }
+
         if ($item->isGroup()) {
             $children = array_values(array_filter(array_map(
                 fn (AdminNavigationItem $child): ?AdminNavigationItem => $this->filterItem($child, $user),
@@ -251,6 +292,21 @@ final class AdminNavigationBuilder implements AdminNavigationBuilderInterface
         }
 
         return app(AuthorizationServiceInterface::class)->can($user, $permission);
+    }
+
+    private function shouldHideForSystemModule(?string $code): bool
+    {
+        if ($code === null || $code === '') {
+            return false;
+        }
+
+        $module = ModuleService::get($code);
+
+        if ($module === null || $module->is_core) {
+            return false;
+        }
+
+        return $module->status !== ModuleStatus::Active;
     }
 
     private function linkIsAvailable(AdminNavigationItem $item): bool

@@ -43,6 +43,8 @@ return [
     'permissions' => [
         'platform.tenant.view' => 'View tenants',
         'platform.tenant.manage' => 'Manage tenants',
+        'system.module.view' => 'View system modules',
+        'system.module.update' => 'Update system module status',
     ],
 
     'api' => [

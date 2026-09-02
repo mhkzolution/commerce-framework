@@ -15,6 +15,7 @@ return [
         'website_content' => 'เนื้อหา',
         'reports' => 'รายงาน',
         'configuration' => 'ตั้งค่า',
+        'system' => 'ระบบ',
         'platform' => 'แพลตฟอร์ม',
     ],
     'items' => [
@@ -61,6 +62,7 @@ return [
         'webhooks' => 'Webhooks',
         'settings' => 'ตั้งค่าระบบ',
         'system_settings' => 'ตั้งค่าระบบ',
+        'modules' => 'โมดูล',
         'pos' => 'POS',
         'marketplace' => 'Marketplace',
         'cms' => 'เนื้อหา',
@@ -121,6 +123,7 @@ return [
         'admin_notification_templates_index' => 'การแจ้งเตือน',
         'admin_notifications_index' => 'การแจ้งเตือน',
         'admin_platform_tenants_index' => 'ผู้เช่า',
+        'admin_system_modules_index' => 'โมดูล',
         'admin_storefront_navigation_show' => 'Navigation',
         'admin_settings_customer-experience_show' => 'Customer Experience',
         'admin_settings_footer_show' => 'Footer',

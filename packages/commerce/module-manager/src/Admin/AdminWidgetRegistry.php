@@ -6,6 +6,8 @@ namespace Commerce\ModuleManager\Admin;
 
 use Commerce\Contracts\Admin\AdminWidgetRegistryInterface;
 use Commerce\Contracts\Authorization\AuthorizationServiceInterface;
+use Commerce\Core\Enums\ModuleStatus;
+use Commerce\Core\Modules\ModuleService;
 use Commerce\ModuleManager\ModuleRegistry;
 
 final class AdminWidgetRegistry implements AdminWidgetRegistryInterface
@@ -29,6 +31,16 @@ final class AdminWidgetRegistry implements AdminWidgetRegistryInterface
         $this->ensureBooted();
 
         $visible = array_filter($this->widgets, function (array $widget) use ($user): bool {
+            $moduleCode = $widget['module'] ?? null;
+
+            if (is_string($moduleCode) && $moduleCode !== '') {
+                $module = ModuleService::get($moduleCode);
+
+                if ($module !== null && ! $module->is_core && $module->status !== ModuleStatus::Active) {
+                    return false;
+                }
+            }
+
             $permission = $widget['permission'] ?? null;
 
             if ($permission === null || $permission === '') {
