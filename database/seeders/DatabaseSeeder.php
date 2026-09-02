@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use Commerce\Core\Database\Seeders\SystemFeatureSeeder;
 use Commerce\Core\Database\Seeders\SystemModuleSeeder;
 use Commerce\Currency\Database\Seeders\CurrencySeeder;
 use Commerce\Iam\Database\Seeders\IamSeeder;
@@ -20,6 +21,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             IamSeeder::class,
             SystemModuleSeeder::class,
+            SystemFeatureSeeder::class,
             SettingsSeeder::class,
             CurrencySeeder::class,
             ShippingMethodSeeder::class,
