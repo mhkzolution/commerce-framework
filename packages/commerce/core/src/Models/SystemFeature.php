@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Commerce\Core\Models;
 
 use Commerce\Core\Enums\FeatureStatus;
+use Commerce\Core\Features\FeatureService;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
 
 class SystemFeature extends Model
 {
@@ -34,11 +34,11 @@ class SystemFeature extends Model
     protected static function booted(): void
     {
         static::saved(static function (): void {
-            Cache::forget('commerce.system_features');
+            FeatureService::clearCache();
         });
 
         static::deleted(static function (): void {
-            Cache::forget('commerce.system_features');
+            FeatureService::clearCache();
         });
     }
 }

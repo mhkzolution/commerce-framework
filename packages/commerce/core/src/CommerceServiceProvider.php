@@ -15,6 +15,7 @@ use Commerce\Contracts\Seo\SlugServiceInterface;
 use Commerce\Contracts\Seo\UrlRedirectServiceInterface;
 use Commerce\Core\Console\PublishOutboxCommand;
 use Commerce\Core\Events\EventBus;
+use Commerce\Core\Features\FeatureService;
 use Commerce\Core\Hooks\HookRegistry;
 use Commerce\Core\Http\Middleware\EnsureModuleEnabled;
 use Commerce\Core\Http\Middleware\ResolveTenant;
@@ -66,6 +67,7 @@ class CommerceServiceProvider extends ServiceProvider
         $this->app->singleton(OutboxRecorder::class);
         $this->app->singleton(OutboxPublisher::class);
         $this->app->singleton(ModuleService::class);
+        $this->app->singleton(FeatureService::class);
     }
 
     public function boot(): void
