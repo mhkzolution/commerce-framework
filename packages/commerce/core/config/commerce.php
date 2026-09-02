@@ -45,6 +45,8 @@ return [
         'platform.tenant.manage' => 'Manage tenants',
         'system.module.view' => 'View system modules',
         'system.module.update' => 'Update system module status',
+        'system.feature.view' => 'View system features',
+        'system.feature.update' => 'Update system feature status',
     ],
 
     'api' => [

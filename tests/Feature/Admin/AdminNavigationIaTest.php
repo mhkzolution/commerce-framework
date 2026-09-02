@@ -81,9 +81,11 @@ final class AdminNavigationIaTest extends TestCase
             array_column($byId['configuration']['children'], 'label'),
         );
         $this->assertSame(['Tenants'], array_column($byId['platform']['children'], 'label'));
-        $this->assertSame(['Modules'], array_column($byId['system']['children'], 'label'));
+        $this->assertSame(['Modules', 'Features'], array_column($byId['system']['children'], 'label'));
         $this->assertSame('admin.system.modules.index', $byId['system']['children'][0]['route']);
         $this->assertSame('system.module.view', $byId['system']['children'][0]['permission']);
+        $this->assertSame('admin.system.features.index', $byId['system']['children'][1]['route']);
+        $this->assertSame('system.feature.view', $byId['system']['children'][1]['permission']);
 
         $this->assertSame('chart-bar', $byId['dashboard']['icon']);
         $this->assertSame('cube', $byId['catalog']['icon']);
@@ -136,6 +138,7 @@ final class AdminNavigationIaTest extends TestCase
         $this->assertSame('ผู้ใช้และการเข้าถึง', $byId['identity']['label']);
         $this->assertSame('ระบบ', $byId['system']['label']);
         $this->assertSame('โมดูล', $byId['system']['children'][0]['label']);
+        $this->assertSame('ฟีเจอร์', $byId['system']['children'][1]['label']);
         $this->assertNotContains('แคตตาล็อก', array_column($nav, 'label'));
         $this->assertNotContains('ระบบกลาง', array_column($nav, 'label'));
         $this->assertCount(1, array_filter(array_column($nav, 'label'), static fn (string $label): bool => $label === 'ผู้ใช้และการเข้าถึง'));

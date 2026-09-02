@@ -170,6 +170,7 @@ return [
             'order' => 85,
             'children' => [
                 ['type' => 'link', 'label' => 'Modules', 'route' => 'admin.system.modules.index', 'permission' => 'system.module.view'],
+                ['type' => 'link', 'label' => 'Features', 'route' => 'admin.system.features.index', 'permission' => 'system.feature.view'],
             ],
         ],
         [

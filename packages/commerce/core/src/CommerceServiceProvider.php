@@ -21,10 +21,12 @@ use Commerce\Core\Http\Middleware\EnsureFeatureEnabled;
 use Commerce\Core\Http\Middleware\EnsureModuleEnabled;
 use Commerce\Core\Http\Middleware\ResolveTenant;
 use Commerce\Core\Http\Middleware\ResolveUrlRedirect;
+use Commerce\Core\Models\SystemFeature;
 use Commerce\Core\Models\SystemModule;
 use Commerce\Core\Modules\ModuleService;
 use Commerce\Core\Outbox\OutboxPublisher;
 use Commerce\Core\Outbox\OutboxRecorder;
+use Commerce\Core\Policies\SystemFeaturePolicy;
 use Commerce\Core\Policies\SystemModulePolicy;
 use Commerce\Core\Pricing\CompositePriceResolver;
 use Commerce\Core\Search\DatabaseSearchIndex;
@@ -77,6 +79,7 @@ class CommerceServiceProvider extends ServiceProvider
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'commerce');
 
         Gate::policy(SystemModule::class, SystemModulePolicy::class);
+        Gate::policy(SystemFeature::class, SystemFeaturePolicy::class);
 
         /** @var Router $router */
         $router = $this->app->make(Router::class);
