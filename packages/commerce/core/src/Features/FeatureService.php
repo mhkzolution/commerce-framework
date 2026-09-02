@@ -114,27 +114,26 @@ final class FeatureService extends BaseService
             return $this->memoized;
         }
 
-        $this->registryAvailable = true;
-
         try {
+            if (! Schema::hasTable('system_features')) {
+                $this->registryAvailable = false;
+                $this->memoized = collect();
+
+                return $this->memoized;
+            }
+
+            $this->registryAvailable = true;
+
             /** @var list<array<string, mixed>> $rows */
             $rows = Cache::remember(
                 self::CACHE_KEY,
                 now()->addSeconds(self::CACHE_TTL_SECONDS),
-                function (): array {
-                    if (! Schema::hasTable('system_features')) {
-                        $this->registryAvailable = false;
-
-                        return [];
-                    }
-
-                    return SystemFeature::query()
-                        ->orderBy('sort_order')
-                        ->orderBy('name')
-                        ->get()
-                        ->map(static fn (SystemFeature $feature): array => $feature->getAttributes())
-                        ->all();
-                },
+                static fn (): array => SystemFeature::query()
+                    ->orderBy('sort_order')
+                    ->orderBy('name')
+                    ->get()
+                    ->map(static fn (SystemFeature $feature): array => $feature->getAttributes())
+                    ->all(),
             );
         } catch (Throwable) {
             $this->registryAvailable = false;

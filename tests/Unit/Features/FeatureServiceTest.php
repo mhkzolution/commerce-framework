@@ -167,6 +167,26 @@ final class FeatureServiceTest extends TestCase
         });
     }
 
+    public function test_missing_registry_is_not_cached_as_an_empty_catalog(): void
+    {
+        Schema::dropIfExists('system_features');
+        FeatureService::clearCache();
+        Event::fake([MessageLogged::class]);
+
+        $this->assertFalse(FeatureService::enabled('scheduled-publishing'));
+
+        app(FeatureService::class)->resetMemo();
+
+        $this->assertFalse(FeatureService::enabled('scheduled-publishing'));
+        Event::assertDispatched(MessageLogged::class, function (MessageLogged $event): bool {
+            return $event->level === 'warning'
+                && $event->message === 'System feature registry unavailable.';
+        });
+        Event::assertNotDispatched(MessageLogged::class, function (MessageLogged $event): bool {
+            return ($event->context['warning_code'] ?? null) === 'feature_unknown';
+        });
+    }
+
     public function test_helpers_match_enabled(): void
     {
         $this->assertSame(FeatureService::enabled('scheduled-publishing'), feature_enabled('scheduled-publishing'));
