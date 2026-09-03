@@ -9,17 +9,6 @@
     padding-bottom: 4rem;
 }
 
-.storefront-home__inner {
-    width: 100%;
-    max-width: 77.5rem;
-    margin-inline: auto;
-    padding-inline: var(--store-gutter);
-}
-
-.storefront-home__inner--faq {
-    max-width: 56.25rem;
-}
-
 .storefront-home__section {
     padding-block: 2.5rem 0;
 }

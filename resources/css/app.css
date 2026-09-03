@@ -3,6 +3,7 @@
 @import './tokens/semantic-light.css';
 @import './tokens/tailwind-theme.css';
 @import './admin/components.css';
+@import './storefront/tokens.css';
 @import './storefront/shell.css';
 @import './storefront/blog.css';
 

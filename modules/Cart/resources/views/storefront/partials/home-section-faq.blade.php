@@ -1,6 +1,6 @@
 @if ($faqEntries !== [])
     <section class="storefront-home__section storefront-home-faq" aria-labelledby="home-faq-title" data-home-reveal>
-        <div class="storefront-home__inner storefront-home__inner--faq">
+        <x-storefront.layout.page-container variant="narrow" class="storefront-home__inner">
             <header class="storefront-home-section-header storefront-home-section-header--center">
                 <div>
                     <h2 id="home-faq-title" class="storefront-home-section-header__title">{{ __('storefront::storefront.home_faq') }}</h2>
@@ -9,6 +9,6 @@
             </header>
 
             <x-storefront.navigation.accordion :items="$faqEntries" />
-        </div>
+        </x-storefront.layout.page-container>
     </section>
 @endif
