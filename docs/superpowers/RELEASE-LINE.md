@@ -14,12 +14,13 @@ v1.7.0
 v1.8.0
 v1.9.0
 v1.9.1
+v1.10.0
 ```
 
-v1.4.0 through v1.9.1 were squash-merged as PR #1 through PR #8. The tags on `main` are the source of history.
+v1.4.0 through v1.10.0 were squash-merged as PR #1 through PR #9. The tags on `main` are the source of history.
 
 ```text
-main = stable (active development line)   8341038
+main = stable (active development line)   6369308
 v1.4.0  Barcode Management     (9cf699f)
 v1.5.0  Homepage CMS           (6b63a8d)
 v1.6.0  Footer Management      (52a1a20)
@@ -27,6 +28,7 @@ v1.7.0  Navigation Management  (a5b336e)
 v1.8.0  Website Settings       (22babfe)
 v1.9.0  WS-002 Design System   (3b3e7cf)
 v1.9.1  Footer Token Adoption  (8341038)
+v1.10.0 Product Card System    (6369308)
 ```
 
 Recovery is **closed**. Phase 1 = Barcode. Phase 2 = Homepage + Footer. Later work is a feature roadmap on `main`. Do not merge archive branches.
@@ -46,8 +48,9 @@ Recovery is **closed**. Phase 1 = Barcode. Phase 2 = Homepage + Footer. Later wo
 | `v1.8.0` | `22babfe` | Storefront / Settings | Website Settings admin, brand keys, FooterSocialQuery |
 | `v1.9.0` | `3b3e7cf` | Storefront / Design | Storefront tokens, page-container, Homepage consume |
 | `v1.9.1` | `8341038` | Storefront / Design | Footer CSS spacing / radius / type tokens |
+| `v1.10.0` | `6369308` | Storefront / Design | Shared product card primitive, Homepage + Shop consume |
 
-v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 through v1.9.1 are separate so a barcode, homepage, footer, navigation, website-settings, or design-system defect rolls back only that surface.
+v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 through v1.10.0 are separate so a barcode, homepage, footer, navigation, website-settings, or design-system defect rolls back only that surface.
 
 ## v1.0.0 — Module Management
 
@@ -162,16 +165,23 @@ Implementation spec: `docs/superpowers/specs/2026-09-03-ws002-design-system-v1-i
 
 Allowlist: `docs/superpowers/specs/2026-09-03-ws002-footer-token-adoption.md`
 
-## Next candidate
+## v1.10.0 — WS-002 Product Card System
 
-**WS-002 Product Card System (v1.10.0)** — one `x-storefront.cards.product` + `ProductCardData`. Homepage arrivals and Shop listing consume the same primitive. No Eloquent in the card Blade. Shop chrome (filters, page-container) waits for v1.11. Header waits for v1.12.
+- `x-storefront.cards.product` + `Commerce\Contracts\Storefront\ProductCardData`
+- `ProductCardMapper` is the only place that reads Product / variant / media / inventory
+- Homepage arrivals and Shop listing consume the same primitive; `HomepageProductCardData` removed
+- Isolation lock: no Eloquent in the card Blade, no shop `page-container`, no `site-header`, no Appearance
+- Squash-merged as PR #9 (`6369308`)
 
 Feature lock: `docs/superpowers/specs/2026-09-03-ws002-product-card-feature.md`  
 Implementation spec: `docs/superpowers/specs/2026-09-03-ws002-product-card-v1-implementation.md`
 
+## Next candidate
+
+**WS-002 Shop Listing Layout (v1.11.0)** — page-container, filters, toolbar, sorting, empty state, pagination. Product card stays as-is. Header waits for v1.12.
+
 ```text
-v1.10.0  Product Card System      ← next
-v1.11.0  Shop Listing Layout
+v1.11.0  Shop Listing Layout      ← next
 v1.12.0  Header Foundation
 v1.13.0  Blog Refresh
 later    Scanner, POS, Inventory, Marketplace
