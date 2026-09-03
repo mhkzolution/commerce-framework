@@ -71,6 +71,14 @@ final class SystemModuleCatalog
                 'is_core' => false,
             ],
             [
+                'code' => 'navigation',
+                'name' => 'Navigation',
+                'description' => 'Named menus and storefront navigation links',
+                'status' => ModuleStatus::Active->value,
+                'sort_order' => 25,
+                'is_core' => false,
+            ],
+            [
                 'code' => 'footer-management',
                 'name' => 'Footer Management',
                 'description' => 'Storefront footer builder and sections',

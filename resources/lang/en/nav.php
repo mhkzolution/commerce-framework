@@ -130,6 +130,7 @@ return [
         'admin_platform_tenants_index' => 'Tenants',
         'admin_system_modules_index' => 'Modules',
         'admin_system_features_index' => 'Features',
+        'admin_navigation_show' => 'Navigation',
         'admin_storefront_navigation_show' => 'Navigation',
         'admin_settings_customer-experience_show' => 'Customer Experience',
         'admin_settings_footer_show' => 'Footer',

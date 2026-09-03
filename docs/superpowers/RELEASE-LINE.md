@@ -1,6 +1,6 @@
 # Release Line
 
-Baseline of tagged releases on `main` as of 2026-09-03 (`52a1a20`).
+Baseline of tagged releases on `main` as of 2026-09-03.
 
 ```text
 v1.0.0-module-management
@@ -15,13 +15,13 @@ v1.6.0
 v1.2.0 / v1.3.0 feature branches were deleted after merge. v1.4.0, v1.5.0, and v1.6.0 were squash-merged as PR #1, PR #2, and PR #3. The tags on `main` are the source of history.
 
 ```text
-main = stable (active development line)
+main = stable (active development line)   8d36013
 v1.4.0  Barcode Management     (9cf699f)
 v1.5.0  Homepage CMS           (6b63a8d)
 v1.6.0  Footer Management      (52a1a20)
 ```
 
-Recovery Phase 1 (Barcode) and Recovery Phase 2 (Homepage + Footer) are closed. Later work is a feature roadmap on `main`, not archive-branch recovery.
+Recovery is **closed**. Phase 1 = Barcode. Phase 2 = Homepage + Footer. Later work is a feature roadmap on `main`. Do not merge archive branches.
 
 ## Tags
 
@@ -99,32 +99,27 @@ Design: `docs/superpowers/specs/2026-09-02-barcode-template-layout-contract.md`
 
 - Admin **Website → Footer** at `/admin/settings/footer`; `footer.config` composition, no Footer migrations
 - Shared storefront + admin preview renderer (`site-footer`) from `FooterPageData` / `FooterSectionData` / `FooterBrandData` / `FooterLinkData`
-- Brand from `store.name` via `FooterBrandingQuery`; navigation and social fail-soft empty until later recoveries
+- Brand from `store.name` via `FooterBrandingQuery`; navigation and social fail-soft empty until Navigation Management / Website Settings
 - Isolation lock: no `SiteIdentityServiceInterface`, `StorefrontNavigationConfig`, `WebsiteSettingsService`, Appearance / CX, WS-002, or `modules/Footer/**`
 - Path-extracted from archive `84e905c`; squash-merged as PR #3
 - Allowlists: `docs/superpowers/specs/2026-09-03-footer-management-m1-allowlist.md`, `m2-allowlist.md`, `m3-allowlist.md`
 
 ## Next candidate
 
-Recovery phases are closed. Next work is a feature on `main` (not an archive merge). Candidates, not started:
+**Navigation Management (v1.7.x)** — feature on `main`, not recovery.
+
+Footer already exposes `FooterNavigationQuery::links($source)` as `[]`. Homepage arrival tabs stay on `HomepageNavigationQuery` (Catalog categories). v1.7 owns named menus and fills the Footer query in place.
+
+Feature lock: `docs/superpowers/specs/2026-09-03-navigation-management-feature.md`  
+Implementation spec: `docs/superpowers/specs/2026-09-03-navigation-management-v1-implementation.md`
+
+Do not start Website Settings or WS-002 until Navigation is tagged.
 
 ```text
-Website Settings Recovery
-Navigation Recovery
-Scanner
-POS Barcode
-Inventory Expansion
-Marketplace Payouts
-WS-002 Storefront Design System
-```
-
-Do not start these until the owner picks one. Proposed later tags (not started):
-
-```text
-v1.7.0  Website Settings + Navigation
-v1.8.x  Warehouse Scanner
-v1.9.x  POS Terminal Expansion
-v2.x    WS-002 Design System
+v1.7.x  Navigation Management     ← next
+v1.8.x  Website Settings          (brand, logo, contact, social, SEO defaults)
+v1.9.x  WS-002 Design System      (header/footer/nav/cards once data owners are stable)
+later   Scanner, POS Barcode, Inventory Expansion, Marketplace Payouts
 ```
 
 ## Not included
@@ -132,7 +127,7 @@ v2.x    WS-002 Design System
 These remain outside the tagged history on `main`:
 
 - Website Settings / Appearance / Site Identity / Customer Experience
-- Navigation Recovery
+- Navigation Management (v1.7.x — next feature on `main`)
 - Warehouse Scanner, POS barcode expansion, Inventory expansion, Marketplace payouts
 - Storefront primitives / `feat/commerce-framework-v1` design system / `stash@{0}`
 - UI-TECH-001 (`@vite/client` injected twice on blog pages)

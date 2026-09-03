@@ -1,0 +1,27 @@
+{
+    "name": "Navigation",
+    "alias": "navigation",
+    "description": "Named menus and storefront navigation links",
+    "version": "1.0.0",
+    "priority": 25,
+    "providers": [
+        "Commerce\\Navigation\\NavigationServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [],
+        "soft": [
+            "iam"
+        ]
+    },
+    "permissions": [
+        "navigation.menu.view",
+        "navigation.menu.update"
+    ],
+    "admin_menu": {
+        "label": "Navigation",
+        "icon": "bars-3",
+        "route": "admin.navigation.show",
+        "order": 25,
+        "permission": "navigation.menu.view"
+    }
+}

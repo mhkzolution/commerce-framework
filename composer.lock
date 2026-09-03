@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bea63c8aa5d841d9d723f1d942c618fc",
+    "content-hash": "89a6c20a9eb1a217ab2016a0a2803f5e",
     "packages": [
         {
             "name": "brick/math",
@@ -136,7 +136,7 @@
         },
         {
             "name": "commerce/api",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "packages/commerce/api",
@@ -172,7 +172,7 @@
         },
         {
             "name": "commerce/barcode",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Barcode",
@@ -205,7 +205,7 @@
         },
         {
             "name": "commerce/cart",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Cart",
@@ -246,7 +246,7 @@
         },
         {
             "name": "commerce/catalog",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Catalog",
@@ -276,7 +276,7 @@
         },
         {
             "name": "commerce/cms",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Cms",
@@ -307,7 +307,7 @@
         },
         {
             "name": "commerce/contracts",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "packages/commerce/contracts",
@@ -332,7 +332,7 @@
         },
         {
             "name": "commerce/core",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "packages/commerce/core",
@@ -372,7 +372,7 @@
         },
         {
             "name": "commerce/crm",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Crm",
@@ -403,7 +403,7 @@
         },
         {
             "name": "commerce/currency",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Currency",
@@ -436,7 +436,7 @@
         },
         {
             "name": "commerce/customers",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Customers",
@@ -470,7 +470,7 @@
         },
         {
             "name": "commerce/iam",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Iam",
@@ -499,7 +499,7 @@
         },
         {
             "name": "commerce/inventory",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Inventory",
@@ -531,7 +531,7 @@
         },
         {
             "name": "commerce/marketplace",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Marketplace",
@@ -562,7 +562,7 @@
         },
         {
             "name": "commerce/media",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Media",
@@ -592,7 +592,7 @@
         },
         {
             "name": "commerce/module-manager",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "packages/commerce/module-manager",
@@ -628,8 +628,38 @@
             }
         },
         {
+            "name": "commerce/navigation",
+            "version": "dev-feat/navigation-management-v1",
+            "dist": {
+                "type": "path",
+                "url": "modules/Navigation",
+                "reference": "24e22e7383eaf888efdea06cb8b6bc5e54dc390a"
+            },
+            "require": {
+                "commerce/contracts": "*",
+                "commerce/core": "*",
+                "commerce/module-manager": "*",
+                "illuminate/database": "^13.0",
+                "illuminate/support": "^13.0",
+                "php": "^8.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Commerce\\Navigation\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Named storefront menus and navigation query API",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "commerce/notification",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Notification",
@@ -661,7 +691,7 @@
         },
         {
             "name": "commerce/orders",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Orders",
@@ -697,7 +727,7 @@
         },
         {
             "name": "commerce/payment",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Payment",
@@ -731,7 +761,7 @@
         },
         {
             "name": "commerce/plugin-manager",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "packages/commerce/plugin-manager",
@@ -767,7 +797,7 @@
         },
         {
             "name": "commerce/pos",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Pos",
@@ -798,7 +828,7 @@
         },
         {
             "name": "commerce/product",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Product",
@@ -830,7 +860,7 @@
         },
         {
             "name": "commerce/promotion",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Promotion",
@@ -861,7 +891,7 @@
         },
         {
             "name": "commerce/reports",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Reports",
@@ -892,7 +922,7 @@
         },
         {
             "name": "commerce/settings",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Settings",
@@ -921,7 +951,7 @@
         },
         {
             "name": "commerce/shipping",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Shipping",
@@ -954,7 +984,7 @@
         },
         {
             "name": "commerce/support",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "packages/commerce/support",
@@ -980,7 +1010,7 @@
         },
         {
             "name": "commerce/tax",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Tax",
@@ -1011,7 +1041,7 @@
         },
         {
             "name": "commerce/webhooks",
-            "version": "dev-feat/barcode-management-v1",
+            "version": "dev-feat/navigation-management-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Webhooks",
@@ -9759,6 +9789,7 @@
     "stability-flags": {
         "commerce/api": 20,
         "commerce/barcode": 20,
+        "commerce/navigation": 20,
         "commerce/cart": 20,
         "commerce/catalog": 20,
         "commerce/contracts": 20,
