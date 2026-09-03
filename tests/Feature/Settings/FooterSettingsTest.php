@@ -61,16 +61,32 @@ final class FooterSettingsTest extends TestCase
         $this->assertSame(8, $saved['sections'][1]['settings']['max_links']);
     }
 
-    public function test_preview_returns_empty_html_until_storefront_milestone(): void
+    public function test_preview_returns_footer_html_from_shared_blade(): void
     {
         $payload = app(FooterConfigService::class)->defaults();
 
-        $this->actingAs(User::query()->first())
+        $response = $this->actingAs(User::query()->first())
             ->postJson(route('admin.settings.footer.preview'), [
                 'config' => json_encode($payload),
             ])
             ->assertOk()
-            ->assertJsonPath('html', '');
+            ->assertJsonStructure([
+                'html',
+                'meta' => [
+                    'total_sections',
+                    'visible_sections',
+                    'hidden_sections',
+                    'hidden_reasons',
+                ],
+            ]);
+
+        $html = $response->json('html');
+        $this->assertIsString($html);
+        $this->assertStringContainsString('<footer class="storefront-site-footer', $html);
+        $this->assertStringContainsString('storefront-site-footer__section--brand', $html);
+        $this->assertStringContainsString('storefront-site-footer__meta-text', $html);
+        $this->assertStringNotContainsString('storefront-site-footer__section--social', $html);
+        $this->assertStringNotContainsString('storefront-site-footer__section--links', $html);
     }
 
     public function test_footer_save_normalizes_and_skips_malformed_sections(): void

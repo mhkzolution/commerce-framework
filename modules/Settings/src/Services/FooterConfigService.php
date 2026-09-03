@@ -134,6 +134,11 @@ final class FooterConfigService extends BaseService
         return $this->resolved;
     }
 
+    public function forgetResolved(): void
+    {
+        $this->resolved = null;
+    }
+
     /**
      * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>

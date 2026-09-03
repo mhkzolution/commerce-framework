@@ -92,9 +92,19 @@ Design: `docs/superpowers/specs/2026-09-02-barcode-template-layout-contract.md`
 
 ## Next candidate
 
-Footer Management is **not tagged**. Source of truth is archive commit `84e905c` (path extract only).
+Footer Management is **not tagged**. M1 Admin Boot lives on `feat/footer-management-v1` (`79cf274`) and is **not** on `main`. Do not open a PR until M2 storefront render (and M3 adapters) land on that branch.
 
-M1 allowlist is locked: `docs/superpowers/specs/2026-09-03-footer-management-m1-allowlist.md`. Do not open `feat/footer-management-v1` until extract follows that list. Isolation forbids `SiteIdentityServiceInterface` and `StorefrontNavigationConfig`.
+M1 allowlist: `docs/superpowers/specs/2026-09-03-footer-management-m1-allowlist.md`  
+M2 allowlist: `docs/superpowers/specs/2026-09-03-footer-management-m2-allowlist.md`
+
+Sequence on `feat/footer-management-v1` (do not push until the last of these):
+
+```text
+M1 Admin Boot         ✓  79cf274
+M2 Storefront Render  ✓  (on branch, not pushed)
+M3 Adapters/Isolation ← next
+then Push → PR → Squash Merge → Tag v1.6.0
+```
 
 Proposed later tags (not started):
 

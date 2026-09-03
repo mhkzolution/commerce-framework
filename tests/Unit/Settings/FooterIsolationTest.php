@@ -30,6 +30,9 @@ final class FooterIsolationTest extends TestCase
         'AppearanceController',
         'CustomerExperienceController',
         'CustomerExperienceConfig',
+        'FooterBrandingQuery',
+        'FooterNavigationQuery',
+        'FooterSocialQuery',
     ];
 
     /**
@@ -94,7 +97,11 @@ final class FooterIsolationTest extends TestCase
         $this->assertStringContainsString('FooterConfigService', $provider);
         $this->assertStringContainsString('FooterSectionRegistry', $provider);
         $this->assertStringContainsString('FooterViewModelBuilder', $provider);
-        $this->assertStringNotContainsString('site-footer', $provider);
+        $this->assertStringContainsString('site-footer', $provider);
+        $this->assertStringContainsString('FooterPageData', $provider);
+        $this->assertStringNotContainsString('FooterBrandingQuery', $provider);
+        $this->assertStringNotContainsString('FooterNavigationQuery', $provider);
+        $this->assertStringNotContainsString('FooterSocialQuery', $provider);
 
         $this->assertSame([], $hits, implode("\n", $hits));
     }
@@ -137,15 +144,41 @@ final class FooterIsolationTest extends TestCase
         $this->assertSame([], $forbiddenHits, implode("\n", $forbiddenHits));
     }
 
-    public function test_m1_does_not_ship_storefront_footer_assets(): void
+    public function test_m2_ships_storefront_footer_without_false_friends(): void
     {
         $repo = dirname(__DIR__, 3);
 
-        $this->assertFileDoesNotExist($repo.'/resources/views/components/storefront/layout/partials/site-footer.blade.php');
-        $this->assertFileDoesNotExist($repo.'/resources/css/storefront/footer.css');
+        $this->assertFileExists($repo.'/resources/views/components/storefront/layout/partials/site-footer.blade.php');
+        $this->assertFileExists($repo.'/resources/css/storefront/footer.css');
         $this->assertFileDoesNotExist($repo.'/resources/views/components/storefront/auth/auth-footer.blade.php');
         $this->assertFileDoesNotExist($repo.'/resources/views/components/storefront/checkout/footer.blade.php');
         $this->assertDirectoryDoesNotExist($repo.'/modules/Footer');
+    }
+
+    public function test_presenter_builds_page_data_without_page_model_or_m3_queries(): void
+    {
+        $path = $this->settingsRoot().'/src/Services/FooterViewModelBuilder.php';
+        $contents = file_get_contents($path);
+        $this->assertNotFalse($contents);
+
+        $this->assertStringContainsString('FooterPageData', $contents);
+        $this->assertStringContainsString('FooterSectionData', $contents);
+        $this->assertStringContainsString('FooterBrandData', $contents);
+        $this->assertStringContainsString('FooterLinkData', $contents);
+        $this->assertStringNotContainsString('Commerce\\Cms\\Models\\Page', $contents);
+        $this->assertStringNotContainsString('FooterBrandingQuery', $contents);
+        $this->assertStringNotContainsString('FooterNavigationQuery', $contents);
+        $this->assertStringNotContainsString('FooterSocialQuery', $contents);
+    }
+
+    public function test_cart_layout_mounts_shared_footer_and_css(): void
+    {
+        $path = dirname(__DIR__, 3).'/modules/Cart/resources/views/layouts/storefront.blade.php';
+        $contents = file_get_contents($path);
+        $this->assertNotFalse($contents);
+
+        $this->assertStringContainsString('x-storefront.layout.partials.site-footer', $contents);
+        $this->assertStringContainsString('resources/css/storefront/footer.css', $contents);
     }
 
     /**
@@ -160,6 +193,10 @@ final class FooterIsolationTest extends TestCase
             $root.'/src/Footer/DTO/FooterBuildContext.php',
             $root.'/src/Footer/DTO/FooterSection.php',
             $root.'/src/Footer/DTO/FooterSectionConfig.php',
+            $root.'/src/Footer/DTO/FooterPageData.php',
+            $root.'/src/Footer/DTO/FooterSectionData.php',
+            $root.'/src/Footer/DTO/FooterBrandData.php',
+            $root.'/src/Footer/DTO/FooterLinkData.php',
             $root.'/src/Footer/Registry/FooterSectionRegistry.php',
             $root.'/src/Footer/Drivers/BrandSectionDriver.php',
             $root.'/src/Footer/Drivers/CmsSectionDriver.php',
@@ -178,6 +215,8 @@ final class FooterIsolationTest extends TestCase
             $root.'/resources/views/admin/footer/index.blade.php',
             $root.'/resources/lang/en/footer.php',
             $root.'/resources/lang/th/footer.php',
+            dirname(__DIR__, 3).'/resources/views/components/storefront/layout/partials/site-footer.blade.php',
+            dirname(__DIR__, 3).'/resources/css/storefront/footer.css',
         ];
     }
 

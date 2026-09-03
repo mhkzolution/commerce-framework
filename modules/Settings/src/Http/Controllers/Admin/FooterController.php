@@ -8,6 +8,7 @@ use Commerce\Cms\Models\Page;
 use Commerce\Settings\Contracts\SettingServiceInterface;
 use Commerce\Settings\DTO\UpdateSettingsGroupData;
 use Commerce\Settings\Footer\DTO\FooterBuildContext;
+use Commerce\Settings\Footer\DTO\FooterPageData;
 use Commerce\Settings\Footer\Registry\FooterSectionRegistry;
 use Commerce\Settings\Http\Requests\PreviewFooterRequest;
 use Commerce\Settings\Http\Requests\UpdateFooterRequest;
@@ -52,6 +53,8 @@ final class FooterController extends Controller
             ],
         ));
 
+        $this->footerConfig->forgetResolved();
+
         return redirect()
             ->route('admin.settings.footer.show')
             ->with('status', 'Footer settings saved.');
@@ -60,17 +63,15 @@ final class FooterController extends Controller
     public function preview(PreviewFooterRequest $request): JsonResponse
     {
         $config = $this->footerConfig->merge($request->configPayload());
-        $viewModel = $this->viewModelBuilder->build($config, new FooterBuildContext(device: null));
+        $footer = $this->viewModelBuilder->build($config, new FooterBuildContext(device: null));
         $visibleSectionIds = [];
 
-        foreach ($viewModel['sections'] as $section) {
-            if (is_array($section) && is_string($section['id'] ?? null)) {
-                $visibleSectionIds[$section['id']] = true;
-            }
+        foreach ($footer->sections as $section) {
+            $visibleSectionIds[$section->id] = true;
         }
 
         return response()->json([
-            'html' => '',
+            'html' => $this->renderFooterHtml($footer),
             'meta' => [
                 'total_sections' => count($config['sections'] ?? []),
                 'visible_sections' => count($visibleSectionIds),
@@ -78,6 +79,13 @@ final class FooterController extends Controller
                 'hidden_reasons' => $this->hiddenReasons($config, $visibleSectionIds),
             ],
         ]);
+    }
+
+    private function renderFooterHtml(FooterPageData $footer): string
+    {
+        return trim(view('components.storefront.layout.partials.site-footer', [
+            'footer' => $footer,
+        ])->render());
     }
 
     /**

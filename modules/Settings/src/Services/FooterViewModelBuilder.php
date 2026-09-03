@@ -6,42 +6,68 @@ namespace Commerce\Settings\Services;
 
 use Commerce\Contracts\Settings\SettingQueryServiceInterface;
 use Commerce\Core\Base\BaseService;
+use Commerce\Settings\Footer\DTO\FooterBrandData;
 use Commerce\Settings\Footer\DTO\FooterBuildContext;
+use Commerce\Settings\Footer\DTO\FooterLinkData;
+use Commerce\Settings\Footer\DTO\FooterPageData;
 use Commerce\Settings\Footer\DTO\FooterSection;
+use Commerce\Settings\Footer\DTO\FooterSectionData;
+use Illuminate\Support\Str;
 use Throwable;
 
 final class FooterViewModelBuilder extends BaseService
 {
     private const SCHEMA_VERSION = 1;
 
+    public function __construct(
+        private readonly FooterSectionManager $sectionManager,
+        private readonly ?SettingQueryServiceInterface $settings = null,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $config
-     * @return array{
-     *     schema_version: int,
-     *     layout: array<string, mixed>,
-     *     sections: list<array<string, mixed>>
-     * }
      */
-    public function build(array $config, FooterBuildContext $context): array
+    public function build(array $config, FooterBuildContext $context): FooterPageData
     {
+        $layout = $this->normalizeLayout(
+            is_array($config['layout'] ?? null) ? $config['layout'] : [],
+        );
+
+        if (($config['enabled'] ?? true) !== true) {
+            return new FooterPageData(
+                enabled: false,
+                className: '',
+                sections: [],
+            );
+        }
+
         $sections = $this->sectionManager->buildSections(
             is_array($config['sections'] ?? null) ? $config['sections'] : [],
             $context,
         );
 
-        return [
-            'schema_version' => self::SCHEMA_VERSION,
-            'layout' => $this->normalizeLayout(
-                is_array($config['layout'] ?? null) ? $config['layout'] : [],
-            ),
-            'sections' => $this->normalizeSections($sections),
-        ];
+        return new FooterPageData(
+            enabled: true,
+            className: $this->className($layout),
+            sections: $this->toSectionData($sections),
+        );
     }
 
-    public function __construct(
-        private readonly FooterSectionManager $sectionManager,
-        private readonly ?SettingQueryServiceInterface $settings = null,
-    ) {}
+    /**
+     * @param  array<string, mixed>  $layout
+     */
+    private function className(array $layout): string
+    {
+        $classes = array_values(array_filter([
+            $layout['columns']['grid_class'] ?? null,
+            $layout['divider']['class'] ?? null,
+            $layout['padding']['class'] ?? null,
+            $layout['spacing']['class'] ?? null,
+            ...(is_array($layout['theme']['classes'] ?? null) ? $layout['theme']['classes'] : []),
+        ], static fn (mixed $class): bool => is_string($class) && $class !== ''));
+
+        return implode(' ', $classes);
+    }
 
     /**
      * @param  array<string, mixed>  $layout
@@ -98,14 +124,14 @@ final class FooterViewModelBuilder extends BaseService
 
     /**
      * @param  array<int, FooterSection>  $sections
-     * @return list<array<string, mixed>>
+     * @return list<FooterSectionData>
      */
-    private function normalizeSections(array $sections): array
+    private function toSectionData(array $sections): array
     {
         $normalized = [];
 
         foreach ($sections as $section) {
-            $viewModel = $this->normalizeSection($section);
+            $viewModel = $this->mapSection($section);
 
             if ($viewModel === null) {
                 continue;
@@ -117,34 +143,117 @@ final class FooterViewModelBuilder extends BaseService
         return $normalized;
     }
 
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function normalizeSection(FooterSection $section): ?array
+    private function mapSection(FooterSection $section): ?FooterSectionData
     {
-        $viewModel = [
-            'id' => $section->id,
-            'type' => $section->type,
-            'title_key' => $section->titleKey,
-            'items' => $this->resolvePlaceholders($section->items),
-            'meta' => $this->resolvePlaceholders($section->meta),
-        ];
+        $items = $this->resolvePlaceholders($section->items);
+        $meta = $this->resolvePlaceholders($section->meta);
 
-        if ($this->isEmptySection($viewModel)) {
+        if ($section->titleKey === null && $items === [] && $meta === []) {
             return null;
         }
 
-        return $viewModel;
+        $title = $this->translate($section->titleKey);
+        $links = $this->toLinks($items);
+        $brand = $section->type === 'brand' ? $this->toBrand(is_array($meta) ? $meta : []) : null;
+        $text = is_array($meta) ? $this->nullableString($meta['text'] ?? null) : null;
+
+        if ($brand === null && $links === [] && $text === null) {
+            return null;
+        }
+
+        return new FooterSectionData(
+            id: $section->id,
+            type: $section->type,
+            title: $title,
+            ariaLabel: $this->ariaLabel($section->type, $title),
+            brand: $brand,
+            links: $links,
+            text: $text,
+        );
     }
 
     /**
-     * @param  array<string, mixed>  $section
+     * @param  mixed  $items
+     * @return list<FooterLinkData>
      */
-    private function isEmptySection(array $section): bool
+    private function toLinks(mixed $items): array
     {
-        return $section['title_key'] === null
-            && $section['items'] === []
-            && $section['meta'] === [];
+        if (! is_array($items)) {
+            return [];
+        }
+
+        $links = [];
+
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $label = $this->nullableString($item['label'] ?? null);
+            $url = $this->nullableString($item['url'] ?? null);
+
+            if ($label === null || $url === null) {
+                continue;
+            }
+
+            $links[] = new FooterLinkData(
+                label: $label,
+                url: $url,
+                key: $this->nullableString($item['key'] ?? null),
+            );
+        }
+
+        return $links;
+    }
+
+    /**
+     * @param  array<string, mixed>  $meta
+     */
+    private function toBrand(array $meta): ?FooterBrandData
+    {
+        $displayName = $this->nullableString($meta['display_name'] ?? null);
+        $logoUrl = $this->nullableString($meta['logo_url'] ?? null);
+        $description = $this->nullableString($meta['description'] ?? null);
+
+        if ($displayName === null && $logoUrl === null && $description === null) {
+            return null;
+        }
+
+        return new FooterBrandData(
+            displayName: $displayName,
+            logoUrl: $logoUrl,
+            description: $description,
+        );
+    }
+
+    private function ariaLabel(string $type, ?string $title): string
+    {
+        if ($title !== null && $title !== '') {
+            return $title;
+        }
+
+        return match ($type) {
+            'brand' => 'Footer brand',
+            'social' => 'Social links',
+            'navigation', 'cms' => 'Footer links',
+            'marketplace' => 'Marketplace links',
+            default => Str::headline($type),
+        };
+    }
+
+    private function translate(?string $key): ?string
+    {
+        if ($key === null || trim($key) === '') {
+            return null;
+        }
+
+        $translated = __($key);
+
+        if (! is_string($translated) || trim($translated) === '' || $translated === $key) {
+            return null;
+        }
+
+        return trim($translated);
     }
 
     private function normalizeColumns(mixed $value): int
@@ -207,5 +316,16 @@ final class FooterViewModelBuilder extends BaseService
         }
 
         return (string) config('commerce.name', 'Commerce Framework');
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return null;
+        }
+
+        $trimmed = trim((string) $value);
+
+        return $trimmed !== '' ? $trimmed : null;
     }
 }
