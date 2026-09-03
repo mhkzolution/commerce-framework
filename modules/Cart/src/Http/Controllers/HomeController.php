@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Commerce\Cart\Http\Controllers;
 
+use Commerce\Cart\Services\HomepageProductQuery;
 use Commerce\Cart\Services\StorefrontHomePageService;
 use Commerce\Contracts\Hook\HookRegistryInterface;
 use Illuminate\Http\JsonResponse;
@@ -15,6 +16,7 @@ final class HomeController extends Controller
 {
     public function __construct(
         private readonly StorefrontHomePageService $homePage,
+        private readonly HomepageProductQuery $products,
         private readonly HookRegistryInterface $hooks,
     ) {}
 
@@ -31,10 +33,10 @@ final class HomeController extends Controller
         $category = $request->string('category')->toString() ?: null;
 
         return response()->json([
-            'html' => view(
-                'cart::storefront.partials.home-product-slides',
-                $this->homePage->arrivalsPayload($category),
-            )->render(),
+            'html' => view('cart::storefront.partials.home-product-slides', [
+                ...$this->homePage->commerceContext(),
+                'arrivalProducts' => $this->products->arrivals($category),
+            ])->render(),
         ]);
     }
 }

@@ -45,5 +45,6 @@ final class CartServiceProvider extends BaseModuleServiceProvider
         $this->loadRoutesFrom($this->modulePath('routes/web.php'));
         $this->loadRoutesFrom($this->modulePath('routes/api.php'));
         $this->loadViewsFrom($this->modulePath('resources/views'), 'cart');
+        $this->loadTranslationsFrom($this->modulePath('resources/lang'), 'storefront');
     }
 }

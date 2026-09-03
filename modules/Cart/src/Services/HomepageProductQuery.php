@@ -111,6 +111,8 @@ final class HomepageProductQuery
             return null;
         }
 
+        $available = $this->available((string) $variant->uuid);
+
         return new HomepageProductCardData(
             uuid: (string) $product->uuid,
             name: (string) $product->name,
@@ -120,7 +122,8 @@ final class HomepageProductQuery
             price: (int) $variant->price,
             compareAtPrice: $variant->compare_at_price !== null ? (int) $variant->compare_at_price : null,
             imageUrl: $this->imageUrl($product),
-            available: $this->available((string) $variant->uuid),
+            available: $available,
+            inStock: $this->inStock($available),
         );
     }
 
@@ -160,6 +163,11 @@ final class HomepageProductQuery
         } catch (Throwable) {
             return null;
         }
+    }
+
+    private function inStock(?int $available): bool
+    {
+        return $available === null || $available > 0;
     }
 
     private function productUrl(string $slug): string

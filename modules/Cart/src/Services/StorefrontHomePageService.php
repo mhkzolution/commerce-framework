@@ -190,7 +190,7 @@ final class StorefrontHomePageService
      *     currencyConverter: CurrencyConverterInterface|null
      * }
      */
-    private function commerceContext(): array
+    public function commerceContext(): array
     {
         $cart = $this->cartService->get();
         $converter = app()->bound(CurrencyConverterInterface::class)

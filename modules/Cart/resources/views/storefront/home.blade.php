@@ -19,5 +19,5 @@
 @endsection
 
 @push('scripts')
-    @vite('resources/js/storefront/home.js')
+    @vite(['resources/css/storefront/home.css', 'resources/js/storefront/home.js'])
 @endpush

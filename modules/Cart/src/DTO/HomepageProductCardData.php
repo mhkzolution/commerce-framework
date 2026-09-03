@@ -18,5 +18,6 @@ final readonly class HomepageProductCardData extends DataTransferObject
         public ?int $compareAtPrice,
         public ?string $imageUrl,
         public ?int $available,
+        public bool $inStock,
     ) {}
 }
