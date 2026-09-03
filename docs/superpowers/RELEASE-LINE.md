@@ -1,15 +1,23 @@
-# CMS Release Line
+# Release Line
 
-Baseline of tagged CMS releases on `main` as of 2026-09-02 (`8ce3e65`).
+Baseline of tagged releases on `main` as of 2026-09-03 (`6b63a8d`).
 
 ```text
 v1.0.0-module-management
 v1.1.0-feature-flags
 v1.2.0-cms-scheduled-publishing
 v1.3.0-blog-ui-refresh
+v1.4.0
+v1.5.0
 ```
 
-v1.2.0 / v1.3.0 feature branches were deleted after merge. The tags on `main` are the source of history.
+v1.2.0 / v1.3.0 feature branches were deleted after merge. v1.4.0 and v1.5.0 were squash-merged as PR #1 and PR #2. The tags on `main` are the source of history.
+
+```text
+main = stable
+v1.4.0  Barcode Management   (9cf699f)
+v1.5.0  Homepage CMS         (6b63a8d)
+```
 
 ## Tags
 
@@ -19,8 +27,10 @@ v1.2.0 / v1.3.0 feature branches were deleted after merge. The tags on `main` ar
 | `v1.1.0-feature-flags` | `0f55100` | Infrastructure | Feature registry / `feature()` |
 | `v1.2.0-cms-scheduled-publishing` | `79d5338` | Behavior | Scheduler, resolver, publish timestamps |
 | `v1.3.0-blog-ui-refresh` | `8ce3e65` | UI | Blog archive, single, editor, adapters |
+| `v1.4.0` | `9cf699f` | Catalog | Barcode Center, templates, print queue |
+| `v1.5.0` | `6b63a8d` | Storefront / CMS | Homepage sections, hero/promo/FAQ, `/` |
 
-v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0.
+v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 and v1.5.0 are separate so a barcode defect does not roll back homepage, and vice versa.
 
 ## v1.0.0 — Module Management
 
@@ -61,13 +71,69 @@ Design: `docs/superpowers/specs/2026-09-01-cms-scheduled-publishing-design.md`
 
 Design: `docs/superpowers/specs/2026-09-02-blog-ui-refresh-thin-adapters-design.md`
 
+## v1.4.0 — Barcode Management
+
+- Admin **Catalog → Barcode Center** at `/admin/barcode`
+- Template presets, print queue, PDF preview
+- Path-extracted from archive `84e905c`; squash-merged as PR #1
+- Product is a narrow read. Media via `MediaQueryServiceInterface::getUrl()`. No `SiteIdentityServiceInterface`
+- Recovery tag: `recovery/barcode-v1.4`
+
+Design: `docs/superpowers/specs/2026-09-02-barcode-template-layout-contract.md`
+
+## v1.5.0 — Homepage CMS
+
+- Admin **Content → Homepage / Hero Banners / Promotion Banners / FAQ**
+- Storefront `GET /` and `GET /home/arrivals`
+- Query adapters on current main (`HomepageNavigationQuery`, `HomepageProductQuery`, `HomepageBrandingQuery`)
+- Isolation lock: no archive `Storefront*Catalog`, `ProductImageResolver`, or `SiteIdentityServiceInterface`
+- Vault (source snapshot, not integrated): `feat/homepage-cms-preservation` / `recovery/homepage-cms`
+- Squash-merged as PR #2
+
+## Next candidate
+
+Footer Management is **not tagged**. M1 Admin Boot lives on `feat/footer-management-v1` (`79cf274`) and is **not** on `main`. Do not open a PR until M2 storefront render (and M3 adapters) land on that branch.
+
+M1 allowlist: `docs/superpowers/specs/2026-09-03-footer-management-m1-allowlist.md`  
+M2 allowlist: `docs/superpowers/specs/2026-09-03-footer-management-m2-allowlist.md`  
+M3 allowlist: `docs/superpowers/specs/2026-09-03-footer-management-m3-allowlist.md`
+
+Sequence on `feat/footer-management-v1` (do not push until M3 is committed):
+
+```text
+M1 Admin Boot         ✓  79cf274
+M2 Storefront Render  ✓  a7a43b0
+M3 Adapters/Isolation ✓  (on branch)
+then Push → PR → Squash Merge → Tag v1.6.0
+```
+
+Proposed later tags (not started):
+
+```text
+v1.6.0  Footer Management
+v1.7.0  Website Settings + Navigation
+v1.8.x  Warehouse Scanner
+v1.9.x  POS Terminal Expansion
+v2.x    WS-002 Design System
+```
+
 ## Not included
 
-These are outside v1.0.0–v1.3.0 tagged history:
+These are outside the tagged history on `main`:
 
-- Homepage CMS (untracked work: hero/FAQ/banners, widgets, `public/wp-content`, `HomeContentAdminTest.php`)
+- Footer Management (recoverable from `84e905c`; do not merge archive branches)
+- Website Settings / Appearance / Site Identity / Customer Experience
+- Navigation Recovery
+- Warehouse Scanner, POS barcode expansion, Inventory expansion, Marketplace payouts
 - Storefront primitives / `feat/commerce-framework-v1` design system / `stash@{0}`
 - UI-TECH-001 (`@vite/client` injected twice on blog pages)
-- Any other files or branches not reachable from the tags above
 
-A directory-wide `phpunit tests/Feature/Cms` on a dirty tree can load untracked homepage tests. Committed CMS / Features / Admin tests at this baseline: 69 passed, 0 failed.
+Safety net (do not delete):
+
+```text
+recovery/barcode-v1.4
+recovery/homepage-cms
+feat/homepage-cms-preservation
+feat/barcode-stock-recovery      (archive, read-only)
+feat/commerce-framework-v1       (archive, read-only)
+```
