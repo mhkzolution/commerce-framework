@@ -10,15 +10,17 @@ v1.3.0-blog-ui-refresh
 v1.4.0
 v1.5.0
 v1.6.0
+v1.7.0
 ```
 
-v1.2.0 / v1.3.0 feature branches were deleted after merge. v1.4.0, v1.5.0, and v1.6.0 were squash-merged as PR #1, PR #2, and PR #3. The tags on `main` are the source of history.
+v1.2.0 / v1.3.0 feature branches were deleted after merge. v1.4.0, v1.5.0, v1.6.0, and v1.7.0 were squash-merged as PR #1, PR #2, PR #3, and PR #4. The tags on `main` are the source of history.
 
 ```text
-main = stable (active development line)   8d36013
+main = stable (active development line)   a5b336e
 v1.4.0  Barcode Management     (9cf699f)
 v1.5.0  Homepage CMS           (6b63a8d)
 v1.6.0  Footer Management      (52a1a20)
+v1.7.0  Navigation Management  (a5b336e)
 ```
 
 Recovery is **closed**. Phase 1 = Barcode. Phase 2 = Homepage + Footer. Later work is a feature roadmap on `main`. Do not merge archive branches.
@@ -34,8 +36,9 @@ Recovery is **closed**. Phase 1 = Barcode. Phase 2 = Homepage + Footer. Later wo
 | `v1.4.0` | `9cf699f` | Catalog | Barcode Center, templates, print queue |
 | `v1.5.0` | `6b63a8d` | Storefront / CMS | Homepage sections, hero/promo/FAQ, `/` |
 | `v1.6.0` | `52a1a20` | Storefront / Settings | Footer composition admin, preview, storefront render |
+| `v1.7.0` | `a5b336e` | Storefront / Navigation | Named menus, admin CRUD, FooterNavigationQuery |
 
-v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 / v1.5.0 / v1.6.0 are separate so a barcode, homepage, or footer defect rolls back only that surface.
+v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 / v1.5.0 / v1.6.0 / v1.7.0 are separate so a barcode, homepage, footer, or navigation defect rolls back only that surface.
 
 ## v1.0.0 — Module Management
 
@@ -104,20 +107,27 @@ Design: `docs/superpowers/specs/2026-09-02-barcode-template-layout-contract.md`
 - Path-extracted from archive `84e905c`; squash-merged as PR #3
 - Allowlists: `docs/superpowers/specs/2026-09-03-footer-management-m1-allowlist.md`, `m2-allowlist.md`, `m3-allowlist.md`
 
-## Next candidate
+## v1.7.0 — Navigation Management
 
-**Navigation Management (v1.7.x)** — feature on `main`, not recovery.
-
-Footer already exposes `FooterNavigationQuery::links($source)` as `[]`. Homepage arrival tabs stay on `HomepageNavigationQuery` (Catalog categories). v1.7 owns named menus and fills the Footer query in place.
+- Admin **Website → Navigation** at `/admin/navigation`; own module, IAM `navigation.menu.view` / `navigation.menu.update`
+- Named menus `main` and `footer`; `account` reserved in the query API only
+- `NavigationQueryServiceInterface::links($source)` returns `NavigationLinkData[]` (never Eloquent / raw arrays / config bags)
+- `FooterNavigationQuery` forwards `$source` and maps DTOs to the existing Footer driver arrays
+- Homepage arrival tabs stay on `HomepageNavigationQuery` (Catalog categories)
+- Isolation lock: no `StorefrontNavigationConfig`, `SiteIdentityServiceInterface`, `WebsiteSettingsService`, Appearance / CX, WS-002, mega menu, or header redesign
+- Squash-merged as PR #4
 
 Feature lock: `docs/superpowers/specs/2026-09-03-navigation-management-feature.md`  
 Implementation spec: `docs/superpowers/specs/2026-09-03-navigation-management-v1-implementation.md`
 
-Do not start Website Settings or WS-002 until Navigation is tagged.
+## Next candidate
+
+**Website Settings (v1.8.x)** — feature on `main`, not recovery.
+
+Do not start WS-002 until Website Settings is tagged.
 
 ```text
-v1.7.x  Navigation Management     ← next
-v1.8.x  Website Settings          (brand, logo, contact, social, SEO defaults)
+v1.8.x  Website Settings          ← next (brand, logo, contact, social, SEO defaults)
 v1.9.x  WS-002 Design System      (header/footer/nav/cards once data owners are stable)
 later   Scanner, POS Barcode, Inventory Expansion, Marketplace Payouts
 ```
@@ -126,8 +136,7 @@ later   Scanner, POS Barcode, Inventory Expansion, Marketplace Payouts
 
 These remain outside the tagged history on `main`:
 
-- Website Settings / Appearance / Site Identity / Customer Experience
-- Navigation Management (v1.7.x — next feature on `main`)
+- Website Settings / Appearance / Site Identity / Customer Experience (v1.8.x — next)
 - Warehouse Scanner, POS barcode expansion, Inventory expansion, Marketplace payouts
 - Storefront primitives / `feat/commerce-framework-v1` design system / `stash@{0}`
 - UI-TECH-001 (`@vite/client` injected twice on blog pages)
