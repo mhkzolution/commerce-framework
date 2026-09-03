@@ -140,7 +140,12 @@ Implementation spec: `docs/superpowers/specs/2026-09-03-website-settings-v1-impl
 
 **WS-002 Design System (v1.9.x)** — feature on `main`, not recovery.
 
-Homepage, Footer, Navigation, and Website Settings now have stable data owners. v1.9 should share one storefront design language across those surfaces. Do not start Scanner / POS / Inventory / Marketplace until that is tagged unless the owner picks a different next.
+Homepage, Footer, Navigation, and Website Settings now have stable data owners. v1.9 owns storefront tokens and shared `x-storefront.*` primitives. First tag is tokens + Homepage container only.
+
+Feature lock: `docs/superpowers/specs/2026-09-03-ws002-design-system-feature.md`  
+Implementation spec: `docs/superpowers/specs/2026-09-03-ws002-design-system-v1-implementation.md`
+
+Do not start Scanner / POS / Inventory / Marketplace until WS-002 Phase 1 is tagged unless the owner picks a different next.
 
 ```text
 v1.9.x  WS-002 Design System      ← next
@@ -151,10 +156,12 @@ later   Scanner, POS Barcode, Inventory Expansion, Marketplace Payouts
 
 These remain outside the tagged history on `main`:
 
-- Appearance / Customer Experience / WS-002 (v1.9.x — next)
+- Appearance / Customer Experience admin (not WS-002)
 - Warehouse Scanner, POS barcode expansion, Inventory expansion, Marketplace payouts
-- Storefront primitives / `feat/commerce-framework-v1` design system / `stash@{0}`
+- `feat/commerce-framework-v1` design system / `stash@{0}` (archive — do not merge)
 - UI-TECH-001 (`@vite/client` injected twice on blog pages)
+
+WS-002 on `main` is the next tag: storefront tokens + `x-storefront.*` primitives, not the archive library.
 
 Safety net (do not delete, do not merge):
 
