@@ -194,9 +194,12 @@ WS-002 through Shop listing is closed (Foundations, Footer tokens, Product Card,
 
 ## Next candidate
 
-**WS-002 Header Foundation (v1.12.0)** — extract `x-storefront.layout.partials.site-header` from the **current** storefront: tokens, `--store-max-width`, Navigation `links('main')`, Website Settings brand. Do not merge archive headers. Do not `git checkout 84e905c -- .`.
+**WS-002 Header Foundation (v1.12.0)** — new header on the current release line, not archive recovery. Inventory is locked in the feature spec (inline `max-w-5xl` header, no collapse, hardcoded Shop/Blog/Cart, no Settings brand, no `links('main')`, no search). Primitive + DTOs are locked in the implementation spec.
 
-Feature lock: `docs/superpowers/specs/2026-09-03-ws002-header-foundation-feature.md`
+Do not merge archive headers. Do not `git checkout 84e905c -- .`.
+
+Feature lock: `docs/superpowers/specs/2026-09-03-ws002-header-foundation-feature.md`  
+Implementation spec: `docs/superpowers/specs/2026-09-03-ws002-header-v1-implementation.md`
 
 ```text
 v1.12.0  Header Foundation        ← next
@@ -213,7 +216,7 @@ These remain outside the tagged history on `main`:
 - `feat/commerce-framework-v1` design system / `stash@{0}` (archive — do not merge)
 - UI-TECH-001 (`@vite/client` injected twice on blog pages)
 
-WS-002 Header and Blog stay later. Header is designed from current `main`, not archive. Appearance / CX stay out.
+WS-002 Header is next (specs locked; implement on `feat/ws002-header-v1`). Blog stays after v1.12. Header is designed from current `main`, not archive. Appearance / CX stay out.
 
 Safety net (do not delete, do not merge):
 
