@@ -78,4 +78,83 @@ final class Ws002ShopListingContractTest extends TestCase
             ->assertOk()
             ->assertSee($product->name);
     }
+
+    public function test_missing_category_and_in_stock_filter_use_the_shared_empty_state(): void
+    {
+        app(ProductServiceInterface::class)->create(new CreateProductData(
+            name: 'Out Of Stock Tray',
+            status: 'published',
+            visibility: 'public',
+            sku: 'LIST-OOS-1',
+            price: 1500,
+        ));
+
+        $missing = $this->get(route('storefront.shop.index', ['category' => 'does-not-exist']))
+            ->assertOk()
+            ->assertSee('storefront-empty', false)
+            ->getContent();
+
+        $this->assertStringNotContainsString('Published products', $missing);
+        $this->assertStringContainsString('storefront-empty__title', $missing);
+
+        $inStock = $this->get(route('storefront.shop.index', ['availability' => 'in_stock']))
+            ->assertOk()
+            ->assertSee('storefront-empty', false)
+            ->getContent();
+
+        $this->assertStringContainsString('storefront-empty', $inStock);
+        $this->assertStringNotContainsString('Published products', $inStock);
+    }
+
+    public function test_get_filters_survive_reload_and_pagination_query_string(): void
+    {
+        $mugs = CatalogCategory::query()->create([
+            'name' => 'Mugs',
+            'slug' => 'mugs',
+            'is_active' => true,
+            'position' => 1,
+        ]);
+
+        for ($i = 1; $i <= 25; $i++) {
+            $product = app(ProductServiceInterface::class)->create(new CreateProductData(
+                name: 'Paged Mug '.$i,
+                status: 'published',
+                visibility: 'public',
+                sku: 'PAGE-MUG-'.$i,
+                price: 1000 + $i,
+                categoryIds: [$mugs->id],
+            ));
+            $variant = $product->defaultVariant();
+            $this->assertNotNull($variant);
+            app(InventoryServiceInterface::class)->receive($variant->uuid, 2);
+        }
+
+        $reload = $this->get(route('storefront.shop.index', [
+            'category' => 'mugs',
+            'availability' => 'in_stock',
+            'sort' => 'price_asc',
+        ]))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('value="mugs"', $reload);
+        $this->assertStringContainsString('selected', $reload);
+        $this->assertStringContainsString('value="in_stock"', $reload);
+        $this->assertStringContainsString('value="price_asc"', $reload);
+        $this->assertStringContainsString('storefront-pagination', $reload);
+
+        $pageTwo = $this->get(route('storefront.shop.index', [
+            'category' => 'mugs',
+            'availability' => 'in_stock',
+            'sort' => 'price_asc',
+            'page' => 2,
+        ]))
+            ->assertOk()
+            ->assertSee('Paged Mug 25')
+            ->getContent();
+
+        $this->assertStringContainsString('category=mugs', $pageTwo);
+        $this->assertStringContainsString('availability=in_stock', $pageTwo);
+        $this->assertStringContainsString('sort=price_asc', $pageTwo);
+    }
 }

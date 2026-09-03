@@ -65,6 +65,13 @@ final class Ws002ShopListingIsolationTest extends TestCase
         $this->assertStringNotContainsString('x-admin.search-input', $contents);
     }
 
+    public function test_vite_config_includes_shop_css(): void
+    {
+        $contents = file_get_contents($this->repoRoot().'/vite.config.js');
+        $this->assertNotFalse($contents);
+        $this->assertStringContainsString('resources/css/storefront/shop.css', $contents);
+    }
+
     public function test_shop_css_uses_storefront_tokens_not_archive_width(): void
     {
         $this->assertFileExists($this->shopCssPath());
