@@ -1,6 +1,6 @@
 # Release Line
 
-Baseline of tagged releases on `main` as of 2026-09-03 (`6b63a8d`).
+Baseline of tagged releases on `main` as of 2026-09-03 (`52a1a20`).
 
 ```text
 v1.0.0-module-management
@@ -9,15 +9,19 @@ v1.2.0-cms-scheduled-publishing
 v1.3.0-blog-ui-refresh
 v1.4.0
 v1.5.0
+v1.6.0
 ```
 
-v1.2.0 / v1.3.0 feature branches were deleted after merge. v1.4.0 and v1.5.0 were squash-merged as PR #1 and PR #2. The tags on `main` are the source of history.
+v1.2.0 / v1.3.0 feature branches were deleted after merge. v1.4.0, v1.5.0, and v1.6.0 were squash-merged as PR #1, PR #2, and PR #3. The tags on `main` are the source of history.
 
 ```text
-main = stable
-v1.4.0  Barcode Management   (9cf699f)
-v1.5.0  Homepage CMS         (6b63a8d)
+main = stable (active development line)
+v1.4.0  Barcode Management     (9cf699f)
+v1.5.0  Homepage CMS           (6b63a8d)
+v1.6.0  Footer Management      (52a1a20)
 ```
+
+Recovery Phase 1 (Barcode) and Recovery Phase 2 (Homepage + Footer) are closed. Later work is a feature roadmap on `main`, not archive-branch recovery.
 
 ## Tags
 
@@ -29,8 +33,9 @@ v1.5.0  Homepage CMS         (6b63a8d)
 | `v1.3.0-blog-ui-refresh` | `8ce3e65` | UI | Blog archive, single, editor, adapters |
 | `v1.4.0` | `9cf699f` | Catalog | Barcode Center, templates, print queue |
 | `v1.5.0` | `6b63a8d` | Storefront / CMS | Homepage sections, hero/promo/FAQ, `/` |
+| `v1.6.0` | `52a1a20` | Storefront / Settings | Footer composition admin, preview, storefront render |
 
-v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 and v1.5.0 are separate so a barcode defect does not roll back homepage, and vice versa.
+v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 / v1.5.0 / v1.6.0 are separate so a barcode, homepage, or footer defect rolls back only that surface.
 
 ## v1.0.0 — Module Management
 
@@ -90,27 +95,32 @@ Design: `docs/superpowers/specs/2026-09-02-barcode-template-layout-contract.md`
 - Vault (source snapshot, not integrated): `feat/homepage-cms-preservation` / `recovery/homepage-cms`
 - Squash-merged as PR #2
 
+## v1.6.0 — Footer Management
+
+- Admin **Website → Footer** at `/admin/settings/footer`; `footer.config` composition, no Footer migrations
+- Shared storefront + admin preview renderer (`site-footer`) from `FooterPageData` / `FooterSectionData` / `FooterBrandData` / `FooterLinkData`
+- Brand from `store.name` via `FooterBrandingQuery`; navigation and social fail-soft empty until later recoveries
+- Isolation lock: no `SiteIdentityServiceInterface`, `StorefrontNavigationConfig`, `WebsiteSettingsService`, Appearance / CX, WS-002, or `modules/Footer/**`
+- Path-extracted from archive `84e905c`; squash-merged as PR #3
+- Allowlists: `docs/superpowers/specs/2026-09-03-footer-management-m1-allowlist.md`, `m2-allowlist.md`, `m3-allowlist.md`
+
 ## Next candidate
 
-Footer Management is **not tagged**. M1 Admin Boot lives on `feat/footer-management-v1` (`79cf274`) and is **not** on `main`. Do not open a PR until M2 storefront render (and M3 adapters) land on that branch.
-
-M1 allowlist: `docs/superpowers/specs/2026-09-03-footer-management-m1-allowlist.md`  
-M2 allowlist: `docs/superpowers/specs/2026-09-03-footer-management-m2-allowlist.md`  
-M3 allowlist: `docs/superpowers/specs/2026-09-03-footer-management-m3-allowlist.md`
-
-Sequence on `feat/footer-management-v1` (do not push until M3 is committed):
+Recovery phases are closed. Next work is a feature on `main` (not an archive merge). Candidates, not started:
 
 ```text
-M1 Admin Boot         ✓  79cf274
-M2 Storefront Render  ✓  a7a43b0
-M3 Adapters/Isolation ✓  (on branch)
-then Push → PR → Squash Merge → Tag v1.6.0
+Website Settings Recovery
+Navigation Recovery
+Scanner
+POS Barcode
+Inventory Expansion
+Marketplace Payouts
+WS-002 Storefront Design System
 ```
 
-Proposed later tags (not started):
+Do not start these until the owner picks one. Proposed later tags (not started):
 
 ```text
-v1.6.0  Footer Management
 v1.7.0  Website Settings + Navigation
 v1.8.x  Warehouse Scanner
 v1.9.x  POS Terminal Expansion
@@ -119,16 +129,15 @@ v2.x    WS-002 Design System
 
 ## Not included
 
-These are outside the tagged history on `main`:
+These remain outside the tagged history on `main`:
 
-- Footer Management (recoverable from `84e905c`; do not merge archive branches)
 - Website Settings / Appearance / Site Identity / Customer Experience
 - Navigation Recovery
 - Warehouse Scanner, POS barcode expansion, Inventory expansion, Marketplace payouts
 - Storefront primitives / `feat/commerce-framework-v1` design system / `stash@{0}`
 - UI-TECH-001 (`@vite/client` injected twice on blog pages)
 
-Safety net (do not delete):
+Safety net (do not delete, do not merge):
 
 ```text
 recovery/barcode-v1.4
