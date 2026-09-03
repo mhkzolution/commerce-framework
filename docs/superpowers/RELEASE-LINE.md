@@ -11,16 +11,18 @@ v1.4.0
 v1.5.0
 v1.6.0
 v1.7.0
+v1.8.0
 ```
 
-v1.2.0 / v1.3.0 feature branches were deleted after merge. v1.4.0, v1.5.0, v1.6.0, and v1.7.0 were squash-merged as PR #1, PR #2, PR #3, and PR #4. The tags on `main` are the source of history.
+v1.2.0 / v1.3.0 feature branches were deleted after merge. v1.4.0 through v1.8.0 were squash-merged as PR #1 through PR #6. The tags on `main` are the source of history.
 
 ```text
-main = stable (active development line)   a5b336e
+main = stable (active development line)   22babfe
 v1.4.0  Barcode Management     (9cf699f)
 v1.5.0  Homepage CMS           (6b63a8d)
 v1.6.0  Footer Management      (52a1a20)
 v1.7.0  Navigation Management  (a5b336e)
+v1.8.0  Website Settings       (22babfe)
 ```
 
 Recovery is **closed**. Phase 1 = Barcode. Phase 2 = Homepage + Footer. Later work is a feature roadmap on `main`. Do not merge archive branches.
@@ -37,8 +39,9 @@ Recovery is **closed**. Phase 1 = Barcode. Phase 2 = Homepage + Footer. Later wo
 | `v1.5.0` | `6b63a8d` | Storefront / CMS | Homepage sections, hero/promo/FAQ, `/` |
 | `v1.6.0` | `52a1a20` | Storefront / Settings | Footer composition admin, preview, storefront render |
 | `v1.7.0` | `a5b336e` | Storefront / Navigation | Named menus, admin CRUD, FooterNavigationQuery |
+| `v1.8.0` | `22babfe` | Storefront / Settings | Website Settings admin, brand keys, FooterSocialQuery |
 
-v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 / v1.5.0 / v1.6.0 / v1.7.0 are separate so a barcode, homepage, footer, or navigation defect rolls back only that surface.
+v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 through v1.8.0 are separate so a barcode, homepage, footer, navigation, or website-settings defect rolls back only that surface.
 
 ## v1.0.0 — Module Management
 
@@ -120,20 +123,27 @@ Design: `docs/superpowers/specs/2026-09-02-barcode-template-layout-contract.md`
 Feature lock: `docs/superpowers/specs/2026-09-03-navigation-management-feature.md`  
 Implementation spec: `docs/superpowers/specs/2026-09-03-navigation-management-v1-implementation.md`
 
-## Next candidate
+## v1.8.0 — Website Settings
 
-**Website Settings (v1.8.x)** — feature on `main`, not recovery.
-
-Footer social is still `FooterSocialQuery::links() → []`. Brand already reads `store.name` / logo. v1.8 owns the admin + keys and fills the social query in place.
+- Admin **Settings → Website Settings** at `/admin/settings/website`; IAM `settings.setting.view` / `settings.setting.update`
+- Writes `store.name`, `store.logo_media_uuid`, `store.description`, and `social.facebook` / `instagram` / `tiktok` / `line`
+- `WebsiteSettingsQueryServiceInterface::socialLinks()` returns `WebsiteSocialLinkData[]`
+- `FooterSocialQuery` maps those DTOs onto the existing Footer social driver
+- `FooterBrandingQuery` and `HomepageBrandingQuery` keep reading `store.*` keys (no consumer rewrite)
+- Isolation lock: no `SiteIdentityServiceInterface`, `WebsiteSettingsService`, Appearance / CX, WS-002, or `modules/Website/**`
+- Squash-merged as PR #6 (`22babfe`); PR #5 is the earlier squash of the same branch
 
 Feature lock: `docs/superpowers/specs/2026-09-03-website-settings-feature.md`  
 Implementation spec: `docs/superpowers/specs/2026-09-03-website-settings-v1-implementation.md`
 
-Do not start WS-002 until Website Settings is tagged.
+## Next candidate
+
+**WS-002 Design System (v1.9.x)** — feature on `main`, not recovery.
+
+Homepage, Footer, Navigation, and Website Settings now have stable data owners. v1.9 should share one storefront design language across those surfaces. Do not start Scanner / POS / Inventory / Marketplace until that is tagged unless the owner picks a different next.
 
 ```text
-v1.8.x  Website Settings          ← next (brand, logo, contact, social, SEO defaults)
-v1.9.x  WS-002 Design System      (header/footer/nav/cards once data owners are stable)
+v1.9.x  WS-002 Design System      ← next
 later   Scanner, POS Barcode, Inventory Expansion, Marketplace Payouts
 ```
 
@@ -141,7 +151,7 @@ later   Scanner, POS Barcode, Inventory Expansion, Marketplace Payouts
 
 These remain outside the tagged history on `main`:
 
-- Website Settings / Appearance / Site Identity / Customer Experience (v1.8.x — next)
+- Appearance / Customer Experience / WS-002 (v1.9.x — next)
 - Warehouse Scanner, POS barcode expansion, Inventory expansion, Marketplace payouts
 - Storefront primitives / `feat/commerce-framework-v1` design system / `stash@{0}`
 - UI-TECH-001 (`@vite/client` injected twice on blog pages)
