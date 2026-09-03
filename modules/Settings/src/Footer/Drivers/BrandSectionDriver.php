@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Commerce\Settings\Footer\Drivers;
 
-use Commerce\Contracts\Settings\SettingQueryServiceInterface;
 use Commerce\Settings\Footer\Contracts\FooterSectionDriver;
 use Commerce\Settings\Footer\DTO\FooterSection;
 use Commerce\Settings\Footer\DTO\FooterSectionConfig;
+use Commerce\Settings\Services\FooterBrandingQuery;
 use Throwable;
 
 final class BrandSectionDriver implements FooterSectionDriver
 {
     public function __construct(
-        private readonly ?SettingQueryServiceInterface $settings = null,
+        private readonly FooterBrandingQuery $branding,
     ) {}
 
     public function build(FooterSectionConfig $config): ?FooterSection
@@ -31,9 +31,10 @@ final class BrandSectionDriver implements FooterSectionDriver
                 return null;
             }
 
-            $logoUrl = $showLogo ? $this->resolveLogoUrl() : null;
-            $storeName = $showStoreName ? $this->resolveStoreName() : null;
-            $description = $showDescription ? $this->resolveDescription() : null;
+            $current = $this->branding->current();
+            $logoUrl = $showLogo ? $current->logoUrl : null;
+            $storeName = $showStoreName ? $current->displayName : null;
+            $description = $showDescription ? $current->description : null;
 
             if ($logoUrl === null && $storeName === null && $description === null) {
                 return null;
@@ -57,48 +58,6 @@ final class BrandSectionDriver implements FooterSectionDriver
     public function supportsMultiple(): bool
     {
         return false;
-    }
-
-    private function resolveStoreName(): ?string
-    {
-        if ($this->settings !== null) {
-            try {
-                $storeName = $this->settings->get('store.name');
-                if (is_string($storeName) && trim($storeName) !== '') {
-                    return trim($storeName);
-                }
-            } catch (Throwable) {
-            }
-        }
-
-        $appName = config('app.name');
-        if (is_string($appName) && trim($appName) !== '') {
-            return trim($appName);
-        }
-
-        return 'Commerce Framework';
-    }
-
-    private function resolveLogoUrl(): ?string
-    {
-        return null;
-    }
-
-    private function resolveDescription(): ?string
-    {
-        if ($this->settings === null) {
-            return null;
-        }
-
-        foreach (['site.description', 'store.description'] as $key) {
-            $value = $this->settings->get($key);
-
-            if (is_string($value) && trim($value) !== '') {
-                return trim($value);
-            }
-        }
-
-        return null;
     }
 
     private function toBool(mixed $value): bool

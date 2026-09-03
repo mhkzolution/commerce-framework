@@ -95,14 +95,15 @@ Design: `docs/superpowers/specs/2026-09-02-barcode-template-layout-contract.md`
 Footer Management is **not tagged**. M1 Admin Boot lives on `feat/footer-management-v1` (`79cf274`) and is **not** on `main`. Do not open a PR until M2 storefront render (and M3 adapters) land on that branch.
 
 M1 allowlist: `docs/superpowers/specs/2026-09-03-footer-management-m1-allowlist.md`  
-M2 allowlist: `docs/superpowers/specs/2026-09-03-footer-management-m2-allowlist.md`
+M2 allowlist: `docs/superpowers/specs/2026-09-03-footer-management-m2-allowlist.md`  
+M3 allowlist: `docs/superpowers/specs/2026-09-03-footer-management-m3-allowlist.md`
 
-Sequence on `feat/footer-management-v1` (do not push until the last of these):
+Sequence on `feat/footer-management-v1` (do not push until M3 is committed):
 
 ```text
 M1 Admin Boot         ✓  79cf274
-M2 Storefront Render  ✓  (on branch, not pushed)
-M3 Adapters/Isolation ← next
+M2 Storefront Render  ✓  a7a43b0
+M3 Adapters/Isolation ✓  (on branch)
 then Push → PR → Squash Merge → Tag v1.6.0
 ```
 

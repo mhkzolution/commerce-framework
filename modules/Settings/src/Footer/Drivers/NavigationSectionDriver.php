@@ -7,10 +7,15 @@ namespace Commerce\Settings\Footer\Drivers;
 use Commerce\Settings\Footer\Contracts\FooterSectionDriver;
 use Commerce\Settings\Footer\DTO\FooterSection;
 use Commerce\Settings\Footer\DTO\FooterSectionConfig;
+use Commerce\Settings\Services\FooterNavigationQuery;
 use Throwable;
 
 final class NavigationSectionDriver implements FooterSectionDriver
 {
+    public function __construct(
+        private readonly FooterNavigationQuery $navigation,
+    ) {}
+
     public function build(FooterSectionConfig $config): ?FooterSection
     {
         try {
@@ -67,7 +72,7 @@ final class NavigationSectionDriver implements FooterSectionDriver
             return $this->normalizeItems($contextItems, $maxLinks, $visibilityMode);
         }
 
-        return [];
+        return $this->normalizeItems($this->navigation->links($source), $maxLinks, $visibilityMode);
     }
 
     /**

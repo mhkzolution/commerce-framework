@@ -11,7 +11,10 @@ use Commerce\Settings\Contracts\SettingServiceInterface;
 use Commerce\Settings\Footer\DTO\FooterBuildContext;
 use Commerce\Settings\Footer\DTO\FooterPageData;
 use Commerce\Settings\Footer\Registry\FooterSectionRegistry;
+use Commerce\Settings\Services\FooterBrandingQuery;
 use Commerce\Settings\Services\FooterConfigService;
+use Commerce\Settings\Services\FooterNavigationQuery;
+use Commerce\Settings\Services\FooterSocialQuery;
 use Commerce\Settings\Services\FooterViewModelBuilder;
 use Commerce\Settings\Services\SettingQueryService;
 use Commerce\Settings\Services\SettingRegistryService;
@@ -35,6 +38,9 @@ final class SettingsServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(FooterConfigService::class);
         $this->app->singleton(FooterSectionRegistry::class);
         $this->app->singleton(FooterViewModelBuilder::class);
+        $this->app->singleton(FooterBrandingQuery::class);
+        $this->app->singleton(FooterNavigationQuery::class);
+        $this->app->singleton(FooterSocialQuery::class);
 
         $this->app->bind(SettingRegistryServiceInterface::class, SettingRegistryService::class);
         $this->app->bind(SettingQueryServiceInterface::class, SettingQueryService::class);

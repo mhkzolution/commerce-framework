@@ -11,7 +11,10 @@ use Commerce\Settings\Footer\Drivers\MarketplaceSectionDriver;
 use Commerce\Settings\Footer\Drivers\NavigationSectionDriver;
 use Commerce\Settings\Footer\Drivers\SocialSectionDriver;
 use Commerce\Settings\Http\Controllers\Admin\FooterController;
+use Commerce\Settings\Services\FooterBrandingQuery;
 use Commerce\Settings\Services\FooterConfigService;
+use Commerce\Settings\Services\FooterNavigationQuery;
+use Commerce\Settings\Services\FooterSocialQuery;
 use Commerce\Settings\Services\FooterViewModelBuilder;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -30,9 +33,6 @@ final class FooterIsolationTest extends TestCase
         'AppearanceController',
         'CustomerExperienceController',
         'CustomerExperienceConfig',
-        'FooterBrandingQuery',
-        'FooterNavigationQuery',
-        'FooterSocialQuery',
     ];
 
     /**
@@ -42,6 +42,9 @@ final class FooterIsolationTest extends TestCase
         FooterController::class,
         FooterConfigService::class,
         FooterViewModelBuilder::class,
+        FooterBrandingQuery::class,
+        FooterNavigationQuery::class,
+        FooterSocialQuery::class,
         BrandSectionDriver::class,
         SocialSectionDriver::class,
         NavigationSectionDriver::class,
@@ -49,18 +52,30 @@ final class FooterIsolationTest extends TestCase
         MarketplaceSectionDriver::class,
     ];
 
-    public function test_m1_source_files_exist(): void
+    /**
+     * @var list<class-string>
+     */
+    private const SETTINGS_QUERY_FORBIDDEN_OWNERS = [
+        BrandSectionDriver::class,
+        SocialSectionDriver::class,
+        NavigationSectionDriver::class,
+        FooterViewModelBuilder::class,
+        FooterNavigationQuery::class,
+        FooterSocialQuery::class,
+    ];
+
+    public function test_source_files_exist(): void
     {
-        foreach ($this->m1PhpAndBladeFiles() as $path) {
+        foreach ($this->footerPhpAndBladeFiles() as $path) {
             $this->assertFileExists($path);
         }
     }
 
-    public function test_m1_files_do_not_contain_forbidden_imports(): void
+    public function test_footer_files_do_not_contain_forbidden_imports(): void
     {
         $hits = [];
 
-        foreach ($this->m1PhpAndBladeFiles() as $path) {
+        foreach ($this->footerPhpAndBladeFiles() as $path) {
             $contents = file_get_contents($path);
             $this->assertNotFalse($contents, $path);
 
@@ -74,7 +89,7 @@ final class FooterIsolationTest extends TestCase
         $this->assertSame([], $hits, implode("\n", $hits));
     }
 
-    public function test_settings_provider_and_routes_do_not_recover_website_settings(): void
+    public function test_settings_provider_binds_footer_queries_without_website_settings(): void
     {
         $hits = [];
 
@@ -97,20 +112,24 @@ final class FooterIsolationTest extends TestCase
         $this->assertStringContainsString('FooterConfigService', $provider);
         $this->assertStringContainsString('FooterSectionRegistry', $provider);
         $this->assertStringContainsString('FooterViewModelBuilder', $provider);
+        $this->assertStringContainsString('FooterBrandingQuery', $provider);
+        $this->assertStringContainsString('FooterNavigationQuery', $provider);
+        $this->assertStringContainsString('FooterSocialQuery', $provider);
         $this->assertStringContainsString('site-footer', $provider);
-        $this->assertStringContainsString('FooterPageData', $provider);
-        $this->assertStringNotContainsString('FooterBrandingQuery', $provider);
-        $this->assertStringNotContainsString('FooterNavigationQuery', $provider);
-        $this->assertStringNotContainsString('FooterSocialQuery', $provider);
 
         $this->assertSame([], $hits, implode("\n", $hits));
     }
 
-    public function test_constructor_graph_excludes_forbidden_types_and_keeps_allowed_owners(): void
+    public function test_constructor_graph_uses_query_adapters_instead_of_archive_identity(): void
     {
         $forbiddenHits = [];
+        $settingsQueryHits = [];
         $sawFooterConfig = false;
-        $sawSettingsQuery = false;
+        $sawBrandingQuery = false;
+        $sawNavigationQuery = false;
+        $sawSocialQuery = false;
+        $sawSettingsQueryOnConfig = false;
+        $sawSettingsQueryOnBranding = false;
 
         foreach (self::CONSTRUCTOR_GRAPH as $class) {
             $this->assertTrue(class_exists($class), $class.' must exist');
@@ -129,19 +148,46 @@ final class FooterIsolationTest extends TestCase
                     }
                 }
 
+                if ($name === SettingQueryServiceInterface::class) {
+                    if (in_array($class, self::SETTINGS_QUERY_FORBIDDEN_OWNERS, true)) {
+                        $settingsQueryHits[] = $class.' injects SettingQueryServiceInterface';
+                    }
+
+                    if ($class === FooterConfigService::class) {
+                        $sawSettingsQueryOnConfig = true;
+                    }
+
+                    if ($class === FooterBrandingQuery::class) {
+                        $sawSettingsQueryOnBranding = true;
+                    }
+                }
+
                 if ($name === FooterConfigService::class) {
                     $sawFooterConfig = true;
                 }
 
-                if ($name === SettingQueryServiceInterface::class) {
-                    $sawSettingsQuery = true;
+                if ($name === FooterBrandingQuery::class) {
+                    $sawBrandingQuery = true;
+                }
+
+                if ($name === FooterNavigationQuery::class) {
+                    $sawNavigationQuery = true;
+                }
+
+                if ($name === FooterSocialQuery::class) {
+                    $sawSocialQuery = true;
                 }
             }
         }
 
         $this->assertTrue($sawFooterConfig, 'FooterController must inject FooterConfigService');
-        $this->assertTrue($sawSettingsQuery, 'M1 graph must inject SettingQueryServiceInterface');
+        $this->assertTrue($sawBrandingQuery, 'Brand driver / builder must inject FooterBrandingQuery');
+        $this->assertTrue($sawNavigationQuery, 'Navigation driver must inject FooterNavigationQuery');
+        $this->assertTrue($sawSocialQuery, 'Social driver must inject FooterSocialQuery');
+        $this->assertTrue($sawSettingsQueryOnConfig, 'FooterConfigService keeps SettingQueryServiceInterface');
+        $this->assertTrue($sawSettingsQueryOnBranding, 'FooterBrandingQuery is the only identity owner of SettingQuery');
         $this->assertSame([], $forbiddenHits, implode("\n", $forbiddenHits));
+        $this->assertSame([], $settingsQueryHits, implode("\n", $settingsQueryHits));
     }
 
     public function test_m2_ships_storefront_footer_without_false_friends(): void
@@ -155,7 +201,7 @@ final class FooterIsolationTest extends TestCase
         $this->assertDirectoryDoesNotExist($repo.'/modules/Footer');
     }
 
-    public function test_presenter_builds_page_data_without_page_model_or_m3_queries(): void
+    public function test_presenter_builds_page_data_from_branding_query_without_page_model(): void
     {
         $path = $this->settingsRoot().'/src/Services/FooterViewModelBuilder.php';
         $contents = file_get_contents($path);
@@ -165,10 +211,9 @@ final class FooterIsolationTest extends TestCase
         $this->assertStringContainsString('FooterSectionData', $contents);
         $this->assertStringContainsString('FooterBrandData', $contents);
         $this->assertStringContainsString('FooterLinkData', $contents);
+        $this->assertStringContainsString('FooterBrandingQuery', $contents);
+        $this->assertStringNotContainsString('SettingQueryServiceInterface', $contents);
         $this->assertStringNotContainsString('Commerce\\Cms\\Models\\Page', $contents);
-        $this->assertStringNotContainsString('FooterBrandingQuery', $contents);
-        $this->assertStringNotContainsString('FooterNavigationQuery', $contents);
-        $this->assertStringNotContainsString('FooterSocialQuery', $contents);
     }
 
     public function test_cart_layout_mounts_shared_footer_and_css(): void
@@ -184,7 +229,7 @@ final class FooterIsolationTest extends TestCase
     /**
      * @return list<string>
      */
-    private function m1PhpAndBladeFiles(): array
+    private function footerPhpAndBladeFiles(): array
     {
         $root = $this->settingsRoot();
 
@@ -208,6 +253,9 @@ final class FooterIsolationTest extends TestCase
             $root.'/src/Services/FooterConfigService.php',
             $root.'/src/Services/FooterSectionManager.php',
             $root.'/src/Services/FooterViewModelBuilder.php',
+            $root.'/src/Services/FooterBrandingQuery.php',
+            $root.'/src/Services/FooterNavigationQuery.php',
+            $root.'/src/Services/FooterSocialQuery.php',
             $root.'/src/Http/Controllers/Admin/FooterController.php',
             $root.'/src/Http/Requests/Concerns/NormalizesFooterConfig.php',
             $root.'/src/Http/Requests/PreviewFooterRequest.php',

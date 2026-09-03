@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Commerce\Settings\Services;
 
-use Commerce\Contracts\Settings\SettingQueryServiceInterface;
 use Commerce\Core\Base\BaseService;
 use Commerce\Settings\Footer\DTO\FooterBrandData;
 use Commerce\Settings\Footer\DTO\FooterBuildContext;
@@ -21,7 +20,7 @@ final class FooterViewModelBuilder extends BaseService
 
     public function __construct(
         private readonly FooterSectionManager $sectionManager,
-        private readonly ?SettingQueryServiceInterface $settings = null,
+        private readonly FooterBrandingQuery $branding,
     ) {}
 
     /**
@@ -300,22 +299,15 @@ final class FooterViewModelBuilder extends BaseService
 
     private function resolveStoreName(): string
     {
-        if ($this->settings !== null) {
-            try {
-                $storeName = $this->settings->get('store.name');
-                if (is_string($storeName) && trim($storeName) !== '') {
-                    return trim($storeName);
-                }
-            } catch (Throwable) {
+        try {
+            $storeName = $this->branding->current()->displayName;
+            if (is_string($storeName) && trim($storeName) !== '') {
+                return trim($storeName);
             }
+        } catch (Throwable) {
         }
 
-        $appName = config('app.name');
-        if (is_string($appName) && trim($appName) !== '') {
-            return trim($appName);
-        }
-
-        return (string) config('commerce.name', 'Commerce Framework');
+        return 'Commerce Framework';
     }
 
     private function nullableString(mixed $value): ?string
