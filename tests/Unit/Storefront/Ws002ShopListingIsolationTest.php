@@ -95,14 +95,13 @@ final class Ws002ShopListingIsolationTest extends TestCase
 
     public function test_header_is_not_extracted(): void
     {
-        $this->assertFileDoesNotExist(
-            $this->repoRoot().'/resources/views/components/storefront/layout/partials/site-header.blade.php',
-        );
+        $shop = file_get_contents($this->shopViewPath());
+        $this->assertNotFalse($shop);
+        $this->assertStringNotContainsString('x-storefront.layout.partials.site-header', $shop);
 
         $layout = file_get_contents($this->repoRoot().'/modules/Cart/resources/views/layouts/storefront.blade.php');
         $this->assertNotFalse($layout);
-        $this->assertStringContainsString('<header class="storefront-header">', $layout);
-        $this->assertStringContainsString('max-w-5xl', $layout);
+        $this->assertStringContainsString('x-storefront.layout.partials.site-header', $layout);
     }
 
     public function test_product_card_primitive_is_not_rewritten(): void

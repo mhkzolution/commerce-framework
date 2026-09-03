@@ -86,13 +86,13 @@ final class Ws002FooterTokenAdoptionTest extends TestCase
 
     public function test_phase_2_does_not_extract_header(): void
     {
-        $this->assertFileDoesNotExist(
-            $this->repoRoot().'/resources/views/components/storefront/layout/partials/site-header.blade.php',
-        );
+        $css = $this->footerCss();
+        $this->assertStringNotContainsString('storefront-site-header', $css);
+        $this->assertStringNotContainsString('.storefront-header', $css);
 
         $layout = file_get_contents($this->repoRoot().'/modules/Cart/resources/views/layouts/storefront.blade.php');
         $this->assertNotFalse($layout);
-        $this->assertStringContainsString('<header class="storefront-header">', $layout);
+        $this->assertStringContainsString('x-storefront.layout.partials.site-header', $layout);
     }
 
     public function test_tokens_file_scale_is_not_expanded(): void

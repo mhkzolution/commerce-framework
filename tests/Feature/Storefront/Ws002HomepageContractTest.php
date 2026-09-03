@@ -17,17 +17,12 @@ final class Ws002HomepageContractTest extends TestCase
         $this->withoutVite();
     }
 
-    public function test_homepage_renders_without_site_header(): void
+    public function test_homepage_renders_home_landmarks(): void
     {
-        $this->assertFileDoesNotExist(
-            resource_path('views/components/storefront/layout/partials/site-header.blade.php'),
-        );
-
         $this->get('/')
             ->assertOk()
             ->assertSee('data-storefront-home', false)
-            ->assertSee('storefront-home-arrivals', false)
-            ->assertDontSee('x-storefront.layout.partials.site-header', false);
+            ->assertSee('storefront-home-arrivals', false);
     }
 
     public function test_homepage_html_uses_page_container(): void

@@ -6,6 +6,7 @@
 @import './storefront/tokens.css';
 @import './storefront/product-card.css';
 @import './storefront/shell.css';
+@import './storefront/header.css';
 @import './storefront/blog.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';

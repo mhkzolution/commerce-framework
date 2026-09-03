@@ -96,10 +96,17 @@ final class FooterNavigationIntegrationTest extends TestCase
             ],
         ]);
 
-        $this->get(route('storefront.shop.index'))
+        $html = $this->get(route('storefront.shop.index'))
             ->assertOk()
-            ->assertSee('Footer Only', false)
-            ->assertDontSee('Main Only', false);
+            ->getContent();
+
+        $footerAt = strpos($html, 'storefront-site-footer');
+        $this->assertNotFalse($footerAt);
+        $footer = substr($html, $footerAt);
+
+        $this->assertStringContainsString('Footer Only', $footer);
+        $this->assertStringNotContainsString('Main Only', $footer);
+        $this->assertStringContainsString('Main Only', substr($html, 0, $footerAt));
     }
 
     /**
