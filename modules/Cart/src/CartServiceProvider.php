@@ -9,6 +9,7 @@ use Commerce\Cart\Contracts\CartStorageInterface;
 use Commerce\Cart\Contracts\CheckoutServiceInterface;
 use Commerce\Cart\Services\CartService;
 use Commerce\Cart\Services\CheckoutService;
+use Commerce\Cart\Services\HeaderViewModelBuilder;
 use Commerce\Cart\Services\HomepageBrandingQuery;
 use Commerce\Cart\Services\HomepageNavigationQuery;
 use Commerce\Cart\Services\HomepageProductQuery;
@@ -16,7 +17,9 @@ use Commerce\Cart\Services\ProductCardMapper;
 use Commerce\Cart\Services\ShopProductQuery;
 use Commerce\Cart\Services\StorefrontHomePageService;
 use Commerce\Cart\Support\SessionCartStorage;
+use Commerce\Contracts\Storefront\HeaderViewData;
 use Commerce\Core\Base\BaseModuleServiceProvider;
+use Illuminate\Support\Facades\View;
 
 final class CartServiceProvider extends BaseModuleServiceProvider
 {
@@ -42,6 +45,7 @@ final class CartServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(HomepageProductQuery::class);
         $this->app->singleton(HomepageBrandingQuery::class);
         $this->app->singleton(StorefrontHomePageService::class);
+        $this->app->singleton(HeaderViewModelBuilder::class);
     }
 
     public function boot(): void
@@ -50,5 +54,15 @@ final class CartServiceProvider extends BaseModuleServiceProvider
         $this->loadRoutesFrom($this->modulePath('routes/api.php'));
         $this->loadViewsFrom($this->modulePath('resources/views'), 'cart');
         $this->loadTranslationsFrom($this->modulePath('resources/lang'), 'storefront');
+
+        View::composer('components.storefront.layout.partials.site-header', function ($view): void {
+            $data = $view->getData();
+
+            if (($data['header'] ?? null) instanceof HeaderViewData) {
+                return;
+            }
+
+            $view->with('header', $this->app->make(HeaderViewModelBuilder::class)->build());
+        });
     }
 }

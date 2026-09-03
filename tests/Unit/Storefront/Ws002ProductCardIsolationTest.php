@@ -112,11 +112,12 @@ final class Ws002ProductCardIsolationTest extends TestCase
         $this->assertStringContainsString('ProductCardMapper', $contents);
     }
 
-    public function test_no_header_extract_this_milestone(): void
+    public function test_product_card_does_not_grow_header_markup(): void
     {
-        $this->assertFileDoesNotExist(
-            $this->repoRoot().'/resources/views/components/storefront/layout/partials/site-header.blade.php',
-        );
+        $card = file_get_contents($this->bladePath());
+        $this->assertNotFalse($card);
+        $this->assertStringNotContainsString('x-storefront.layout.partials.site-header', $card);
+        $this->assertStringNotContainsString('storefront-site-header', $card);
     }
 
     private function dtoPath(): string

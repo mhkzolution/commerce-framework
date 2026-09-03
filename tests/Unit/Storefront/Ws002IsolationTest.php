@@ -142,17 +142,19 @@ final class Ws002IsolationTest extends TestCase
 
     public function test_m1_does_not_extract_site_header_or_redesign_navigation(): void
     {
-        $this->assertFileDoesNotExist(
-            $this->repoRoot().'/resources/views/components/storefront/layout/partials/site-header.blade.php',
-        );
-
         $layout = file_get_contents($this->repoRoot().'/modules/Cart/resources/views/layouts/storefront.blade.php');
         $this->assertNotFalse($layout);
-        $this->assertStringContainsString('<header class="storefront-header">', $layout);
-        $this->assertStringContainsString('max-w-5xl', $layout);
-        $this->assertStringNotContainsString('x-storefront.layout.partials.site-header', $layout);
+        $this->assertStringContainsString('x-storefront.layout.partials.site-header', $layout);
         $this->assertStringNotContainsString('NavigationQueryServiceInterface', $layout);
         $this->assertStringNotContainsString('links(\'main\')', $layout);
+
+        $tokens = file_get_contents($this->tokensPath());
+        $this->assertNotFalse($tokens);
+        $this->assertStringNotContainsString('.storefront-site-header', $tokens);
+
+        $pageContainer = file_get_contents($this->pageContainerPath());
+        $this->assertNotFalse($pageContainer);
+        $this->assertStringNotContainsString('storefront-site-header', $pageContainer);
     }
 
     public function test_m1_does_not_add_archive_product_card_or_site_header_on_shop(): void

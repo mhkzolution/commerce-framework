@@ -1,0 +1,171 @@
+/* Site header — layout and responsive collapse. Chrome colors stay in shell.css. */
+
+.storefront-site-header__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-12);
+    padding-block: var(--space-16);
+}
+
+.storefront-site-header__brand {
+    order: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-8);
+    min-width: 0;
+}
+
+.storefront-site-header__logo {
+    display: block;
+    width: auto;
+    max-height: 2rem;
+    object-fit: contain;
+}
+
+.storefront-site-header__brand-name {
+    font-family: var(--font-store);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.storefront-site-header__menu {
+    order: 3;
+    width: 100%;
+}
+
+.storefront-site-header__menu-toggle {
+    list-style: none;
+    cursor: pointer;
+    font-family: var(--font-store);
+    font-size: 0.875rem;
+    color: var(--color-muted);
+}
+
+.storefront-site-header__menu-toggle::-webkit-details-marker {
+    display: none;
+}
+
+.storefront-site-header__nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    padding-block-start: var(--space-12);
+}
+
+.storefront-site-header__actions {
+    order: 2;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-12);
+    margin-inline-start: auto;
+}
+
+.storefront-site-header__search-label {
+    display: block;
+}
+
+.storefront-site-header__search-caption {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.storefront-site-header__search-input {
+    width: 8.5rem;
+    max-width: 100%;
+    padding: var(--space-4) var(--space-8);
+    font-family: var(--font-store);
+    font-size: 0.875rem;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+.storefront-site-header__cart {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.storefront-site-header__cart-count {
+    display: inline-flex;
+    min-width: 1.25rem;
+    justify-content: center;
+    padding-inline: var(--space-4);
+    font-size: 0.75rem;
+    line-height: 1.25rem;
+    color: var(--color-surface);
+    background: var(--color-primary);
+    border-radius: var(--radius-sm);
+}
+
+.storefront-site-header__logout,
+.storefront-site-header__currency {
+    display: inline;
+}
+
+.storefront-site-header__currency-select {
+    font-family: var(--font-store);
+    font-size: 0.875rem;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-4);
+}
+
+@media (min-width: 48rem) {
+    .storefront-site-header__inner {
+        flex-wrap: nowrap;
+        gap: var(--space-16);
+    }
+
+    .storefront-site-header__menu {
+        order: 2;
+        width: auto;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .storefront-site-header__menu-toggle {
+        display: none;
+    }
+
+    /*
+     * Closed <details> hides its panel via ::details-content
+     * (content-visibility) in Chromium. Force the primary nav
+     * visible on desktop/tablet without JS.
+     */
+    .storefront-site-header__menu::details-content {
+        content-visibility: visible;
+        display: block;
+    }
+
+    .storefront-site-header__nav {
+        display: flex !important;
+        flex-direction: row;
+        align-items: center;
+        gap: var(--space-16);
+        padding-block-start: 0;
+    }
+
+    .storefront-site-header__actions {
+        order: 3;
+        margin-inline-start: 0;
+    }
+
+    .storefront-site-header__search-input {
+        width: 12rem;
+    }
+}
