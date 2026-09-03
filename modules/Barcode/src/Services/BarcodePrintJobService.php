@@ -31,11 +31,26 @@ final class BarcodePrintJobService
             'label_count' => $labelCount,
             'paper_size' => (string) ($settings['paper_size_label'] ?? $settings['paper_size'] ?? $template->paper_size),
             'template_name' => (string) ($settings['name'] ?? $template->name),
-            'status' => 'completed',
+            'status' => 'queued',
             'settings' => $settings,
             'payload' => ['lines' => $lines],
-            'printed_at' => now(),
+            'printed_at' => null,
         ]);
+    }
+
+    public function markPrinted(BarcodePrintJob $job): void
+    {
+        $job->forceFill([
+            'status' => 'printed',
+            'printed_at' => $job->printed_at ?? now(),
+        ])->save();
+    }
+
+    public function markFailed(BarcodePrintJob $job): void
+    {
+        $job->forceFill([
+            'status' => 'failed',
+        ])->save();
     }
 
     /**

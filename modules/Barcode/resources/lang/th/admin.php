@@ -155,7 +155,8 @@ return [
         'status' => 'สถานะ',
         'view' => 'ดูรายละเอียด',
         'reprint' => 'พิมพ์ซ้ำ',
-        'status_completed' => 'สำเร็จ',
+        'status_queued' => 'รอพิมพ์',
+        'status_printed' => 'พิมพ์แล้ว',
         'status_failed' => 'ล้มเหลว',
     ],
 

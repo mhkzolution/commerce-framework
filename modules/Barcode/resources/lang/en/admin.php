@@ -155,7 +155,8 @@ return [
         'status' => 'Status',
         'view' => 'View details',
         'reprint' => 'Reprint',
-        'status_completed' => 'Completed',
+        'status_queued' => 'Queued',
+        'status_printed' => 'Printed',
         'status_failed' => 'Failed',
     ],
 

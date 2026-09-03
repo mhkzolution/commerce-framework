@@ -15,6 +15,7 @@ final class ExpandedLabelMapper
             ownerName: $item->ownerName,
             barcode: $item->barcode,
             displayText: $item->displayText,
+            title: $item->title,
         );
     }
 

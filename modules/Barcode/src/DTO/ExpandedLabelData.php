@@ -10,10 +10,11 @@ final readonly class ExpandedLabelData
         public string $ownerName,
         public string $barcode,
         public string $displayText,
+        public string $title = '',
     ) {}
 
     /**
-     * @return array{owner_name: string, barcode: string, display_text: string}
+     * @return array{owner_name: string, barcode: string, display_text: string, title: string, product_name: string}
      */
     public function toArray(): array
     {
@@ -21,6 +22,8 @@ final readonly class ExpandedLabelData
             'owner_name' => $this->ownerName,
             'barcode' => $this->barcode,
             'display_text' => $this->displayText,
+            'title' => $this->title,
+            'product_name' => $this->title,
         ];
     }
 }

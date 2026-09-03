@@ -23,8 +23,8 @@
             <td class="px-4 py-3 text-sm text-muted">{{ $job['template'] }}</td>
             <td class="px-4 py-3 text-sm text-muted">{{ $job['paper_size'] }}</td>
             <td class="px-4 py-3">
-                <x-admin.badge :variant="$job['status'] === 'completed' ? 'published' : 'danger'">
-                    {{ $job['status'] === 'completed' ? __('barcode::admin.history.status_completed') : __('barcode::admin.history.status_failed') }}
+                <x-admin.badge :variant="$job['status'] === 'printed' ? 'published' : ($job['status'] === 'queued' ? 'draft' : 'danger')">
+                    {{ __('barcode::admin.history.status_'.$job['status']) }}
                 </x-admin.badge>
             </td>
             <td class="px-4 py-3 text-right">

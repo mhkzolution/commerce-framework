@@ -4,38 +4,51 @@ declare(strict_types=1);
 
 namespace Commerce\Barcode\Services;
 
-use Commerce\Contracts\Settings\SiteIdentityServiceInterface;
+use Commerce\Contracts\Settings\SettingQueryServiceInterface;
 use Commerce\Marketplace\Models\Seller;
 use Commerce\Product\Models\Product;
 use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 final class BarcodeOwnerResolver
 {
     public function __construct(
-        private readonly SiteIdentityServiceInterface $siteIdentity,
+        private readonly SettingQueryServiceInterface $settings,
     ) {}
 
     public function resolve(?Product $product): string
     {
-        if ($product?->seller_uuid) {
-            return $this->resolveForSeller((string) $product->seller_uuid);
-        }
-
-        return $this->siteIdentity->name();
+        return $this->resolveForSeller($product?->seller_uuid);
     }
 
     public function resolveForSeller(?string $sellerUuid): string
     {
-        if ($sellerUuid && Schema::hasTable('marketplace_sellers')) {
-            $sellerName = Seller::query()
-                ->where('uuid', $sellerUuid)
-                ->value('name');
+        try {
+            if ($sellerUuid && class_exists(Seller::class) && Schema::hasTable('marketplace_sellers')) {
+                $sellerName = Seller::query()
+                    ->where('uuid', $sellerUuid)
+                    ->value('name');
 
-            if (is_string($sellerName) && $sellerName !== '') {
-                return $sellerName;
+                if (is_string($sellerName) && $sellerName !== '') {
+                    return $sellerName;
+                }
             }
+        } catch (Throwable) {
         }
 
-        return $this->siteIdentity->name();
+        try {
+            $storeName = $this->settings->get('store.name');
+            if (is_string($storeName) && trim($storeName) !== '') {
+                return trim($storeName);
+            }
+        } catch (Throwable) {
+        }
+
+        $appName = config('app.name');
+        if (is_string($appName) && trim($appName) !== '') {
+            return trim($appName);
+        }
+
+        return 'Store';
     }
 }

@@ -8,7 +8,7 @@ use Commerce\Barcode\Services\BarcodeLabelExpansionService;
 use Commerce\Barcode\Services\BarcodeOwnerResolver;
 use Commerce\Barcode\Services\BarcodeQueueItemNormalizer;
 use Commerce\Barcode\Services\ExpandedLabelMapper;
-use Commerce\Contracts\Settings\SiteIdentityServiceInterface;
+use Commerce\Contracts\Settings\SettingQueryServiceInterface;
 use Commerce\Core\Barcode\BarcodeValueGenerator;
 use Commerce\Core\Barcode\Strategies\PrefixBarcodeStrategy;
 use Commerce\Core\Barcode\Strategies\RandomBarcodeStrategy;
@@ -17,12 +17,14 @@ use PHPUnit\Framework\TestCase;
 
 final class BarcodeQueueArchitectureTest extends TestCase
 {
-    private function normalizer(string $siteName = 'Acme'): BarcodeQueueItemNormalizer
+    private function normalizer(): BarcodeQueueItemNormalizer
     {
-        $siteIdentity = $this->createMock(SiteIdentityServiceInterface::class);
-        $siteIdentity->method('name')->willReturn($siteName);
+        $settings = $this->createMock(SettingQueryServiceInterface::class);
+        $settings->method('get')->willReturn(null);
+        $settings->method('has')->willReturn(false);
+        $settings->method('getGroup')->willReturn([]);
 
-        return new BarcodeQueueItemNormalizer(new BarcodeOwnerResolver($siteIdentity));
+        return new BarcodeQueueItemNormalizer(new BarcodeOwnerResolver($settings));
     }
 
     public function test_legacy_payload_normalizes_to_canonical_queue_item(): void
@@ -82,6 +84,42 @@ final class BarcodeQueueArchitectureTest extends TestCase
         $this->assertCount(2, $labels);
         $this->assertSame('Display', $labels[0]['display_text']);
         $this->assertSame('BC-2', $labels[1]['display_text']);
+    }
+
+    public function test_stored_line_expansion_does_not_call_owner_resolver(): void
+    {
+        $settings = $this->createMock(SettingQueryServiceInterface::class);
+        $settings->expects($this->never())->method('get');
+        $settings->expects($this->never())->method('has');
+        $settings->expects($this->never())->method('getGroup');
+
+        $service = new BarcodeLabelExpansionService(
+            new BarcodeQueueItemNormalizer(new BarcodeOwnerResolver($settings)),
+            new ExpandedLabelMapper,
+        );
+
+        $labels = $service->expand([
+            [
+                'source' => 'MANUAL',
+                'title' => 'Frozen Widget',
+                'barcode' => 'SKU-001',
+                'display_text' => 'SKU-001',
+                'owner_name' => 'Frozen Owner',
+                'quantity' => 1,
+            ],
+            [
+                'source' => 'PRODUCT',
+                'title' => 'Live Name Must Not Matter',
+                'barcode' => 'SKU-002',
+                'display_text' => 'SKU-002',
+                'owner_name' => 'Snapshotted Owner',
+                'quantity' => 1,
+            ],
+        ]);
+
+        $this->assertCount(2, $labels);
+        $this->assertSame('Frozen Owner', $labels[0]['owner_name']);
+        $this->assertSame('Snapshotted Owner', $labels[1]['owner_name']);
     }
 
     public function test_barcode_value_generator_supports_multiple_strategies(): void

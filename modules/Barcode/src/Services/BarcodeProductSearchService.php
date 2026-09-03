@@ -4,26 +4,21 @@ declare(strict_types=1);
 
 namespace Commerce\Barcode\Services;
 
+use Commerce\Barcode\DTO\BarcodeSearchResult;
 use Commerce\Barcode\Support\BarcodeSkuNormalizer;
+use Commerce\Product\Models\Product;
+use Commerce\Product\Models\ProductMedia;
 use Commerce\Product\Models\ProductVariant;
-use Commerce\Product\Services\ProductImageResolver;
 
 final class BarcodeProductSearchService
 {
     public function __construct(
         private readonly BarcodeOwnerResolver $ownerResolver,
-        private readonly ProductImageResolver $imageResolver,
+        private readonly BarcodeImageResolver $imageResolver,
     ) {}
 
     /**
-     * @return list<array{
-     *     variant_uuid: string,
-     *     thumbnail_url: string|null,
-     *     owner_name: string,
-     *     product_name: string,
-     *     variant_name: string,
-     *     sku: string
-     * }>
+     * @return list<BarcodeSearchResult>
      */
     public function search(string $query, int $limit = 20): array
     {
@@ -47,24 +42,12 @@ final class BarcodeProductSearchService
             ->limit($limit)
             ->get();
 
-        $this->imageResolver->preloadForProducts($variants->pluck('product')->filter());
-
         return $variants
             ->map(fn (ProductVariant $variant) => $this->toResult($variant))
             ->all();
     }
 
-    /**
-     * @return array{
-     *     variant_uuid: string,
-     *     thumbnail_url: string|null,
-     *     owner_name: string,
-     *     product_name: string,
-     *     variant_name: string,
-     *     sku: string
-     * }|null
-     */
-    public function findBySku(string $sku): ?array
+    public function findBySku(string $sku): ?BarcodeSearchResult
     {
         $sku = BarcodeSkuNormalizer::normalize($sku);
 
@@ -91,28 +74,31 @@ final class BarcodeProductSearchService
         return $this->toResult($variant);
     }
 
-    /**
-     * @return array{
-     *     variant_uuid: string,
-     *     thumbnail_url: string|null,
-     *     owner_name: string,
-     *     product_name: string,
-     *     variant_name: string,
-     *     sku: string
-     * }
-     */
-    private function toResult(ProductVariant $variant): array
+    private function toResult(ProductVariant $variant): BarcodeSearchResult
     {
         $product = $variant->product;
         $sku = (string) ($variant->sku ?? '');
 
-        return [
-            'variant_uuid' => $variant->uuid,
-            'thumbnail_url' => $product ? $this->imageResolver->urlForProduct($product) : null,
-            'owner_name' => $this->ownerResolver->resolve($product),
-            'product_name' => (string) ($product?->name ?? ''),
-            'variant_name' => (string) ($variant->name ?? ''),
-            'sku' => $sku,
-        ];
+        return new BarcodeSearchResult(
+            productUuid: $product?->uuid,
+            variantUuid: $variant->uuid,
+            sku: $sku,
+            productName: (string) ($product?->name ?? ''),
+            variantName: (string) ($variant->name ?? ''),
+            ownerName: $this->ownerResolver->resolve($product),
+            thumbnailUrl: $this->imageResolver->resolve($this->primaryMediaUuid($product)),
+        );
+    }
+
+    private function primaryMediaUuid(?Product $product): ?string
+    {
+        if ($product === null) {
+            return null;
+        }
+
+        $media = $product->media;
+        $primary = $media->firstWhere('is_primary', true) ?? $media->first();
+
+        return $primary instanceof ProductMedia ? $primary->media_uuid : null;
     }
 }

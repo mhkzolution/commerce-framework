@@ -505,31 +505,6 @@ function initBarcodeCenter() {
         }
     }
 
-    function loadReprintPayload() {
-        const raw = sessionStorage.getItem('bc_reprint_payload');
-        if (!raw) {
-            return;
-        }
-
-        sessionStorage.removeItem('bc_reprint_payload');
-
-        try {
-            const payload = JSON.parse(raw);
-            if (Array.isArray(payload.lines) && payload.lines.length > 0) {
-                queue.loadItems(payload.lines);
-            }
-            if (payload.settings) {
-                settings = { ...settings, ...payload.settings };
-                applySettingsToDom();
-                if (payload.settings.id && templateSelect instanceof HTMLSelectElement) {
-                    templateSelect.value = String(payload.settings.id);
-                }
-            }
-        } catch {
-            // ignore invalid payload
-        }
-    }
-
     clearQueueBtn?.addEventListener('click', () => {
         if (confirm(i18n.clearConfirm || 'Clear queue?')) {
             queue.clear();
@@ -553,7 +528,6 @@ function initBarcodeCenter() {
     });
 
     applySettingsToDom();
-    loadReprintPayload();
     renderQueue(queue.snapshot());
 }
 

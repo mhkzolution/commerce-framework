@@ -6,6 +6,7 @@ namespace Commerce\Barcode;
 
 use Commerce\Barcode\Adapters\ManualQueueItemAdapter;
 use Commerce\Barcode\Adapters\ProductQueueItemAdapter;
+use Commerce\Barcode\Services\BarcodeImageResolver;
 use Commerce\Barcode\Services\BarcodeLabelExpansionService;
 use Commerce\Barcode\Services\BarcodeLabelRenderer;
 use Commerce\Barcode\Services\BarcodeLayoutCalculator;
@@ -34,6 +35,7 @@ final class BarcodeServiceProvider extends BaseModuleServiceProvider
         $this->mergeConfigFrom($this->modulePath('config/barcode.php'), 'barcode');
 
         $this->app->singleton(BarcodeOwnerResolver::class);
+        $this->app->singleton(BarcodeImageResolver::class);
         $this->app->singleton(BarcodeProductSearchService::class);
         $this->app->singleton(ProductQueueItemAdapter::class);
         $this->app->singleton(ManualQueueItemAdapter::class);

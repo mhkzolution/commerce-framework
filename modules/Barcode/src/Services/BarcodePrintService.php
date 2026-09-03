@@ -17,21 +17,37 @@ final class BarcodePrintService
     public function __construct(
         private readonly BarcodeLayoutCalculator $layoutCalculator,
         private readonly BarcodeLabelRenderer $labelRenderer,
+        private readonly ?BarcodePrintJobService $printJobs = null,
     ) {}
 
     public function printView(BarcodePrintJob $job): View
     {
-        return view('barcode::admin.print.labels', $this->viewData($job));
+        try {
+            $view = view('barcode::admin.print.labels', $this->viewData($job));
+            $this->jobs()->markPrinted($job);
+
+            return $view;
+        } catch (\Throwable $exception) {
+            $this->jobs()->markFailed($job);
+            throw $exception;
+        }
     }
 
     public function pdfDownload(BarcodePrintJob $job): Response
     {
+        try {
+            $html = $this->renderHtml($job);
+        } catch (\Throwable $exception) {
+            $this->jobs()->markFailed($job);
+            throw $exception;
+        }
+
         $options = new Options;
         $options->set('isRemoteEnabled', false);
         $options->set('defaultFont', 'DejaVu Sans');
 
         $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($this->printView($job)->render());
+        $dompdf->loadHtml($html);
 
         $layout = $this->layoutCalculator->resolve(
             $job->settings ?? [],
@@ -41,7 +57,14 @@ final class BarcodePrintService
         $widthPt = $layout->paperWidthMm * 2.83465;
         $heightPt = $layout->paperHeightMm * 2.83465;
         $dompdf->setPaper([0, 0, $widthPt, $heightPt]);
-        $dompdf->render();
+        try {
+            $dompdf->render();
+        } catch (\Throwable $exception) {
+            $this->jobs()->markFailed($job);
+            throw $exception;
+        }
+
+        $this->jobs()->markPrinted($job);
 
         $filename = 'barcode-labels-'.$job->uuid.'.pdf';
 
@@ -49,6 +72,18 @@ final class BarcodePrintService
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
+    }
+
+    private function renderHtml(BarcodePrintJob $job): string
+    {
+        return view('barcode::admin.print.labels', $this->viewData($job))->render();
+    }
+
+    private function jobs(): BarcodePrintJobService
+    {
+        return $this->printJobs ?? (app()->bound(BarcodePrintJobService::class)
+            ? app(BarcodePrintJobService::class)
+            : new BarcodePrintJobService);
     }
 
     /**

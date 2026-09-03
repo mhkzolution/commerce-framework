@@ -7,22 +7,21 @@ namespace Tests\Feature\Barcode;
 use Commerce\Barcode\Http\Controllers\Admin\HistoryController;
 use Commerce\Barcode\Http\Requests\StoreBarcodePrintRequest;
 use Commerce\Barcode\Models\BarcodePrintJob;
+use Commerce\Barcode\Models\BarcodeTemplate;
 use Commerce\Barcode\Services\BarcodeLabelExpansionService;
 use Commerce\Barcode\Services\BarcodeLabelRenderer;
 use Commerce\Barcode\Services\BarcodeLayoutCalculator;
 use Commerce\Barcode\Services\BarcodePrintJobService;
 use Commerce\Barcode\Services\BarcodePrintService;
 use Commerce\Barcode\Services\BarcodeTemplateService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Commerce\Iam\Models\User;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
-final class BarcodePrintJobTest extends TestCase
+final class BarcodePrintJobTest extends BarcodeFeatureTestCase
 {
-    use RefreshDatabase;
 
     /**
      * @var list<string>
@@ -80,15 +79,19 @@ final class BarcodePrintJobTest extends TestCase
         $this->app['view']->addNamespace('barcode', base_path('modules/Barcode/resources/views'));
         $this->app['translator']->addNamespace('barcode', base_path('modules/Barcode/resources/lang'));
 
-        Route::get('/admin/barcode', static fn () => '')->name('admin.barcode.index');
-        Route::get('/admin/barcode/print/{job}/pdf', static fn () => '')->name('admin.barcode.print.pdf');
+        if (! Route::has('admin.barcode.index')) {
+            Route::get('/admin/barcode', static fn () => '')->name('admin.barcode.index');
+        }
+        if (! Route::has('admin.barcode.print.pdf')) {
+            Route::get('/admin/barcode/print/{job}/pdf', static fn () => '')->name('admin.barcode.print.pdf');
+        }
         $this->app['router']->getRoutes()->refreshNameLookups();
 
         $this->app->instance(BarcodeLabelExpansionService::class, new class
         {
             /**
              * @param  list<array<string, mixed>>  $lines
-             * @return list<array{owner_name: string, barcode: string, display_text: string}>
+             * @return list<array<string, mixed>>
              */
             public function expand(array $lines): array
             {
@@ -96,10 +99,13 @@ final class BarcodePrintJobTest extends TestCase
 
                 foreach ($lines as $line) {
                     $quantity = max(1, (int) ($line['quantity'] ?? 1));
+                    $title = (string) ($line['title'] ?? $line['product_name'] ?? '');
                     $label = [
                         'owner_name' => (string) ($line['owner_name'] ?? ''),
                         'barcode' => (string) ($line['barcode'] ?? $line['sku'] ?? ''),
                         'display_text' => (string) ($line['display_text'] ?? $line['sku'] ?? ''),
+                        'title' => $title,
+                        'product_name' => $title,
                     ];
 
                     for ($i = 0; $i < $quantity; $i++) {
@@ -116,6 +122,7 @@ final class BarcodePrintJobTest extends TestCase
         $this->printService = new BarcodePrintService(
             new BarcodeLayoutCalculator,
             new BarcodeLabelRenderer,
+            $this->printJobs,
         );
     }
 
@@ -260,6 +267,190 @@ final class BarcodePrintJobTest extends TestCase
         $this->assertStringContainsString('->resolve(', $source);
         $this->assertStringNotContainsString('->compute(', $source);
         $this->assertStringNotContainsString("config('barcode.presets')", $source);
+    }
+
+    #[Test]
+    public function print_create_is_queued_then_printed_never_completed(): void
+    {
+        $template = $this->templates->create([
+            'name' => 'Status Source',
+            'preset_code' => 'a4_40',
+        ]);
+
+        $job = $this->printJobs->create($this->oneLine(), $template, 0);
+
+        $this->assertSame('queued', $job->status);
+        $this->assertNull($job->printed_at);
+        $this->assertNotSame('completed', $job->status);
+
+        $this->printService->printView($job)->render();
+
+        $job->refresh();
+        $this->assertSame('printed', $job->status);
+        $this->assertNotNull($job->printed_at);
+        $this->assertNotSame('completed', $job->status);
+        $this->assertDatabaseMissing('barcode_print_jobs', ['status' => 'completed']);
+    }
+
+    #[Test]
+    public function renderer_exception_marks_job_failed(): void
+    {
+        $template = $this->templates->create([
+            'name' => 'Fail Source',
+            'preset_code' => 'a4_40',
+        ]);
+
+        $job = $this->printJobs->create($this->oneLine(), $template, 0);
+
+        $this->app->instance(BarcodeLabelExpansionService::class, new class
+        {
+            public function expand(array $lines): array
+            {
+                throw new \RuntimeException('svg failed');
+            }
+        });
+
+        $printService = new BarcodePrintService(
+            new BarcodeLayoutCalculator,
+            new BarcodeLabelRenderer,
+        );
+
+        try {
+            $printService->printView($job);
+            $this->fail('Renderer exception should surface');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('svg failed', $exception->getMessage());
+        }
+
+        $job->refresh();
+        $this->assertSame('failed', $job->status);
+        $this->assertNotSame('completed', $job->status);
+    }
+
+    #[Test]
+    public function reprint_after_product_name_change_shows_stored_product_name(): void
+    {
+        $template = $this->templates->create([
+            'name' => 'Rename Lock',
+            'preset_code' => 'a4_40',
+        ]);
+
+        $job = $this->printJobs->create([[
+            'source' => 'PRODUCT',
+            'title' => 'Frozen Product Name',
+            'barcode' => 'BC-RENAME-001',
+            'display_text' => 'BC-RENAME-001',
+            'owner_name' => 'Acme Store',
+            'product_name' => 'Frozen Product Name',
+            'quantity' => 1,
+        ]], $template, 0);
+
+        $html = $this->printService->printView($job)->render();
+
+        $this->assertStringContainsString('Frozen Product Name', $html);
+        $this->assertStringNotContainsString('Renamed After Print', $html);
+    }
+
+    #[Test]
+    public function reprint_after_product_deleted_still_succeeds_from_payload(): void
+    {
+        $template = $this->templates->create([
+            'name' => 'Delete Lock',
+            'preset_code' => 'a4_40',
+        ]);
+
+        $job = $this->printJobs->create([[
+            'source' => 'PRODUCT',
+            'title' => 'Deleted Product Name',
+            'barcode' => 'BC-DELETE-001',
+            'display_text' => 'BC-DELETE-001',
+            'owner_name' => 'Acme Store',
+            'product_name' => 'Deleted Product Name',
+            'quantity' => 1,
+        ]], $template, 0);
+
+        $html = $this->printService->printView($job)->render();
+
+        $this->assertStringContainsString('Deleted Product Name', $html);
+        $this->assertStringContainsString('BC-DELETE-001', $html);
+    }
+
+    #[Test]
+    public function http_print_store_ignores_browser_label_width(): void
+    {
+        $this->templates->ensureDefaults();
+
+        $template = BarcodeTemplate::query()->where('preset_code', 'a4_40')->firstOrFail();
+        $this->assertEqualsWithDelta(48.5, (float) $template->label_width, 0.001);
+
+        $user = new User;
+        $user->id = 1;
+        $user->name = 'Printer';
+
+        $response = $this->withoutMiddleware()
+            ->actingAs($user)
+            ->postJson(route('admin.barcode.print.store'), [
+                'template_id' => $template->id,
+                'lines' => [$this->validLineInput()],
+                'settings' => [
+                    'label_width' => 999,
+                    'paper_size' => 'thermal',
+                ],
+            ]);
+
+        $response->assertOk();
+
+        $job = BarcodePrintJob::query()->where('uuid', $response->json('job_uuid'))->firstOrFail();
+        $this->assertEqualsWithDelta(48.5, (float) $job->settings['label_width'], 0.001);
+        $this->assertNotEquals(999, $job->settings['label_width']);
+        $this->assertSame('queued', $job->status);
+    }
+
+    #[Test]
+    public function renderer_succeeds_after_template_row_is_deleted(): void
+    {
+        $template = $this->templates->create([
+            'name' => 'Disposable Layout',
+            'preset_code' => 'a4_40',
+        ]);
+
+        $job = $this->printJobs->create($this->oneLine(), $template, 0);
+        $settings = $job->settings;
+
+        BarcodeTemplate::query()->whereKey($template->id)->delete();
+        $this->assertDatabaseMissing('barcode_templates', ['id' => $template->id]);
+
+        $html = $this->printService->printView($job)->render();
+
+        $this->assertStringContainsString('48.5mm', $html);
+        $this->assertStringContainsString('25.4mm', $html);
+
+        $job->refresh();
+        $this->assertSame($settings, $job->settings);
+        $this->assertSame('printed', $job->status);
+    }
+
+    #[Test]
+    public function reprint_survives_catalog_millimetre_mutation(): void
+    {
+        $template = $this->templates->create([
+            'name' => 'Catalog Lock',
+            'preset_code' => 'a4_40',
+        ]);
+
+        $job = $this->printJobs->create($this->oneLine(), $template, 0);
+
+        config()->set('barcode.presets.a4_40.label_width', 1);
+        config()->set('barcode.presets.a4_40.label_height', 1);
+        config()->set('barcode.presets.a4_40.columns', 1);
+
+        $reprint = (new HistoryController($this->printJobs, $this->printService))->reprint($job);
+        $this->assertInstanceOf(View::class, $reprint);
+
+        $html = $reprint->render();
+        $this->assertStringContainsString('48.5mm', $html);
+        $this->assertStringContainsString('25.4mm', $html);
+        $this->assertEqualsWithDelta(48.5, (float) $job->fresh()->settings['label_width'], 0.001);
     }
 
     /**

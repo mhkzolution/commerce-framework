@@ -19,7 +19,7 @@ return new class extends Migration
             $table->unsignedInteger('label_count')->default(0);
             $table->string('paper_size', 32)->nullable();
             $table->string('template_name')->nullable();
-            $table->string('status', 32)->default('completed');
+            $table->string('status', 32)->default('queued');
             $table->json('settings')->nullable();
             $table->json('payload')->nullable();
             $table->timestamp('printed_at')->nullable();

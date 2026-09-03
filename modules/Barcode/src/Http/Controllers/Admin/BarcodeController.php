@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Commerce\Barcode\Http\Controllers\Admin;
 
+use Commerce\Barcode\DTO\BarcodeSearchResult;
 use Commerce\Barcode\Services\BarcodeOwnerResolver;
 use Commerce\Barcode\Services\BarcodeProductSearchService;
 use Commerce\Barcode\Services\BarcodeWorkspaceService;
@@ -75,12 +76,15 @@ final class BarcodeController
             $exact = $this->searchService->findBySku($query);
 
             return response()->json([
-                'data' => $exact ? [$exact] : [],
+                'data' => $exact instanceof BarcodeSearchResult ? [$exact->toArray()] : [],
             ]);
         }
 
         return response()->json([
-            'data' => $this->searchService->search($query),
+            'data' => array_map(
+                static fn (BarcodeSearchResult $row): array => $row->toArray(),
+                $this->searchService->search($query),
+            ),
         ]);
     }
 
