@@ -6,7 +6,6 @@ namespace Tests\Feature\Storefront;
 
 use Commerce\Cart\DTO\HomepageBrandingData;
 use Commerce\Cart\DTO\HomepageNavigationData;
-use Commerce\Cart\DTO\HomepageProductCardData;
 use Commerce\Cart\Services\StorefrontHomePageService;
 use Commerce\Catalog\Models\Category as CatalogCategory;
 use Commerce\Cms\Models\FaqEntry;
@@ -14,6 +13,7 @@ use Commerce\Cms\Models\HeroBanner;
 use Commerce\Cms\Models\Post;
 use Commerce\Cms\Models\PromotionBanner;
 use Commerce\Contracts\Media\MediaQueryServiceInterface;
+use Commerce\Contracts\Storefront\ProductCardData;
 use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Product\Contracts\ProductServiceInterface;
 use Commerce\Product\DTO\CreateProductData;
@@ -75,7 +75,7 @@ final class StorefrontHomePageTest extends TestCase
 
         $this->assertNotEmpty($payload['arrivalProducts']);
         foreach ($payload['arrivalProducts'] as $card) {
-            $this->assertInstanceOf(HomepageProductCardData::class, $card);
+            $this->assertInstanceOf(ProductCardData::class, $card);
         }
 
         $this->assertNotEmpty($payload['arrivalCategories']);
@@ -98,7 +98,7 @@ final class StorefrontHomePageTest extends TestCase
 
         $html = (string) $response->json('html');
         $this->assertStringContainsString(self::PRODUCT_NAME, $html);
-        $this->assertStringContainsString('storefront-home-product-card', $html);
+        $this->assertStringContainsString('storefront-product-card', $html);
         $this->assertStringContainsString('12.50', $html);
     }
 

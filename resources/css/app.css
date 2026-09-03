@@ -4,6 +4,7 @@
 @import './tokens/tailwind-theme.css';
 @import './admin/components.css';
 @import './storefront/tokens.css';
+@import './storefront/product-card.css';
 @import './storefront/shell.css';
 @import './storefront/blog.css';
 

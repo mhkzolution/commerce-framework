@@ -17,21 +17,17 @@ final class Ws002HomepageContractTest extends TestCase
         $this->withoutVite();
     }
 
-    public function test_homepage_renders_without_later_ws002_primitives(): void
+    public function test_homepage_renders_without_site_header(): void
     {
         $this->assertFileDoesNotExist(
             resource_path('views/components/storefront/layout/partials/site-header.blade.php'),
-        );
-        $this->assertFileDoesNotExist(
-            resource_path('views/components/storefront/cards/product.blade.php'),
         );
 
         $this->get('/')
             ->assertOk()
             ->assertSee('data-storefront-home', false)
             ->assertSee('storefront-home-arrivals', false)
-            ->assertDontSee('x-storefront.layout.partials.site-header', false)
-            ->assertDontSee('x-storefront.cards.product', false);
+            ->assertDontSee('x-storefront.layout.partials.site-header', false);
     }
 
     public function test_homepage_html_uses_page_container(): void

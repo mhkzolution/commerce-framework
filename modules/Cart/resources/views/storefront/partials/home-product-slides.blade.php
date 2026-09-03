@@ -1,10 +1,12 @@
 @forelse ($arrivalProducts as $index => $product)
     <div class="storefront-slider__slide storefront-home-arrivals__slide">
-        @include('cart::storefront.partials.home-product-card', [
-            'product' => $product,
-            'displayCurrency' => $displayCurrency ?? '',
-            'priority' => $index < 2,
-        ])
+        <x-storefront.cards.product
+            :product="$product"
+            :display-currency="$displayCurrency ?? ''"
+            :base-currency="$baseCurrency ?? null"
+            :currency-converter="$currencyConverter ?? null"
+            :priority="$index < 2"
+        />
     </div>
 @empty
     <div class="storefront-slider__slide storefront-home-arrivals__empty">

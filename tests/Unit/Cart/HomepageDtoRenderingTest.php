@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Cart;
 
 use Commerce\Cart\DTO\HomepageNavigationData;
-use Commerce\Cart\DTO\HomepageProductCardData;
+use Commerce\Contracts\Storefront\ProductCardData;
 use Tests\TestCase;
 
 final class HomepageDtoRenderingTest extends TestCase
@@ -18,7 +18,7 @@ final class HomepageDtoRenderingTest extends TestCase
 
     public function test_product_slides_render_homepage_product_card_data(): void
     {
-        $card = new HomepageProductCardData(
+        $card = new ProductCardData(
             uuid: '11111111-1111-1111-1111-111111111111',
             name: 'DTO Harbor Mug',
             slug: 'dto-harbor-mug',
@@ -42,7 +42,7 @@ final class HomepageDtoRenderingTest extends TestCase
         $this->assertStringContainsString('12.50', $html);
         $this->assertStringContainsString('THB', $html);
         $this->assertStringContainsString(__('storefront::storefront.in_stock'), $html);
-        $this->assertStringContainsString('storefront-home-product-card', $html);
+        $this->assertStringContainsString('storefront-product-card', $html);
         $this->assertStringNotContainsString('defaultVariant', $html);
     }
 
@@ -69,7 +69,7 @@ final class HomepageDtoRenderingTest extends TestCase
 
     public function test_out_of_stock_card_renders_dto_flag(): void
     {
-        $card = new HomepageProductCardData(
+        $card = new ProductCardData(
             uuid: '44444444-4444-4444-4444-444444444444',
             name: 'Sold Out Tray',
             slug: 'sold-out-tray',
