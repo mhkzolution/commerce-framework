@@ -124,6 +124,11 @@ Implementation spec: `docs/superpowers/specs/2026-09-03-navigation-management-v1
 
 **Website Settings (v1.8.x)** — feature on `main`, not recovery.
 
+Footer social is still `FooterSocialQuery::links() → []`. Brand already reads `store.name` / logo. v1.8 owns the admin + keys and fills the social query in place.
+
+Feature lock: `docs/superpowers/specs/2026-09-03-website-settings-feature.md`  
+Implementation spec: `docs/superpowers/specs/2026-09-03-website-settings-v1-implementation.md`
+
 Do not start WS-002 until Website Settings is tagged.
 
 ```text
