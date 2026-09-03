@@ -1,6 +1,6 @@
 @if (! module_disabled('blog') && $latestPosts->isNotEmpty())
     <section class="storefront-home__section storefront-home-articles" aria-labelledby="home-articles-title" data-home-reveal>
-        <div class="storefront-home__inner">
+        <x-storefront.layout.page-container class="storefront-home__inner">
             <header class="storefront-home-section-header storefront-home-section-header--split">
                 <div>
                     <h2 id="home-articles-title" class="storefront-home-section-header__title">{{ __('storefront::storefront.home_latest_articles') }}</h2>
@@ -23,6 +23,6 @@
                     </div>
                 @endforeach
             </x-storefront.navigation.slider>
-        </div>
+        </x-storefront.layout.page-container>
     </section>
 @endif

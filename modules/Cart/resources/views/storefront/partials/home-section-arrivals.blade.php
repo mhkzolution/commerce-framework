@@ -3,7 +3,7 @@
 @endphp
 
 <section class="storefront-home__section storefront-home-arrivals" aria-labelledby="home-arrivals-title" data-home-reveal>
-    <div class="storefront-home__inner">
+    <x-storefront.layout.page-container class="storefront-home__inner">
         <header class="storefront-home-section-header">
             <div>
                 <h2 id="home-arrivals-title" class="storefront-home-section-header__title">{{ __('storefront::storefront.home_new_arrivals') }}</h2>
@@ -62,5 +62,5 @@
                 @include('cart::storefront.partials.home-product-slides')
             </x-storefront.navigation.slider>
         </div>
-    </div>
+    </x-storefront.layout.page-container>
 </section>

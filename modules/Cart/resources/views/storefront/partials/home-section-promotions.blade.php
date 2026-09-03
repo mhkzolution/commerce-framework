@@ -9,7 +9,7 @@
         aria-label="{{ __('storefront::storefront.home_promotions') }}"
         data-home-reveal
     >
-        <div class="storefront-home__inner">
+        <x-storefront.layout.page-container class="storefront-home__inner">
             @if ($layout === 'slider')
                 <x-storefront.navigation.slider
                     class="storefront-home-promos__slider"
@@ -33,6 +33,6 @@
                     @endforeach
                 </div>
             @endif
-        </div>
+        </x-storefront.layout.page-container>
     </section>
 @endif
