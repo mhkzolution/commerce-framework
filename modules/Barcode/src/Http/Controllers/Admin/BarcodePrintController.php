@@ -25,14 +25,7 @@ final class BarcodePrintController
     public function store(StoreBarcodePrintRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        $template = isset($validated['template_id'])
-            ? BarcodeTemplate::query()->find($validated['template_id'])
-            : null;
-
-        $settings = $validated['settings'];
-        if ($template) {
-            $settings['name'] = $template->name;
-        }
+        $template = BarcodeTemplate::query()->findOrFail($validated['template_id']);
 
         $lines = array_map(
             fn (array $line): array => $this->queueItemNormalizer->normalize($line)->toArray(),
@@ -41,7 +34,6 @@ final class BarcodePrintController
 
         $job = $this->printJobService->create(
             lines: $lines,
-            settings: $settings,
             template: $template,
             userId: (int) $request->user()->id,
         );

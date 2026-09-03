@@ -6,13 +6,14 @@ namespace Commerce\Barcode\Http\Controllers\Admin;
 
 use Commerce\Barcode\Models\BarcodePrintJob;
 use Commerce\Barcode\Services\BarcodePrintJobService;
-use Illuminate\Http\JsonResponse;
+use Commerce\Barcode\Services\BarcodePrintService;
 use Illuminate\View\View;
 
 final class HistoryController
 {
     public function __construct(
         private readonly BarcodePrintJobService $printJobService,
+        private readonly BarcodePrintService $printService,
     ) {}
 
     public function index(): View
@@ -38,12 +39,12 @@ final class HistoryController
     public function show(BarcodePrintJob $job): View
     {
         return view('barcode::admin.history.show', [
-            'job' => $job->load(['printedBy', 'template']),
+            'job' => $job->load(['printedBy']),
         ]);
     }
 
-    public function reprint(BarcodePrintJob $job): JsonResponse
+    public function reprint(BarcodePrintJob $job): View
     {
-        return response()->json($this->printJobService->reprintPayload($job));
+        return $this->printService->printView($job);
     }
 }

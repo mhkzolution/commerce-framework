@@ -12,26 +12,25 @@ final class BarcodePrintJobService
 {
     /**
      * @param  list<array<string, mixed>>  $lines
-     * @param  array<string, mixed>  $settings
      */
     public function create(
         array $lines,
-        array $settings,
-        ?BarcodeTemplate $template,
+        BarcodeTemplate $template,
         int $userId,
     ): BarcodePrintJob {
+        $settings = $template->toSettingsArray();
+
         $labelCount = array_sum(array_map(
             static fn (array $line): int => max(1, (int) ($line['quantity'] ?? 1)),
             $lines,
         ));
 
         return BarcodePrintJob::query()->create([
-            'barcode_template_id' => $template?->id,
+            'barcode_template_id' => $template->id,
             'printed_by_user_id' => $userId,
             'label_count' => $labelCount,
-            'paper_size' => config("barcode.paper_sizes.{$settings['paper_size']}.label")
-                ?? strtoupper((string) ($settings['paper_size'] ?? '')),
-            'template_name' => (string) ($settings['name'] ?? $template?->name ?? 'Custom'),
+            'paper_size' => (string) ($settings['paper_size_label'] ?? $settings['paper_size'] ?? $template->paper_size),
+            'template_name' => (string) ($settings['name'] ?? $template->name),
             'status' => 'completed',
             'settings' => $settings,
             'payload' => ['lines' => $lines],
@@ -45,23 +44,9 @@ final class BarcodePrintJobService
     public function listRecent(int $limit = 50): Collection
     {
         return BarcodePrintJob::query()
-            ->with(['printedBy', 'template'])
+            ->with(['printedBy'])
             ->orderByDesc('printed_at')
             ->limit($limit)
             ->get();
-    }
-
-    /**
-     * @return array{
-     *     lines: list<array<string, mixed>>,
-     *     settings: array<string, mixed>
-     * }
-     */
-    public function reprintPayload(BarcodePrintJob $job): array
-    {
-        return [
-            'lines' => $job->payload['lines'] ?? [],
-            'settings' => $job->settings ?? [],
-        ];
     }
 }

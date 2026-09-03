@@ -167,14 +167,23 @@
     @foreach ($pages as $page)
         <div class="bc-print-sheet">
             @foreach ($page['cells'] as $cell)
-                @if ($cell['barcode_svg'])
+                @if ($cell['occupied'] ?? false)
                     <div
                         class="bc-print-label {{ $orientationClass }}"
                         style="left: {{ $cell['left'] }}mm; top: {{ $cell['top'] }}mm; width: {{ $cell['width'] }}mm; height: {{ $cell['height'] }}mm;"
                     >
-                        <div class="bc-print-label__owner">{{ $cell['owner_name'] }}</div>
-                        <div class="bc-print-label__barcode">{!! $cell['barcode_svg'] !!}</div>
-                        <div class="bc-print-label__sku">{{ $cell['display_text'] }}</div>
+                        @if ($cell['owner_name'])
+                            <div class="bc-print-label__owner">{{ $cell['owner_name'] }}</div>
+                        @endif
+                        @if ($cell['barcode_svg'])
+                            <div class="bc-print-label__barcode">{!! $cell['barcode_svg'] !!}</div>
+                        @endif
+                        @if ($cell['product_name'])
+                            <div class="bc-print-label__name">{{ $cell['product_name'] }}</div>
+                        @endif
+                        @if ($cell['display_text'])
+                            <div class="bc-print-label__sku">{{ $cell['display_text'] }}</div>
+                        @endif
                     </div>
                 @endif
             @endforeach
