@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Commerce\Cart\Http\Controllers;
 
 use Commerce\Cart\Contracts\CartServiceInterface;
+use Commerce\Cart\DTO\ShopListingFilters;
+use Commerce\Cart\Services\HomepageNavigationQuery;
 use Commerce\Cart\Services\ProductCardMapper;
+use Commerce\Cart\Services\ShopProductQuery;
 use Commerce\Contracts\Currency\CurrencyConverterInterface;
 use Commerce\Contracts\Inventory\InventoryQueryServiceInterface;
 use Commerce\Contracts\Storefront\ProductCardData;
@@ -19,6 +22,8 @@ final class ShopController extends Controller
 {
     public function __construct(
         private readonly ProductQueryService $productQueryService,
+        private readonly ShopProductQuery $listing,
+        private readonly HomepageNavigationQuery $navigation,
         private readonly CartServiceInterface $cartService,
         private readonly InventoryQueryServiceInterface $inventoryQueryService,
         private readonly ProductCardMapper $cards,
@@ -30,11 +35,9 @@ final class ShopController extends Controller
         $converter = app()->bound(CurrencyConverterInterface::class)
             ? app(CurrencyConverterInterface::class)
             : null;
-        $search = $request->string('search')->toString() ?: null;
+        $filters = ShopListingFilters::fromRequest($request);
 
-        $paginator = $search
-            ? $this->productQueryService->paginateStorefrontSearch($search, perPage: 24)
-            : $this->productQueryService->paginateStorefront(perPage: 24);
+        $paginator = $this->listing->paginate($filters, perPage: 24);
 
         $cards = $paginator->getCollection()
             ->map(fn (Product $product): ?ProductCardData => $this->cards->fromProduct($product))
@@ -45,7 +48,8 @@ final class ShopController extends Controller
 
         return view('cart::storefront.shop', [
             'products' => $paginator,
-            'search' => $search,
+            'filters' => $filters,
+            'categories' => $this->navigation->shopFilterOptions(),
             'displayCurrency' => $cart->currency,
             'baseCurrency' => $converter?->baseCurrency() ?? $cart->currency,
             'currencyConverter' => $converter,

@@ -84,7 +84,7 @@ final class Ws002FooterTokenAdoptionTest extends TestCase
         }
     }
 
-    public function test_phase_2_does_not_extract_header_or_touch_shop(): void
+    public function test_phase_2_does_not_extract_header(): void
     {
         $this->assertFileDoesNotExist(
             $this->repoRoot().'/resources/views/components/storefront/layout/partials/site-header.blade.php',
@@ -93,10 +93,6 @@ final class Ws002FooterTokenAdoptionTest extends TestCase
         $layout = file_get_contents($this->repoRoot().'/modules/Cart/resources/views/layouts/storefront.blade.php');
         $this->assertNotFalse($layout);
         $this->assertStringContainsString('<header class="storefront-header">', $layout);
-
-        $shop = file_get_contents($this->repoRoot().'/modules/Cart/resources/views/storefront/shop.blade.php');
-        $this->assertNotFalse($shop);
-        $this->assertStringNotContainsString('x-storefront.layout.page-container', $shop);
     }
 
     public function test_tokens_file_scale_is_not_expanded(): void
