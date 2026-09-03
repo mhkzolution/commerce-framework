@@ -12,17 +12,19 @@ v1.5.0
 v1.6.0
 v1.7.0
 v1.8.0
+v1.9.0
 ```
 
-v1.2.0 / v1.3.0 feature branches were deleted after merge. v1.4.0 through v1.8.0 were squash-merged as PR #1 through PR #6. The tags on `main` are the source of history.
+v1.4.0 through v1.9.0 were squash-merged as PR #1 through PR #7. The tags on `main` are the source of history.
 
 ```text
-main = stable (active development line)   22babfe
+main = stable (active development line)   3b3e7cf
 v1.4.0  Barcode Management     (9cf699f)
 v1.5.0  Homepage CMS           (6b63a8d)
 v1.6.0  Footer Management      (52a1a20)
 v1.7.0  Navigation Management  (a5b336e)
 v1.8.0  Website Settings       (22babfe)
+v1.9.0  WS-002 Design System   (3b3e7cf)
 ```
 
 Recovery is **closed**. Phase 1 = Barcode. Phase 2 = Homepage + Footer. Later work is a feature roadmap on `main`. Do not merge archive branches.
@@ -40,8 +42,9 @@ Recovery is **closed**. Phase 1 = Barcode. Phase 2 = Homepage + Footer. Later wo
 | `v1.6.0` | `52a1a20` | Storefront / Settings | Footer composition admin, preview, storefront render |
 | `v1.7.0` | `a5b336e` | Storefront / Navigation | Named menus, admin CRUD, FooterNavigationQuery |
 | `v1.8.0` | `22babfe` | Storefront / Settings | Website Settings admin, brand keys, FooterSocialQuery |
+| `v1.9.0` | `3b3e7cf` | Storefront / Design | Storefront tokens, page-container, Homepage consume |
 
-v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 through v1.8.0 are separate so a barcode, homepage, footer, navigation, or website-settings defect rolls back only that surface.
+v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 through v1.9.0 are separate so a barcode, homepage, footer, navigation, website-settings, or design-system defect rolls back only that surface.
 
 ## v1.0.0 — Module Management
 
@@ -136,19 +139,29 @@ Implementation spec: `docs/superpowers/specs/2026-09-03-navigation-management-v1
 Feature lock: `docs/superpowers/specs/2026-09-03-website-settings-feature.md`  
 Implementation spec: `docs/superpowers/specs/2026-09-03-website-settings-v1-implementation.md`
 
-## Next candidate
+## v1.9.0 — WS-002 Design System Foundations
 
-**WS-002 Design System (v1.9.x)** — feature on `main`, not recovery.
-
-Homepage, Footer, Navigation, and Website Settings now have stable data owners. v1.9 owns storefront tokens and shared `x-storefront.*` primitives. First tag is tokens + Homepage container only.
+- `resources/css/storefront/tokens.css` — `--store-max-width` 80rem / gutter / `--radius-store*` / spacing scale
+- `x-storefront.layout.page-container` (Homepage inners; FAQ uses `narrow`)
+- Homepage drops hardcoded `77.5rem`
+- Footer Blade / DTOs unchanged; Footer CSS already read `--store-max-width`
+- Isolation lock: no `feat/commerce-framework-v1` merge, no site-header, no shared product card, no Appearance
+- Squash-merged as PR #7 (`3b3e7cf`)
 
 Feature lock: `docs/superpowers/specs/2026-09-03-ws002-design-system-feature.md`  
 Implementation spec: `docs/superpowers/specs/2026-09-03-ws002-design-system-v1-implementation.md`
 
-Do not start Scanner / POS / Inventory / Marketplace until WS-002 Phase 1 is tagged unless the owner picks a different next.
+## Next candidate
+
+**WS-002 Phase 2 — Footer Token Adoption (v1.9.1)** — CSS-only. Footer consumes spacing / radius / type tokens. Do not rewrite `site-footer` Blade.
+
+Allowlist: `docs/superpowers/specs/2026-09-03-ws002-footer-token-adoption.md`
+
+Do not start Header / Navigation chrome, Scanner, POS, Inventory, or Marketplace until this is tagged unless the owner picks a different next.
 
 ```text
-v1.9.x  WS-002 Design System      ← next
+v1.9.1  WS-002 Footer Token Adoption   ← next
+v1.10.x Header / Navigation chrome
 later   Scanner, POS Barcode, Inventory Expansion, Marketplace Payouts
 ```
 
@@ -161,7 +174,7 @@ These remain outside the tagged history on `main`:
 - `feat/commerce-framework-v1` design system / `stash@{0}` (archive — do not merge)
 - UI-TECH-001 (`@vite/client` injected twice on blog pages)
 
-WS-002 on `main` is the next tag: storefront tokens + `x-storefront.*` primitives, not the archive library.
+WS-002 Phase 3+ (header / Shop / Blog) and the archive library stay later. Appearance / CX stay out.
 
 Safety net (do not delete, do not merge):
 
