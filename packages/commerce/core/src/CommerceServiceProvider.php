@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Commerce\Core;
 
 use Commerce\Contracts\Authorization\PermissionRegistryInterface;
+use Commerce\Contracts\Barcode\BarcodeValueGeneratorInterface;
 use Commerce\Contracts\Event\EventBusInterface;
 use Commerce\Contracts\Hook\HookRegistryInterface;
 use Commerce\Contracts\Pricing\PriceResolverInterface;
@@ -13,6 +14,11 @@ use Commerce\Contracts\Search\SearchQueryInterface;
 use Commerce\Contracts\Seo\SeoServiceInterface;
 use Commerce\Contracts\Seo\SlugServiceInterface;
 use Commerce\Contracts\Seo\UrlRedirectServiceInterface;
+use Commerce\Core\Barcode\BarcodeValueGenerator;
+use Commerce\Core\Barcode\Strategies\PrefixBarcodeStrategy;
+use Commerce\Core\Barcode\Strategies\RandomBarcodeStrategy;
+use Commerce\Core\Barcode\Strategies\SequentialBarcodeStrategy;
+use Commerce\Core\Barcode\Strategies\TimestampBarcodeStrategy;
 use Commerce\Core\Console\PublishOutboxCommand;
 use Commerce\Core\Events\EventBus;
 use Commerce\Core\Features\FeatureService;
@@ -47,6 +53,16 @@ class CommerceServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/commerce.php', 'commerce');
+        $this->mergeConfigFrom(__DIR__.'/../config/barcode.php', 'barcode');
+
+        $this->app->singleton(BarcodeValueGeneratorInterface::class, static function (): BarcodeValueGenerator {
+            return new BarcodeValueGenerator([
+                new RandomBarcodeStrategy,
+                new TimestampBarcodeStrategy,
+                new PrefixBarcodeStrategy,
+                new SequentialBarcodeStrategy,
+            ]);
+        });
 
         $this->app->singleton(EventBusInterface::class, EventBus::class);
         $this->app->singleton(HookRegistryInterface::class, HookRegistry::class);

@@ -110,6 +110,14 @@ final class SystemModuleCatalog
                 'sort_order' => 70,
                 'is_core' => false,
             ],
+            [
+                'code' => 'barcode',
+                'name' => 'Barcode',
+                'description' => 'Barcode label generation and printing center',
+                'status' => ModuleStatus::Active->value,
+                'sort_order' => 80,
+                'is_core' => false,
+            ],
         ];
     }
 

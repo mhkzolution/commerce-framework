@@ -28,6 +28,7 @@ return [
         'pos' => true,
         'crm' => true,
         'marketplace' => true,
+        'barcode' => true,
     ],
 
     'plugins' => [

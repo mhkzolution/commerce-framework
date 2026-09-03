@@ -7,6 +7,7 @@ namespace Tests\Unit\Modules;
 use Commerce\Core\Enums\ModuleStatus;
 use Commerce\Core\Models\SystemModule;
 use Commerce\Core\Modules\ModuleService;
+use Commerce\Core\Modules\SystemModuleCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Cache;
@@ -32,23 +33,8 @@ final class ModuleServiceTest extends TestCase
     {
         $codes = ModuleService::all()->pluck('code')->all();
 
-        $this->assertSame(
-            [
-                'media',
-                'settings',
-                'users',
-                'roles',
-                'permissions',
-                'cms',
-                'blog',
-                'footer-management',
-                'customer-experience',
-                'reviews',
-                'marketplace',
-                'kyc',
-            ],
-            $codes,
-        );
+        $this->assertSame(array_column(SystemModuleCatalog::defaults(), 'code'), $codes);
+        $this->assertContains('barcode', $codes);
     }
 
     public function test_unknown_module_is_not_active_hidden_or_disabled(): void
