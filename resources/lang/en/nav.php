@@ -98,6 +98,7 @@ return [
         'admin_payments_index' => 'Payments',
         'admin_promotions_index' => 'Promotions',
         'admin_tax_index' => 'Tax',
+        'admin_settings_website_show' => 'Website Settings',
         'admin_settings_site_identity_show' => 'Website Settings',
         'admin_settings_mail_show' => 'Email',
         'admin_settings_auth_show' => 'Login & Security',

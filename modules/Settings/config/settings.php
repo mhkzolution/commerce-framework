@@ -9,5 +9,11 @@ return [
         'store.currency' => 'THB',
         'store.timezone' => 'Asia/Bangkok',
         'store.locale' => 'en',
+        'store.logo_media_uuid' => null,
+        'store.description' => null,
+        'social.facebook' => null,
+        'social.instagram' => null,
+        'social.tiktok' => null,
+        'social.line' => null,
     ],
 ];

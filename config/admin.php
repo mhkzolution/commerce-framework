@@ -154,7 +154,7 @@ return [
             'icon' => 'cog',
             'order' => 80,
             'children' => [
-                ['type' => 'link', 'label' => 'Website Settings', 'route' => 'admin.settings.site-identity.show', 'permission' => 'settings.setting.view', 'module' => 'settings'],
+                ['type' => 'link', 'label' => 'Website Settings', 'route' => 'admin.settings.website.show', 'permission' => 'settings.setting.view', 'module' => 'settings'],
                 ['type' => 'link', 'label' => 'Email', 'route' => 'admin.settings.mail.show', 'permission' => 'settings.setting.view', 'module' => 'settings'],
                 ['type' => 'link', 'label' => 'Login & Security', 'route' => 'admin.settings.auth.show', 'permission' => 'settings.setting.view', 'module' => 'settings'],
                 ['type' => 'link', 'label' => 'Languages', 'route' => 'admin.settings.translations.index', 'permission' => 'settings.setting.view', 'module' => 'settings'],

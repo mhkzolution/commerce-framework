@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Commerce\Settings\Database\Seeders;
 
 use Commerce\Contracts\Settings\SettingRegistryServiceInterface;
-use Commerce\Settings\DTO\RegisterSettingData;
 use Illuminate\Database\Seeder;
 
 final class SettingsSeeder extends Seeder
@@ -24,6 +23,12 @@ final class SettingsSeeder extends Seeder
             'store.timezone' => ['type' => 'string', 'label' => 'Timezone', 'group' => 'store', 'default' => 'Asia/Bangkok'],
             'store.locale' => ['type' => 'string', 'label' => 'Locale', 'group' => 'store', 'default' => 'en', 'is_public' => true],
             'store.email' => ['type' => 'string', 'label' => 'Store Email', 'group' => 'store', 'default' => 'superadmin@example.com'],
+            'store.logo_media_uuid' => ['type' => 'string', 'label' => 'Store Logo', 'group' => 'store', 'default' => null, 'is_public' => true],
+            'store.description' => ['type' => 'string', 'label' => 'Store Description', 'group' => 'store', 'default' => null, 'is_public' => true],
+            'social.facebook' => ['type' => 'string', 'label' => 'Facebook', 'group' => 'social', 'default' => null, 'is_public' => true],
+            'social.instagram' => ['type' => 'string', 'label' => 'Instagram', 'group' => 'social', 'default' => null, 'is_public' => true],
+            'social.tiktok' => ['type' => 'string', 'label' => 'TikTok', 'group' => 'social', 'default' => null, 'is_public' => true],
+            'social.line' => ['type' => 'string', 'label' => 'LINE', 'group' => 'social', 'default' => null, 'is_public' => true],
         ];
 
         foreach ($definitions as $key => $schema) {
@@ -40,7 +45,7 @@ final class SettingsSeeder extends Seeder
                 continue;
             }
 
-            $manifestFile = $path . '/' . $entry . '/module.json';
+            $manifestFile = $path.'/'.$entry.'/module.json';
 
             if (! is_file($manifestFile)) {
                 continue;

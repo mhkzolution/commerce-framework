@@ -6,6 +6,7 @@ namespace Commerce\Settings;
 
 use Commerce\Contracts\Settings\SettingQueryServiceInterface;
 use Commerce\Contracts\Settings\SettingRegistryServiceInterface;
+use Commerce\Contracts\Settings\WebsiteSettingsQueryServiceInterface;
 use Commerce\Core\Base\BaseModuleServiceProvider;
 use Commerce\Settings\Contracts\SettingServiceInterface;
 use Commerce\Settings\Footer\DTO\FooterBuildContext;
@@ -19,6 +20,7 @@ use Commerce\Settings\Services\FooterViewModelBuilder;
 use Commerce\Settings\Services\SettingQueryService;
 use Commerce\Settings\Services\SettingRegistryService;
 use Commerce\Settings\Services\SettingService;
+use Commerce\Settings\Services\WebsiteSettingsQueryService;
 use Illuminate\Support\Facades\View;
 
 final class SettingsServiceProvider extends BaseModuleServiceProvider
@@ -41,10 +43,12 @@ final class SettingsServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(FooterBrandingQuery::class);
         $this->app->singleton(FooterNavigationQuery::class);
         $this->app->singleton(FooterSocialQuery::class);
+        $this->app->singleton(WebsiteSettingsQueryService::class);
 
         $this->app->bind(SettingRegistryServiceInterface::class, SettingRegistryService::class);
         $this->app->bind(SettingQueryServiceInterface::class, SettingQueryService::class);
         $this->app->bind(SettingServiceInterface::class, SettingService::class);
+        $this->app->bind(WebsiteSettingsQueryServiceInterface::class, WebsiteSettingsQueryService::class);
     }
 
     public function boot(): void
