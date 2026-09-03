@@ -96,7 +96,7 @@ return [
             'order' => 50,
             'children' => [
                 ['type' => 'link', 'label' => 'Storefront', 'route' => 'admin.settings.appearance.show', 'permission' => 'settings.setting.view', 'module' => 'settings'],
-                ['type' => 'link', 'label' => 'Navigation', 'route' => 'admin.storefront.navigation.show', 'permission' => 'settings.setting.view', 'module' => 'settings'],
+                ['type' => 'link', 'label' => 'Navigation', 'route' => 'admin.navigation.show', 'permission' => 'navigation.menu.view', 'module' => 'navigation'],
                 ['type' => 'link', 'label' => 'Customer Experience', 'route' => 'admin.settings.customer-experience.show', 'permission' => 'settings.setting.view', 'module' => 'customer-experience'],
                 ['type' => 'link', 'label' => 'Footer', 'route' => 'admin.settings.footer.show', 'permission' => 'settings.setting.view', 'module' => 'footer-management'],
             ],

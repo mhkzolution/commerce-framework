@@ -35,6 +35,7 @@ final class ModuleServiceTest extends TestCase
 
         $this->assertSame(array_column(SystemModuleCatalog::defaults(), 'code'), $codes);
         $this->assertContains('barcode', $codes);
+        $this->assertContains('navigation', $codes);
     }
 
     public function test_unknown_module_is_not_active_hidden_or_disabled(): void

@@ -29,6 +29,7 @@ return [
         'crm' => true,
         'marketplace' => true,
         'barcode' => true,
+        'navigation' => true,
     ],
 
     'plugins' => [
