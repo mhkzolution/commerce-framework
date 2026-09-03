@@ -13,6 +13,7 @@
     "require": {
         "php": "^8.4",
         "commerce/api": "@dev",
+        "commerce/barcode": "@dev",
         "commerce/cart": "@dev",
         "commerce/catalog": "@dev",
         "commerce/contracts": "@dev",
@@ -35,8 +36,10 @@
         "commerce/shipping": "@dev",
         "commerce/support": "@dev",
         "commerce/tax": "@dev",
+        "dompdf/dompdf": "^3.0",
         "laravel/framework": "^13.8",
         "laravel/tinker": "^3.0",
+        "picqer/php-barcode-generator": "^2.4 || ^3.0",
         "commerce/cms": "@dev",
         "commerce/pos": "@dev",
         "commerce/crm": "@dev",
