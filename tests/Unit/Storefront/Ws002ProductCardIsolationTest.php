@@ -92,7 +92,7 @@ final class Ws002ProductCardIsolationTest extends TestCase
         $this->assertNotFalse($shop);
         $this->assertStringContainsString('<x-storefront.cards.product', $shop);
         $this->assertStringNotContainsString('defaultVariant', $shop);
-        $this->assertStringNotContainsString('x-storefront.layout.page-container', $shop);
+        $this->assertStringContainsString('x-storefront.layout.page-container', $shop);
     }
 
     public function test_shop_controller_maps_through_product_card_mapper(): void

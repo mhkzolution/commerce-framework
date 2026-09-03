@@ -33,6 +33,22 @@ final class HomepageNavigationQuery
     /**
      * @return list<HomepageNavigationData>
      */
+    public function shopFilterOptions(): array
+    {
+        return $this->mapCategories(
+            $this->activeCategories()
+                ->filter(static fn (Category $category): bool => filled($category->slug))
+                ->sortBy([
+                    ['position', 'asc'],
+                    ['name', 'asc'],
+                ])
+                ->values(),
+        );
+    }
+
+    /**
+     * @return list<HomepageNavigationData>
+     */
     public function featured(): array
     {
         return $this->mapCategories(
