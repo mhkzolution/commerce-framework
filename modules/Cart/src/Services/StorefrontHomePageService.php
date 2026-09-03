@@ -5,31 +5,26 @@ declare(strict_types=1);
 namespace Commerce\Cart\Services;
 
 use Commerce\Cart\Contracts\CartServiceInterface;
-use Commerce\Catalog\Models\Category;
+use Commerce\Cart\DTO\HomepageBrandingData;
 use Commerce\Cms\Models\Post;
-use Commerce\Cms\Services\CmsStructuredDataBuilder;
 use Commerce\Cms\Services\HomeContentQueryService;
 use Commerce\Cms\Services\StorefrontBlogService;
 use Commerce\Cms\Support\HomeContentCache;
 use Commerce\Contracts\Currency\CurrencyConverterInterface;
-use Commerce\Contracts\Settings\SiteIdentityServiceInterface;
-use Commerce\Product\Models\Product;
-use Commerce\Product\Services\ProductImageResolver;
-use Illuminate\Database\Eloquent\Builder;
+use Commerce\Contracts\Media\MediaQueryServiceInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Route;
 
 final class StorefrontHomePageService
 {
     public function __construct(
         private readonly CartServiceInterface $cartService,
-        private readonly StorefrontNavigationCatalog $navigationCatalog,
-        private readonly StorefrontInStockCatalog $inStockCatalog,
-        private readonly StorefrontProductPageService $productPageService,
-        private readonly ProductImageResolver $imageResolver,
         private readonly HomeContentQueryService $homeContent,
+        private readonly HomepageNavigationQuery $navigation,
+        private readonly HomepageProductQuery $products,
+        private readonly HomepageBrandingQuery $branding,
+        private readonly MediaQueryServiceInterface $media,
         private readonly StorefrontBlogService $blogService,
-        private readonly CmsStructuredDataBuilder $structuredData,
-        private readonly SiteIdentityServiceInterface $siteIdentity,
     ) {}
 
     /**
@@ -38,11 +33,11 @@ final class StorefrontHomePageService
     public function build(?string $categorySlug = null): array
     {
         $commerce = $this->commerceContext();
-        $products = $this->newArrivals($categorySlug);
-        $this->imageResolver->preloadForProducts($products);
+        $cards = $this->products->arrivals($categorySlug);
         $heroBanners = module_disabled('cms') ? [] : $this->homeContent->heroBanners();
+        $branding = $this->branding->current();
         $latestPosts = $this->latestPosts();
-        $pageSeo = $this->pageSeo($heroBanners);
+        $pageSeo = $this->pageSeo($heroBanners, $branding);
 
         return [
             ...$commerce,
@@ -50,19 +45,14 @@ final class StorefrontHomePageService
             'promotionBanners' => module_disabled('cms') ? [] : $this->homeContent->promotionBanners(),
             'faqEntries' => module_disabled('cms') ? [] : $this->homeContent->faqEntries(),
             'homepageSections' => $this->visibleHomepageSections(),
-            'arrivalCategories' => $this->arrivalCategories(),
+            'arrivalCategories' => $this->navigation->arrivalTabs(),
             'activeArrivalCategory' => $categorySlug,
-            'arrivalProducts' => $products,
-            'stockLevels' => $this->productPageService->stockLevelsForCollection($products),
+            'arrivalProducts' => $cards,
             'latestPosts' => $latestPosts,
             'blogService' => $this->blogService,
+            'branding' => $branding,
             'pageSeo' => $pageSeo,
-            'structuredData' => $this->structuredData->homepage(
-                $this->siteIdentity->name(),
-                $pageSeo['canonical'],
-                $pageSeo['description'],
-                $this->siteIdentity->logoUrl('large') ?? $this->siteIdentity->logoUrl(),
-            ),
+            'structuredData' => $this->structuredData($branding, $pageSeo),
         ];
     }
 
@@ -71,82 +61,10 @@ final class StorefrontHomePageService
      */
     public function arrivalsPayload(?string $categorySlug = null): array
     {
-        $commerce = $this->commerceContext();
-        $products = $this->newArrivals($categorySlug);
-        $this->imageResolver->preloadForProducts($products);
-
         return [
-            ...$commerce,
-            'arrivalProducts' => $products,
-            'stockLevels' => $this->productPageService->stockLevelsForCollection($products),
+            ...$this->commerceContext(),
+            'arrivalProducts' => $this->products->arrivals($categorySlug),
         ];
-    }
-
-    /**
-     * @return Collection<int, Category>
-     */
-    private function arrivalCategories(): Collection
-    {
-        return $this->navigationCatalog
-            ->categories()
-            ->filter(static fn (Category $category): bool => filled($category->slug))
-            ->take(8)
-            ->values();
-    }
-
-    /**
-     * @return Collection<int, Product>
-     */
-    private function newArrivals(?string $categorySlug): Collection
-    {
-        $suffix = is_string($categorySlug) && $categorySlug !== '' ? $categorySlug : 'all';
-        /** @var list<string> $uuids */
-        $uuids = HomeContentCache::remember(
-            'arrivals',
-            fn (): array => $this->queryArrivalUuids($categorySlug),
-            $suffix,
-        );
-
-        return $this->hydrateProducts($uuids);
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function queryArrivalUuids(?string $categorySlug): array
-    {
-        $query = Product::query()->visibleOnStorefront();
-        $this->inStockCatalog->applyInStockVariantConstraint($query);
-
-        if (is_string($categorySlug) && $categorySlug !== '') {
-            $query->whereHas('categories', static function (Builder $categoryQuery) use ($categorySlug): void {
-                $categoryQuery->where('slug', $categorySlug);
-            });
-        }
-
-        return $query->latest()->limit(12)->pluck('uuid')->all();
-    }
-
-    /**
-     * @param  list<string>  $uuids
-     * @return Collection<int, Product>
-     */
-    private function hydrateProducts(array $uuids): Collection
-    {
-        if ($uuids === []) {
-            return collect();
-        }
-
-        $order = array_flip($uuids);
-        $query = Product::query()
-            ->with(['variants', 'media', 'categories'])
-            ->visibleOnStorefront()
-            ->whereIn('uuid', $uuids);
-        $this->inStockCatalog->applyInStockVariantConstraint($query);
-
-        return $query->get()
-            ->sortBy(static fn (Product $product): int => $order[$product->uuid] ?? 999)
-            ->values();
     }
 
     /**
@@ -183,6 +101,7 @@ final class StorefrontHomePageService
         if (module_disabled('blog')) {
             return collect();
         }
+
         $uuids = HomeContentCache::remember('articles', function (): array {
             return $this->blogService->publishedQuery()
                 ->latest('published_at')
@@ -209,10 +128,10 @@ final class StorefrontHomePageService
      * @param  list<array{imageUrl?: string}>  $heroBanners
      * @return array{title: string, description: string, canonical: string, url: string, ogImage: ?string, ogType: string}
      */
-    private function pageSeo(array $heroBanners): array
+    private function pageSeo(array $heroBanners, HomepageBrandingData $branding): array
     {
-        $canonical = route('storefront.home');
-        $ogImage = $heroBanners[0]['imageUrl'] ?? $this->siteIdentity->logoUrl('large') ?? $this->siteIdentity->logoUrl();
+        $canonical = $this->canonicalUrl();
+        $ogImage = $heroBanners[0]['imageUrl'] ?? $branding->logoUrl;
 
         return [
             'title' => __('storefront::storefront.home'),
@@ -222,6 +141,46 @@ final class StorefrontHomePageService
             'ogImage' => $ogImage,
             'ogType' => 'website',
         ];
+    }
+
+    /**
+     * @param  array{canonical: string, description: string, ogImage: ?string}  $pageSeo
+     * @return array<string, mixed>
+     */
+    private function structuredData(HomepageBrandingData $branding, array $pageSeo): array
+    {
+        $data = [
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            'name' => $branding->name,
+            'url' => $pageSeo['canonical'],
+            'description' => $pageSeo['description'],
+        ];
+
+        $image = $pageSeo['ogImage'] ?? $branding->logoUrl;
+        if (is_string($image) && $image !== '') {
+            $data['image'] = $image;
+        }
+
+        return $data;
+    }
+
+    private function canonicalUrl(): string
+    {
+        return Route::has('storefront.home')
+            ? route('storefront.home')
+            : url('/');
+    }
+
+    private function mediaUrl(?string $uuid): ?string
+    {
+        if (! is_string($uuid) || $uuid === '') {
+            return null;
+        }
+
+        return $this->media->getUrl($uuid, 'large')
+            ?? $this->media->getUrl($uuid, 'medium')
+            ?? $this->media->getUrl($uuid);
     }
 
     /**
