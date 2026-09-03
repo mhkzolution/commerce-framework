@@ -19,9 +19,12 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\CreatesPurchasableProduct;
 
 final class BarcodePrintJobTest extends BarcodeFeatureTestCase
 {
+    use CreatesPurchasableProduct;
+
 
     /**
      * @var list<string>
@@ -330,6 +333,13 @@ final class BarcodePrintJobTest extends BarcodeFeatureTestCase
     #[Test]
     public function reprint_after_product_name_change_shows_stored_product_name(): void
     {
+        $this->useLiveExpansionService();
+
+        $variant = $this->createPurchasableProduct(sku: 'BC-RENAME-001');
+        $product = $variant->product;
+        $this->assertNotNull($product);
+        $storedName = $product->name;
+
         $template = $this->templates->create([
             'name' => 'Rename Lock',
             'preset_code' => 'a4_40',
@@ -337,23 +347,37 @@ final class BarcodePrintJobTest extends BarcodeFeatureTestCase
 
         $job = $this->printJobs->create([[
             'source' => 'PRODUCT',
-            'title' => 'Frozen Product Name',
-            'barcode' => 'BC-RENAME-001',
-            'display_text' => 'BC-RENAME-001',
+            'title' => $storedName,
+            'barcode' => $variant->sku,
+            'display_text' => $variant->sku,
             'owner_name' => 'Acme Store',
-            'product_name' => 'Frozen Product Name',
+            'product_name' => $storedName,
+            'variant_uuid' => $variant->uuid,
             'quantity' => 1,
         ]], $template, 0);
 
-        $html = $this->printService->printView($job)->render();
+        $product->forceFill(['name' => 'Renamed After Print'])->save();
+        $this->assertSame('Renamed After Print', $product->fresh()->name);
 
-        $this->assertStringContainsString('Frozen Product Name', $html);
+        $reprint = (new HistoryController($this->printJobs, $this->printService))->reprint($job);
+        $this->assertInstanceOf(View::class, $reprint);
+
+        $html = $reprint->render();
+        $this->assertStringContainsString($storedName, $html);
         $this->assertStringNotContainsString('Renamed After Print', $html);
     }
 
     #[Test]
     public function reprint_after_product_deleted_still_succeeds_from_payload(): void
     {
+        $this->useLiveExpansionService();
+
+        $variant = $this->createPurchasableProduct(sku: 'BC-DELETE-001');
+        $product = $variant->product;
+        $this->assertNotNull($product);
+        $storedName = $product->name;
+        $productId = $product->id;
+
         $template = $this->templates->create([
             'name' => 'Delete Lock',
             'preset_code' => 'a4_40',
@@ -361,17 +385,23 @@ final class BarcodePrintJobTest extends BarcodeFeatureTestCase
 
         $job = $this->printJobs->create([[
             'source' => 'PRODUCT',
-            'title' => 'Deleted Product Name',
-            'barcode' => 'BC-DELETE-001',
-            'display_text' => 'BC-DELETE-001',
+            'title' => $storedName,
+            'barcode' => $variant->sku,
+            'display_text' => $variant->sku,
             'owner_name' => 'Acme Store',
-            'product_name' => 'Deleted Product Name',
+            'product_name' => $storedName,
+            'variant_uuid' => $variant->uuid,
             'quantity' => 1,
         ]], $template, 0);
 
-        $html = $this->printService->printView($job)->render();
+        $product->forceDelete();
+        $this->assertDatabaseMissing('products', ['id' => $productId]);
 
-        $this->assertStringContainsString('Deleted Product Name', $html);
+        $reprint = (new HistoryController($this->printJobs, $this->printService))->reprint($job);
+        $this->assertInstanceOf(View::class, $reprint);
+
+        $html = $reprint->render();
+        $this->assertStringContainsString($storedName, $html);
         $this->assertStringContainsString('BC-DELETE-001', $html);
     }
 
@@ -451,6 +481,12 @@ final class BarcodePrintJobTest extends BarcodeFeatureTestCase
         $this->assertStringContainsString('48.5mm', $html);
         $this->assertStringContainsString('25.4mm', $html);
         $this->assertEqualsWithDelta(48.5, (float) $job->fresh()->settings['label_width'], 0.001);
+    }
+
+    private function useLiveExpansionService(): void
+    {
+        $this->app->forgetInstance(BarcodeLabelExpansionService::class);
+        $this->app->offsetUnset(BarcodeLabelExpansionService::class);
     }
 
     /**

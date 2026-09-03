@@ -458,16 +458,22 @@ final class BarcodeCenterAdminTest extends BarcodeFeatureTestCase
             ->assertOk()
             ->assertJsonPath('data.0.sku', $variant->sku);
 
-        $this->actingAs($operator)
+        $create = $this->actingAs($operator)
             ->postJson(route('admin.barcode.print.store'), $this->printPayload($variant->sku, $template, [
                 'variant_uuid' => $variant->uuid,
                 'product_name' => 'Operator Product',
             ]))
             ->assertOk();
 
+        $job = BarcodePrintJob::query()->where('uuid', $create->json('job_uuid'))->firstOrFail();
+
         $this->actingAs($operator)
             ->get(route('admin.barcode.history.index'))
             ->assertOk();
+
+        $this->actingAs($operator)
+            ->get(route('admin.barcode.history.reprint', $job))
+            ->assertForbidden();
 
         $this->actingAs($operator)
             ->get(route('admin.barcode.templates.index'))
