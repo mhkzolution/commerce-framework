@@ -6,11 +6,14 @@ namespace Tests\Unit\Barcode;
 
 use Commerce\Barcode\Models\BarcodeTemplate;
 use Commerce\Barcode\Services\BarcodeTemplateService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 final class BarcodeTemplateServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     private BarcodeTemplateService $service;
 
     protected function setUp(): void
