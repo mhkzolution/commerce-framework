@@ -180,6 +180,9 @@ Implementation spec: `docs/superpowers/specs/2026-09-03-ws002-product-card-v1-im
 
 **WS-002 Shop Listing Layout (v1.11.0)** — page-container, filters, toolbar, sorting, empty state, pagination. Product card stays as-is. Header waits for v1.12.
 
+Feature lock: `docs/superpowers/specs/2026-09-03-ws002-shop-listing-feature.md`  
+Implementation spec: `docs/superpowers/specs/2026-09-03-ws002-shop-listing-v1-implementation.md`
+
 ```text
 v1.11.0  Shop Listing Layout      ← next
 v1.12.0  Header Foundation
@@ -196,7 +199,7 @@ These remain outside the tagged history on `main`:
 - `feat/commerce-framework-v1` design system / `stash@{0}` (archive — do not merge)
 - UI-TECH-001 (`@vite/client` injected twice on blog pages)
 
-WS-002 Shop listing, Header, and Blog stay later. Appearance / CX stay out.
+WS-002 Header and Blog stay later. Appearance / CX stay out.
 
 Safety net (do not delete, do not merge):
 
