@@ -15,12 +15,13 @@ v1.8.0
 v1.9.0
 v1.9.1
 v1.10.0
+v1.11.0
 ```
 
-v1.4.0 through v1.10.0 were squash-merged as PR #1 through PR #9. The tags on `main` are the source of history.
+v1.4.0 through v1.11.0 were squash-merged as PR #1 through PR #10. The tags on `main` are the source of history.
 
 ```text
-main = stable (active development line)   6369308
+main = stable (active development line)   1faf8f5
 v1.4.0  Barcode Management     (9cf699f)
 v1.5.0  Homepage CMS           (6b63a8d)
 v1.6.0  Footer Management      (52a1a20)
@@ -29,6 +30,7 @@ v1.8.0  Website Settings       (22babfe)
 v1.9.0  WS-002 Design System   (3b3e7cf)
 v1.9.1  Footer Token Adoption  (8341038)
 v1.10.0 Product Card System    (6369308)
+v1.11.0 Shop Listing Layout    (1faf8f5)
 ```
 
 Recovery is **closed**. Phase 1 = Barcode. Phase 2 = Homepage + Footer. Later work is a feature roadmap on `main`. Do not merge archive branches.
@@ -49,8 +51,9 @@ Recovery is **closed**. Phase 1 = Barcode. Phase 2 = Homepage + Footer. Later wo
 | `v1.9.0` | `3b3e7cf` | Storefront / Design | Storefront tokens, page-container, Homepage consume |
 | `v1.9.1` | `8341038` | Storefront / Design | Footer CSS spacing / radius / type tokens |
 | `v1.10.0` | `6369308` | Storefront / Design | Shared product card primitive, Homepage + Shop consume |
+| `v1.11.0` | `1faf8f5` | Storefront / Design | Shop page-container, toolbar, empty-state, pagination, GET filters |
 
-v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 through v1.10.0 are separate so a barcode, homepage, footer, navigation, website-settings, or design-system defect rolls back only that surface.
+v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 through v1.11.0 are separate so a barcode, homepage, footer, navigation, website-settings, or design-system defect rolls back only that surface.
 
 ## v1.0.0 — Module Management
 
@@ -176,16 +179,27 @@ Allowlist: `docs/superpowers/specs/2026-09-03-ws002-footer-token-adoption.md`
 Feature lock: `docs/superpowers/specs/2026-09-03-ws002-product-card-feature.md`  
 Implementation spec: `docs/superpowers/specs/2026-09-03-ws002-product-card-v1-implementation.md`
 
-## Next candidate
+## v1.11.0 — WS-002 Shop Listing Layout
 
-**WS-002 Shop Listing Layout (v1.11.0)** — page-container, filters, toolbar, sorting, empty state, pagination. Product card stays as-is. Header waits for v1.12.
+- Shop uses `x-storefront.layout.page-container` (full-bleed `storefront-shop-main`, not `max-w-5xl`)
+- `x-storefront.shop.toolbar` (count, sort, view-mode seam), `x-storefront.empty-state`, `pagination::storefront`
+- GET filters: `search`, `category`, `availability`, `sort` — no Ajax, no faceted search
+- Product card and Header unchanged
+- Squash-merged as PR #10 (`1faf8f5`)
 
 Feature lock: `docs/superpowers/specs/2026-09-03-ws002-shop-listing-feature.md`  
 Implementation spec: `docs/superpowers/specs/2026-09-03-ws002-shop-listing-v1-implementation.md`
 
+WS-002 through Shop listing is closed (Foundations, Footer tokens, Product Card, Shop listing). Header is next.
+
+## Next candidate
+
+**WS-002 Header Foundation (v1.12.0)** — extract `x-storefront.layout.partials.site-header` from the **current** storefront: tokens, `--store-max-width`, Navigation `links('main')`, Website Settings brand. Do not merge archive headers. Do not `git checkout 84e905c -- .`.
+
+Feature lock: `docs/superpowers/specs/2026-09-03-ws002-header-foundation-feature.md`
+
 ```text
-v1.11.0  Shop Listing Layout      ← next
-v1.12.0  Header Foundation
+v1.12.0  Header Foundation        ← next
 v1.13.0  Blog Refresh
 later    Scanner, POS, Inventory, Marketplace
 ```
@@ -199,7 +213,7 @@ These remain outside the tagged history on `main`:
 - `feat/commerce-framework-v1` design system / `stash@{0}` (archive — do not merge)
 - UI-TECH-001 (`@vite/client` injected twice on blog pages)
 
-WS-002 Header and Blog stay later. Appearance / CX stay out.
+WS-002 Header and Blog stay later. Header is designed from current `main`, not archive. Appearance / CX stay out.
 
 Safety net (do not delete, do not merge):
 
