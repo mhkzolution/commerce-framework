@@ -8,6 +8,23 @@ use Commerce\Barcode\Models\BarcodeTemplate;
 
 final class BarcodeTemplateService
 {
+    /**
+     * @var list<string>
+     */
+    private const FROZEN_FIELDS = [
+        'paper_size',
+        'rows',
+        'columns',
+        'label_width',
+        'label_height',
+        'margin_top',
+        'margin_right',
+        'margin_bottom',
+        'margin_left',
+        'spacing_horizontal',
+        'spacing_vertical',
+    ];
+
     public function ensureDefaults(): void
     {
         if (BarcodeTemplate::query()->exists()) {
@@ -25,81 +42,31 @@ final class BarcodeTemplateService
     private function defaultPresets(): array
     {
         $labelStyle = config('barcode.label_style', []);
+        $catalog = config('barcode.presets', []);
+        $defaults = [];
 
-        return [
-            [
-                'name' => 'A4 4×10',
-                'paper_size' => 'a4',
-                'rows' => 10,
-                'columns' => 4,
-                'margin_top' => 10,
-                'margin_right' => 10,
-                'margin_bottom' => 10,
-                'margin_left' => 10,
-                'spacing_horizontal' => 2,
-                'spacing_vertical' => 2,
-                'label_width' => 48.5,
-                'label_height' => 25.4,
+        foreach (['a4_40', 'a4_24', 'a4_65', 'thermal_50x30'] as $code) {
+            $preset = $catalog[$code] ?? null;
+            if (! is_array($preset)) {
+                continue;
+            }
+
+            $defaults[] = [
+                'name' => $preset['name'],
+                'preset_code' => $code,
+                ...$this->geometryFromPreset($preset),
                 'label_orientation' => 'vertical',
                 ...$labelStyle,
-                'is_favorite' => true,
-                'is_default' => true,
-            ],
-            [
-                'name' => 'A4 3×8',
-                'paper_size' => 'a4',
-                'rows' => 8,
-                'columns' => 3,
-                'margin_top' => 10,
-                'margin_right' => 10,
-                'margin_bottom' => 10,
-                'margin_left' => 10,
-                'spacing_horizontal' => 2,
-                'spacing_vertical' => 2,
-                'label_width' => 63.5,
-                'label_height' => 33.9,
-                'label_orientation' => 'vertical',
-                ...$labelStyle,
-                'is_favorite' => true,
-                'is_default' => false,
-            ],
-            [
-                'name' => 'Thermal 50×30',
-                'paper_size' => 'thermal',
-                'rows' => 1,
-                'columns' => 1,
-                'margin_top' => 0,
-                'margin_right' => 0,
-                'margin_bottom' => 0,
-                'margin_left' => 0,
-                'spacing_horizontal' => 0,
-                'spacing_vertical' => 0,
-                'label_width' => 50,
-                'label_height' => 30,
-                'label_orientation' => 'vertical',
-                ...$labelStyle,
-                'is_favorite' => false,
-                'is_default' => false,
-            ],
-            [
-                'name' => 'Thermal 40×30',
-                'paper_size' => 'thermal',
-                'rows' => 1,
-                'columns' => 1,
-                'margin_top' => 0,
-                'margin_right' => 0,
-                'margin_bottom' => 0,
-                'margin_left' => 0,
-                'spacing_horizontal' => 0,
-                'spacing_vertical' => 0,
-                'label_width' => 40,
-                'label_height' => 30,
-                'label_orientation' => 'vertical',
-                ...$labelStyle,
-                'is_favorite' => false,
-                'is_default' => false,
-            ],
-        ];
+                'show_name' => true,
+                'show_sku' => true,
+                'show_owner' => true,
+                'show_barcode' => true,
+                'is_favorite' => $code === 'a4_40',
+                'is_default' => $code === 'a4_40',
+            ];
+        }
+
+        return $defaults;
     }
 
     /**
@@ -133,6 +100,8 @@ final class BarcodeTemplateService
      */
     public function create(array $data): BarcodeTemplate
     {
+        $data = $this->applyPresetGeometry($data);
+
         if (! empty($data['is_default'])) {
             $this->clearDefaultFlag();
         }
@@ -145,6 +114,16 @@ final class BarcodeTemplateService
      */
     public function update(BarcodeTemplate $template, array $data): BarcodeTemplate
     {
+        $presetCode = (string) ($data['preset_code'] ?? $template->preset_code);
+        $presetChanged = $presetCode !== (string) $template->preset_code;
+
+        $data = $this->rejectFrozenWrites($data);
+
+        if ($presetChanged) {
+            $data['preset_code'] = $presetCode;
+            $data = $this->applyPresetGeometry($data);
+        }
+
         if (! empty($data['is_default'])) {
             $this->clearDefaultFlag($template->id);
         }
@@ -186,6 +165,62 @@ final class BarcodeTemplateService
         $template->update(['is_favorite' => ! $template->is_favorite]);
 
         return $template->refresh();
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function applyPresetGeometry(array $data): array
+    {
+        $presetCode = (string) ($data['preset_code'] ?? 'a4_40');
+        $preset = config("barcode.presets.{$presetCode}");
+
+        if (! is_array($preset)) {
+            throw new \InvalidArgumentException("Unknown barcode preset [{$presetCode}].");
+        }
+
+        $data = $this->rejectFrozenWrites($data);
+        $data['preset_code'] = $presetCode;
+
+        return [
+            ...$data,
+            ...$this->geometryFromPreset($preset),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function rejectFrozenWrites(array $data): array
+    {
+        foreach (self::FROZEN_FIELDS as $field) {
+            unset($data[$field]);
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $preset
+     * @return array<string, mixed>
+     */
+    private function geometryFromPreset(array $preset): array
+    {
+        return [
+            'paper_size' => $preset['paper_size'],
+            'rows' => $preset['rows'],
+            'columns' => $preset['columns'],
+            'label_width' => $preset['label_width'],
+            'label_height' => $preset['label_height'],
+            'margin_top' => $preset['margin_top'],
+            'margin_right' => $preset['margin_right'],
+            'margin_bottom' => $preset['margin_bottom'],
+            'margin_left' => $preset['margin_left'],
+            'spacing_horizontal' => $preset['spacing_horizontal'],
+            'spacing_vertical' => $preset['spacing_vertical'],
+        ];
     }
 
     private function clearDefaultFlag(?int $exceptId = null): void

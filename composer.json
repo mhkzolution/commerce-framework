@@ -87,6 +87,7 @@
             "Commerce\\Pos\\": "modules/Pos/src/",
             "Commerce\\Crm\\": "modules/Crm/src/",
             "Commerce\\Marketplace\\": "modules/Marketplace/src/",
+            "Commerce\\Barcode\\": "modules/Barcode/src/",
             "Plugins\\HelloWorld\\": "plugins/hello-world/src/",
             "Plugins\\ProductBadge\\": "plugins/product-badge/src/"
         }

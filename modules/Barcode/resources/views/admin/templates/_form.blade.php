@@ -3,20 +3,14 @@
 ])
 
 @php
-    $paperSizes = config('barcode.paper_sizes', []);
+    $presets = config('barcode.presets', []);
     $values = $template ?? new \Commerce\Barcode\Models\BarcodeTemplate([
-        'paper_size' => 'a4',
-        'rows' => 10,
-        'columns' => 4,
-        'margin_top' => 10,
-        'margin_right' => 10,
-        'margin_bottom' => 10,
-        'margin_left' => 10,
-        'spacing_horizontal' => 2,
-        'spacing_vertical' => 2,
-        'label_width' => 48.5,
-        'label_height' => 25.4,
+        'preset_code' => 'a4_40',
         'label_orientation' => 'vertical',
+        'show_name' => true,
+        'show_sku' => true,
+        'show_owner' => true,
+        'show_barcode' => true,
         ...config('barcode.label_style', []),
         'is_favorite' => false,
         'is_default' => false,
@@ -34,62 +28,26 @@
     </div>
 
     <div>
-        <label class="cf-label" for="paper_size">{{ __('barcode::admin.settings.paper_size') }}</label>
-        <select id="paper_size" name="paper_size" class="cf-input" required>
-            @foreach ($paperSizes as $key => $size)
-                <option value="{{ $key }}" @selected(old('paper_size', $values->paper_size) === $key)>{{ $size['label'] }}</option>
+        <label class="cf-label" for="preset_code">{{ __('barcode::admin.templates.preset') }}</label>
+        <select id="preset_code" name="preset_code" class="cf-input" required>
+            @foreach ($presets as $code => $preset)
+                <option value="{{ $code }}" @selected(old('preset_code', $values->preset_code ?? 'a4_40') === $code)>
+                    {{ $preset['name'] ?? $code }}
+                </option>
             @endforeach
         </select>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2">
-        <div>
-            <label class="cf-label" for="rows">{{ __('barcode::admin.settings.rows') }}</label>
-            <input type="number" id="rows" name="rows" class="cf-input" min="1" max="50" value="{{ old('rows', $values->rows) }}" required>
-        </div>
-        <div>
-            <label class="cf-label" for="columns">{{ __('barcode::admin.settings.columns') }}</label>
-            <input type="number" id="columns" name="columns" class="cf-input" min="1" max="20" value="{{ old('columns', $values->columns) }}" required>
-        </div>
-    </div>
-
     <fieldset>
-        <legend class="cf-label">{{ __('barcode::admin.settings.margins') }}</legend>
-        <div class="grid gap-4 sm:grid-cols-4">
-            @foreach (['top', 'right', 'bottom', 'left'] as $side)
-                <div>
-                    <label class="text-xs text-muted" for="margin_{{ $side }}">{{ __("barcode::admin.settings.margin_{$side}") }}</label>
-                    <input type="number" id="margin_{{ $side }}" name="margin_{{ $side }}" class="cf-input" min="0" step="0.5" value="{{ old("margin_{$side}", $values->{"margin_{$side}"}) }}" required>
-                </div>
+        <legend class="cf-label">{{ __('barcode::admin.templates.visibility') }}</legend>
+        <div class="flex flex-wrap gap-4">
+            @foreach (['show_name', 'show_sku', 'show_owner', 'show_barcode'] as $flag)
+                <label class="inline-flex items-center gap-2 text-sm">
+                    <input type="hidden" name="{{ $flag }}" value="0">
+                    <input type="checkbox" name="{{ $flag }}" value="1" @checked(old($flag, $values->{$flag} ?? true))>
+                    {{ __("barcode::admin.templates.{$flag}") }}
+                </label>
             @endforeach
-        </div>
-    </fieldset>
-
-    <fieldset>
-        <legend class="cf-label">{{ __('barcode::admin.settings.spacing') }}</legend>
-        <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-                <label class="text-xs text-muted" for="spacing_horizontal">{{ __('barcode::admin.settings.spacing_horizontal') }}</label>
-                <input type="number" id="spacing_horizontal" name="spacing_horizontal" class="cf-input" min="0" step="0.5" value="{{ old('spacing_horizontal', $values->spacing_horizontal) }}" required>
-            </div>
-            <div>
-                <label class="text-xs text-muted" for="spacing_vertical">{{ __('barcode::admin.settings.spacing_vertical') }}</label>
-                <input type="number" id="spacing_vertical" name="spacing_vertical" class="cf-input" min="0" step="0.5" value="{{ old('spacing_vertical', $values->spacing_vertical) }}" required>
-            </div>
-        </div>
-    </fieldset>
-
-    <fieldset>
-        <legend class="cf-label">{{ __('barcode::admin.settings.label_size') }}</legend>
-        <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-                <label class="text-xs text-muted" for="label_width">{{ __('barcode::admin.settings.label_width') }}</label>
-                <input type="number" id="label_width" name="label_width" class="cf-input" min="1" step="0.1" value="{{ old('label_width', $values->label_width) }}" required>
-            </div>
-            <div>
-                <label class="text-xs text-muted" for="label_height">{{ __('barcode::admin.settings.label_height') }}</label>
-                <input type="number" id="label_height" name="label_height" class="cf-input" min="1" step="0.1" value="{{ old('label_height', $values->label_height) }}" required>
-            </div>
         </div>
     </fieldset>
 
