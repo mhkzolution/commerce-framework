@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Commerce\Settings\Http\Controllers\Admin\FooterController;
 use Commerce\Settings\Http\Controllers\Admin\SettingsController;
+use Commerce\Settings\Http\Controllers\Admin\WebsiteSettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('web')->group(function (): void {
@@ -20,6 +21,12 @@ Route::middleware('web')->group(function (): void {
                     ->middleware('permission:settings.setting.update')
                     ->name('footer.preview');
             });
+
+            Route::get('/website', [WebsiteSettingsController::class, 'show'])->name('website.show');
+            Route::put('/website', [WebsiteSettingsController::class, 'update'])
+                ->middleware('permission:settings.setting.update')
+                ->name('website.update');
+            Route::get('/site-identity', [WebsiteSettingsController::class, 'show'])->name('site-identity.show');
 
             Route::get('/', [SettingsController::class, 'index'])->name('index');
             Route::put('/{group}', [SettingsController::class, 'update'])

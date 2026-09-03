@@ -98,6 +98,7 @@ return [
         'admin_payments_index' => 'การชำระเงิน',
         'admin_promotions_index' => 'โปรโมชัน',
         'admin_tax_index' => 'ภาษี',
+        'admin_settings_website_show' => 'ตั้งค่าเว็บไซต์',
         'admin_settings_site_identity_show' => 'ตั้งค่าเว็บไซต์',
         'admin_settings_mail_show' => 'Email',
         'admin_settings_auth_show' => 'Login & Security',
