@@ -28,6 +28,12 @@ final class CmsServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(Support\CmsSeoSync::class);
         $this->app->singleton(Services\CmsSitemapProvider::class);
         $this->app->tag(Services\CmsSitemapProvider::class, 'commerce.sitemap');
+        $this->app->singleton(Services\HomeContentQueryService::class);
+        $this->app->singleton(Services\HomepageSectionService::class);
+        $this->app->singleton(Services\HeroBannerService::class);
+        $this->app->singleton(Services\PromotionBannerService::class);
+        $this->app->singleton(Services\FaqEntryService::class);
+        $this->app->singleton(Support\CmsMediaThumbnails::class);
     }
 
     public function boot(): void
@@ -36,6 +42,8 @@ final class CmsServiceProvider extends BaseModuleServiceProvider
         $this->loadRoutesFrom($this->modulePath('routes/web.php'));
         $this->loadViewsFrom($this->modulePath('resources/views'), 'cms');
         $this->loadTranslationsFrom($this->modulePath('resources/lang'), 'cms');
+        Support\HomeContentCache::registerContentInvalidation();
+        Support\HomeContentCache::registerCatalogInvalidation();
 
         if ($this->app->runningInConsole()) {
             $this->commands([

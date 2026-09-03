@@ -113,6 +113,10 @@ return [
                 ['type' => 'link', 'label' => 'Categories', 'route' => 'admin.cms.categories.index', 'permission' => 'cms.category.view', 'module' => 'blog'],
                 ['type' => 'link', 'label' => 'Tags', 'route' => 'admin.cms.tags.index', 'permission' => 'cms.tag.view', 'module' => 'blog'],
                 ['type' => 'link', 'label' => 'Pages', 'route' => 'admin.cms.pages.index', 'permission' => 'cms.page.view', 'module' => 'cms'],
+                ['type' => 'link', 'label' => 'Homepage', 'route' => 'admin.cms.homepage.edit', 'permission' => 'cms.page.view', 'module' => 'cms'],
+                ['type' => 'link', 'label' => 'Hero Banners', 'route' => 'admin.cms.hero-banners.index', 'permission' => 'cms.page.view', 'module' => 'cms'],
+                ['type' => 'link', 'label' => 'Promotion Banners', 'route' => 'admin.cms.promotion-banners.index', 'permission' => 'cms.page.view', 'module' => 'cms'],
+                ['type' => 'link', 'label' => 'FAQ', 'route' => 'admin.cms.faq-entries.index', 'permission' => 'cms.page.view', 'module' => 'cms'],
             ],
         ],
         [
