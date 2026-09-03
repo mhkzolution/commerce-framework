@@ -19,4 +19,5 @@ return [
     'no_products' => 'ยังไม่มีสินค้า',
     'in_stock' => 'มีสินค้า',
     'out_of_stock' => 'สินค้าหมด',
+    'add_to_cart' => 'เพิ่มลงตะกร้า',
 ];

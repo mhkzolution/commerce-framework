@@ -12,6 +12,7 @@ use Commerce\Cart\Services\CheckoutService;
 use Commerce\Cart\Services\HomepageBrandingQuery;
 use Commerce\Cart\Services\HomepageNavigationQuery;
 use Commerce\Cart\Services\HomepageProductQuery;
+use Commerce\Cart\Services\ProductCardMapper;
 use Commerce\Cart\Services\StorefrontHomePageService;
 use Commerce\Cart\Support\SessionCartStorage;
 use Commerce\Core\Base\BaseModuleServiceProvider;
@@ -35,6 +36,7 @@ final class CartServiceProvider extends BaseModuleServiceProvider
         $this->app->bind(CartServiceInterface::class, CartService::class);
         $this->app->bind(CheckoutServiceInterface::class, CheckoutService::class);
         $this->app->singleton(HomepageNavigationQuery::class);
+        $this->app->singleton(ProductCardMapper::class);
         $this->app->singleton(HomepageProductQuery::class);
         $this->app->singleton(HomepageBrandingQuery::class);
         $this->app->singleton(StorefrontHomePageService::class);

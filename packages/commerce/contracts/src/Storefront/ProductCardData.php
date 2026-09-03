@@ -2,11 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Commerce\Cart\DTO;
+namespace Commerce\Contracts\Storefront;
 
-use Commerce\Support\DTO\DataTransferObject;
-
-final readonly class HomepageProductCardData extends DataTransferObject
+final readonly class ProductCardData
 {
     public function __construct(
         public string $uuid,

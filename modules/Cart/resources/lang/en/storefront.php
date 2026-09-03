@@ -19,4 +19,5 @@ return [
     'no_products' => 'No products available.',
     'in_stock' => 'In stock',
     'out_of_stock' => 'Out of stock',
+    'add_to_cart' => 'Add',
 ];

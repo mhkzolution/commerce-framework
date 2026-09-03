@@ -155,19 +155,17 @@ final class Ws002IsolationTest extends TestCase
         $this->assertStringNotContainsString('links(\'main\')', $layout);
     }
 
-    public function test_m1_does_not_add_shared_product_or_blog_cards(): void
+    public function test_m1_does_not_add_archive_product_card_or_shop_page_container(): void
     {
-        $this->assertFileDoesNotExist(
-            $this->repoRoot().'/resources/views/components/storefront/cards/product.blade.php',
-        );
         $this->assertFileDoesNotExist(
             $this->repoRoot().'/resources/views/components/storefront/cards/product-card.blade.php',
         );
 
         $shop = file_get_contents($this->repoRoot().'/modules/Cart/resources/views/storefront/shop.blade.php');
         $this->assertNotFalse($shop);
+        $this->assertStringContainsString('x-storefront.cards.product', $shop);
         $this->assertStringNotContainsString('x-storefront.layout.page-container', $shop);
-        $this->assertStringNotContainsString('x-storefront.cards.product', $shop);
+        $this->assertStringNotContainsString('x-storefront.layout.partials.site-header', $shop);
     }
 
     public function test_m1_does_not_rewrite_site_footer(): void

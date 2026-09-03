@@ -138,7 +138,7 @@ final class HomepageIsolationTest extends TestCase
             $root.'/src/Services/HomepageProductQuery.php',
             $root.'/src/Services/HomepageBrandingQuery.php',
             $root.'/src/DTO/HomepageNavigationData.php',
-            $root.'/src/DTO/HomepageProductCardData.php',
+            dirname(__DIR__, 3).'/packages/commerce/contracts/src/Storefront/ProductCardData.php',
             $root.'/src/DTO/HomepageBrandingData.php',
         ];
 

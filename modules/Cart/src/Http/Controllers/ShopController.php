@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Commerce\Cart\Http\Controllers;
 
 use Commerce\Cart\Contracts\CartServiceInterface;
+use Commerce\Cart\Services\ProductCardMapper;
 use Commerce\Contracts\Currency\CurrencyConverterInterface;
 use Commerce\Contracts\Inventory\InventoryQueryServiceInterface;
+use Commerce\Contracts\Storefront\ProductCardData;
+use Commerce\Product\Models\Product;
 use Commerce\Product\Services\ProductQueryService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -18,6 +21,7 @@ final class ShopController extends Controller
         private readonly ProductQueryService $productQueryService,
         private readonly CartServiceInterface $cartService,
         private readonly InventoryQueryServiceInterface $inventoryQueryService,
+        private readonly ProductCardMapper $cards,
     ) {}
 
     public function index(Request $request): View
@@ -28,10 +32,19 @@ final class ShopController extends Controller
             : null;
         $search = $request->string('search')->toString() ?: null;
 
+        $paginator = $search
+            ? $this->productQueryService->paginateStorefrontSearch($search, perPage: 24)
+            : $this->productQueryService->paginateStorefront(perPage: 24);
+
+        $cards = $paginator->getCollection()
+            ->map(fn (Product $product): ?ProductCardData => $this->cards->fromProduct($product))
+            ->filter()
+            ->values();
+
+        $paginator->setCollection($cards);
+
         return view('cart::storefront.shop', [
-            'products' => $search
-                ? $this->productQueryService->paginateStorefrontSearch($search, perPage: 24)
-                : $this->productQueryService->paginateStorefront(perPage: 24),
+            'products' => $paginator,
             'search' => $search,
             'displayCurrency' => $cart->currency,
             'baseCurrency' => $converter?->baseCurrency() ?? $cart->currency,
