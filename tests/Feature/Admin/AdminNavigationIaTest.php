@@ -54,7 +54,7 @@ final class AdminNavigationIaTest extends TestCase
             array_column($byId['website']['children'], 'label'),
         );
         $this->assertSame(
-            ['Posts', 'Categories', 'Tags', 'Pages'],
+            ['Posts', 'Categories', 'Tags', 'Pages', 'Homepage', 'Hero Banners', 'Promotion Banners', 'FAQ'],
             array_column($byId['content']['children'], 'label'),
         );
         $this->assertSame(
@@ -105,11 +105,15 @@ final class AdminNavigationIaTest extends TestCase
                 'admin.cms.categories.index',
                 'admin.cms.tags.index',
                 'admin.cms.pages.index',
+                'admin.cms.homepage.edit',
+                'admin.cms.hero-banners.index',
+                'admin.cms.promotion-banners.index',
+                'admin.cms.faq-entries.index',
             ],
             $contentRoutes,
         );
         $this->assertSame(
-            ['cms.post.view', 'cms.category.view', 'cms.tag.view', 'cms.page.view'],
+            ['cms.post.view', 'cms.category.view', 'cms.tag.view', 'cms.page.view', 'cms.page.view', 'cms.page.view', 'cms.page.view', 'cms.page.view'],
             array_column($byId['content']['children'], 'permission'),
         );
         $this->assertSame('admin.tax.index', $byId['configuration']['children'][5]['route']);
@@ -183,7 +187,10 @@ final class AdminNavigationIaTest extends TestCase
 
         $this->assertArrayHasKey('content', $byId);
         $this->assertSame('Content', $byId['content']['label']);
-        $this->assertSame(['Posts', 'Categories', 'Tags', 'Pages'], array_column($byId['content']['children'], 'label'));
+        $this->assertSame(
+            ['Posts', 'Categories', 'Tags', 'Pages', 'Homepage', 'Hero Banners', 'Promotion Banners', 'FAQ'],
+            array_column($byId['content']['children'], 'label'),
+        );
         $this->assertSame('admin.cms.posts.index', $byId['content']['children'][0]['route']);
         $this->assertSame('cms.post.view', $byId['content']['children'][0]['permission']);
         $this->assertSame('admin.cms.pages.index', $byId['content']['children'][3]['route']);

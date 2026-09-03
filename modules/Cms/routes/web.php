@@ -3,8 +3,12 @@
 declare(strict_types=1);
 
 use Commerce\Cms\Http\Controllers\Admin\CategoryController;
+use Commerce\Cms\Http\Controllers\Admin\FaqEntryController;
+use Commerce\Cms\Http\Controllers\Admin\HeroBannerController;
+use Commerce\Cms\Http\Controllers\Admin\HomepageSectionController;
 use Commerce\Cms\Http\Controllers\Admin\PageController;
 use Commerce\Cms\Http\Controllers\Admin\PostController;
+use Commerce\Cms\Http\Controllers\Admin\PromotionBannerController;
 use Commerce\Cms\Http\Controllers\Admin\TagController;
 use Commerce\Cms\Http\Controllers\Storefront\AuthorController;
 use Commerce\Cms\Http\Controllers\Storefront\CategoryController as StorefrontCategoryController;
@@ -35,6 +39,16 @@ Route::middleware('web')->group(function (): void {
         ->group(function (): void {
             Route::middleware('module:cms')->group(function (): void {
                 Route::get('/pages', [PageController::class, 'index'])->name('pages.index');
+                Route::get('/homepage', [HomepageSectionController::class, 'edit'])->name('homepage.edit');
+                Route::get('/hero-banners', [HeroBannerController::class, 'index'])->name('hero-banners.index');
+                Route::get('/hero-banners/create', [HeroBannerController::class, 'create'])->name('hero-banners.create');
+                Route::get('/hero-banners/{heroBanner}/edit', [HeroBannerController::class, 'edit'])->name('hero-banners.edit');
+                Route::get('/promotion-banners', [PromotionBannerController::class, 'index'])->name('promotion-banners.index');
+                Route::get('/promotion-banners/create', [PromotionBannerController::class, 'create'])->name('promotion-banners.create');
+                Route::get('/promotion-banners/{promotionBanner}/edit', [PromotionBannerController::class, 'edit'])->name('promotion-banners.edit');
+                Route::get('/faq-entries', [FaqEntryController::class, 'index'])->name('faq-entries.index');
+                Route::get('/faq-entries/create', [FaqEntryController::class, 'create'])->name('faq-entries.create');
+                Route::get('/faq-entries/{faqEntry}/edit', [FaqEntryController::class, 'edit'])->name('faq-entries.edit');
 
                 Route::middleware('permission:cms.page.manage')->group(function (): void {
                     Route::get('/pages/create', [PageController::class, 'create'])->name('pages.create');
@@ -42,6 +56,16 @@ Route::middleware('web')->group(function (): void {
                     Route::get('/pages/{page}/edit', [PageController::class, 'edit'])->name('pages.edit');
                     Route::put('/pages/{page}', [PageController::class, 'update'])->name('pages.update');
                     Route::delete('/pages/{page}', [PageController::class, 'destroy'])->name('pages.destroy');
+                    Route::put('/homepage', [HomepageSectionController::class, 'update'])->name('homepage.update');
+                    Route::post('/hero-banners', [HeroBannerController::class, 'store'])->name('hero-banners.store');
+                    Route::put('/hero-banners/{heroBanner}', [HeroBannerController::class, 'update'])->name('hero-banners.update');
+                    Route::delete('/hero-banners/{heroBanner}', [HeroBannerController::class, 'destroy'])->name('hero-banners.destroy');
+                    Route::post('/promotion-banners', [PromotionBannerController::class, 'store'])->name('promotion-banners.store');
+                    Route::put('/promotion-banners/{promotionBanner}', [PromotionBannerController::class, 'update'])->name('promotion-banners.update');
+                    Route::delete('/promotion-banners/{promotionBanner}', [PromotionBannerController::class, 'destroy'])->name('promotion-banners.destroy');
+                    Route::post('/faq-entries', [FaqEntryController::class, 'store'])->name('faq-entries.store');
+                    Route::put('/faq-entries/{faqEntry}', [FaqEntryController::class, 'update'])->name('faq-entries.update');
+                    Route::delete('/faq-entries/{faqEntry}', [FaqEntryController::class, 'destroy'])->name('faq-entries.destroy');
                 });
             });
 

@@ -14,6 +14,8 @@ export default defineConfig({
                 'resources/css/admin/cms-editor.css',
                 'resources/js/admin/cms-editor.js',
                 'resources/js/storefront/blog.js',
+                'resources/css/storefront/home.css',
+                'resources/js/storefront/home.js',
                 'resources/css/barcode.css',
                 'resources/js/barcode/index.js',
                 'resources/js/barcode/history.js',

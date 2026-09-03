@@ -11,7 +11,7 @@
 <body class="storefront min-h-screen bg-background text-text antialiased">
     <header class="storefront-header">
         <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-            <a href="{{ route('storefront.shop.index') }}" class="storefront-brand">{{ config('commerce.name', 'Commerce Framework') }}</a>
+            <a href="{{ Route::has('storefront.home') ? route('storefront.home') : route('storefront.shop.index') }}" class="storefront-brand">{{ config('commerce.name', 'Commerce Framework') }}</a>
             <nav class="flex items-center gap-4 text-sm">
                 <a href="{{ route('storefront.shop.index') }}" class="storefront-nav-link">Shop</a>
                 @if (Route::has('storefront.cms.posts.index'))

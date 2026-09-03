@@ -2,11 +2,15 @@
 
 declare(strict_types=1);
 
+use Commerce\Cart\Http\Controllers\HomeController;
 use Commerce\Cart\Http\Controllers\ShopController;
 use Commerce\Cart\Http\Controllers\StorefrontCartController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('web')->group(function (): void {
+    Route::get('/', [HomeController::class, 'index'])->name('storefront.home');
+    Route::get('/home/arrivals', [HomeController::class, 'arrivals'])->name('storefront.home.arrivals');
+
     Route::get('/shop', [ShopController::class, 'index'])->name('storefront.shop.index');
     Route::get('/products/{slug}', [ShopController::class, 'show'])->name('storefront.products.show');
 
