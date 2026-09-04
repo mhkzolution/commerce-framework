@@ -18,12 +18,13 @@ v1.10.0
 v1.11.0
 v1.12.0
 v1.13.0
+v1.14.0
 ```
 
-v1.4.0 through v1.13.0 were squash-merged as PR #1 through PR #13. The tags on `main` are the source of history.
+v1.4.0 through v1.14.0 were squash-merged as PR #1 through PR #14. The tags on `main` are the source of history.
 
 ```text
-main = stable (active development line)   4365316
+main = stable (active development line)   20a3ee5
 v1.4.0  Barcode Management     (9cf699f)
 v1.5.0  Homepage CMS           (6b63a8d)
 v1.6.0  Footer Management      (52a1a20)
@@ -35,6 +36,7 @@ v1.10.0 Product Card System    (6369308)
 v1.11.0 Shop Listing Layout    (1faf8f5)
 v1.12.0 Header Foundation      (74daebd)
 v1.13.0 Blog Refresh           (4365316)
+v1.14.0 PDP Refresh            (20a3ee5)
 ```
 
 Recovery is **closed**. Phase 1 = Barcode. Phase 2 = Homepage + Footer. Later work is a feature roadmap on `main`. Do not merge archive branches.
@@ -58,8 +60,9 @@ Recovery is **closed**. Phase 1 = Barcode. Phase 2 = Homepage + Footer. Later wo
 | `v1.11.0` | `1faf8f5` | Storefront / Design | Shop page-container, toolbar, empty-state, pagination, GET filters |
 | `v1.12.0` | `74daebd` | Storefront / Design | Header primitive, HeaderViewData, links('main'), search/cart/account, mobile `<details>` |
 | `v1.13.0` | `4365316` | Storefront / Design | Blog page-container, storefront search, pagination::storefront, single Vite client |
+| `v1.14.0` | `20a3ee5` | Storefront / Design | PDP page-container, ProductDetailData, primary image, storefront add-to-cart |
 
-v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 through v1.13.0 are separate so a barcode, homepage, footer, navigation, website-settings, or design-system defect rolls back only that surface.
+v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 through v1.14.0 are separate so a barcode, homepage, footer, navigation, website-settings, or design-system defect rolls back only that surface.
 
 ## v1.0.0 — Module Management
 
@@ -224,20 +227,34 @@ WS-002 through Header is closed (Foundations, Footer tokens, Product Card, Shop 
 Feature lock: `docs/superpowers/specs/2026-09-04-ws002-blog-refresh-feature.md`  
 Implementation spec: `docs/superpowers/specs/2026-09-04-ws002-blog-v1-implementation.md`
 
-WS-002 through Blog is closed (Foundations, Footer tokens, Product Card, Shop listing, Header, Blog). PDP is next.
+WS-002 through Blog is closed (Foundations, Footer tokens, Product Card, Shop listing, Header, Blog). PDP landed in v1.14.0.
 
-## Next candidate
+## v1.14.0 — WS-002 PDP Refresh
 
-**WS-002 PDP Refresh (v1.14.0)** — Product detail joins Homepage / Shop / Header / Blog width and leaves admin-era Tailwind / `cf-btn`. Not archive recovery. Inventory is locked in the feature spec (layout default `max-w-5xl`, Eloquent + currency math in the Blade, media box never renders an `<img>`, hardcoded English copy).
-
-Do not merge archive PDP markup. Do not `git checkout 84e905c -- .`.
+- Full-bleed `storefront-pdp-main` and `x-storefront.layout.page-container`
+- Blade consumes only `ProductDetailData` (Cart `ProductDetailBuilder`: default variant, media URL, inventory, currency)
+- Primary image renders as `<img>` when present; placeholder when not
+- Add-to-cart is storefront chrome + `storefront::` copy (no `cf-btn` / Eloquent / `defaultVariant` in the view)
+- Header / Shop listing / Blog / product card unchanged
+- Squash-merged as PR #14 (`20a3ee5`). Tag `v1.14.0` is on `20a3ee5`
 
 Feature lock: `docs/superpowers/specs/2026-09-04-ws002-pdp-refresh-feature.md`  
 Implementation spec: `docs/superpowers/specs/2026-09-04-ws002-pdp-v1-implementation.md`
 
+WS-002 merchandising surfaces are closed (Homepage, Shop, Header, Blog, PDP). Cart is next.
+
+## Next candidate
+
+**WS-002 Cart Refresh (v1.15.0)** — Cart joins the storefront width and leaves admin-era `cf-btn` / `cf-input` / hardcoded English. Not archive recovery, not a checkout rewrite. Inventory is locked in the feature spec (layout default `max-w-5xl`, Tailwind table, empty copy as `<p>`, `CartData` already present).
+
+Do not merge archive cart markup. Do not `git checkout 84e905c -- .`.
+
+Feature lock: `docs/superpowers/specs/2026-09-04-ws002-cart-refresh-feature.md`  
+Implementation spec: `docs/superpowers/specs/2026-09-04-ws002-cart-v1-implementation.md`
+
 ```text
-v1.14.0  PDP Refresh              ← next
-later    Appearance/Theming, Scanner, POS, Inventory, Marketplace
+v1.15.0  Cart Refresh             ← next
+later    Checkout, Account, Appearance/Theming, Scanner, POS, Inventory, Marketplace
 ```
 
 ## Not included
@@ -248,9 +265,9 @@ These remain outside the tagged history on `main`:
 - Warehouse Scanner, POS barcode expansion, Inventory expansion, Marketplace payouts
 - `feat/commerce-framework-v1` design system / `stash@{0}` (archive — do not merge)
 - CMS static `page.blade.php` (not the blog archive / article)
-- Cart, checkout, and account bodies (still layout default `max-w-5xl`)
+- Checkout, confirmation, and account / login / register bodies (still layout default `max-w-5xl`)
 
-WS-002 PDP is next (specs locked; implement on `feat/ws002-pdp-v1`). PDP is designed from current `main`, not archive. Appearance / CX / cart-checkout stay out.
+WS-002 Cart is next (specs locked; implement on `feat/ws002-cart-v1`). Cart is designed from current `main`, not archive. Appearance / CX / checkout stay out.
 
 Safety net (do not delete, do not merge):
 
