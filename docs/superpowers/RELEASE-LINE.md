@@ -241,20 +241,20 @@ WS-002 through Blog is closed (Foundations, Footer tokens, Product Card, Shop li
 Feature lock: `docs/superpowers/specs/2026-09-04-ws002-pdp-refresh-feature.md`  
 Implementation spec: `docs/superpowers/specs/2026-09-04-ws002-pdp-v1-implementation.md`
 
-WS-002 merchandising surfaces are closed (Homepage, Shop, Header, Blog, PDP). Cart is next.
+WS-002 merchandising surfaces are closed (Homepage, Shop, Header, Blog, PDP). Shopper chrome is next.
 
 ## Next candidate
 
-**WS-002 Cart Refresh (v1.15.0)** — Cart joins the storefront width and leaves admin-era `cf-btn` / `cf-input` / hardcoded English. Not archive recovery, not a checkout rewrite. Inventory is locked in the feature spec (layout default `max-w-5xl`, Tailwind table, empty copy as `<p>`, `CartData` already present).
+**WS-002 Shopper Chrome (v1.15.0)** — Remaining shopper path (Cart, Checkout, confirmation, pay, Account, order, login, register) joins page-container and shared `shopper.css`. Not archive recovery. Cart-only lock is superseded.
 
-Do not merge archive cart markup. Do not `git checkout 84e905c -- .`.
+Do not merge archive markup. Do not `git checkout 84e905c -- .`.
 
-Feature lock: `docs/superpowers/specs/2026-09-04-ws002-cart-refresh-feature.md`  
-Implementation spec: `docs/superpowers/specs/2026-09-04-ws002-cart-v1-implementation.md`
+Feature lock: `docs/superpowers/specs/2026-09-04-ws002-shopper-chrome-feature.md`  
+Implementation spec: `docs/superpowers/specs/2026-09-04-ws002-shopper-chrome-v1-implementation.md`
 
 ```text
-v1.15.0  Cart Refresh             ← next
-later    Checkout, Account, Appearance/Theming, Scanner, POS, Inventory, Marketplace
+v1.15.0  Shopper Chrome           ← next (Cart → pay → Account in one tag)
+later    Appearance/Theming, Scanner, POS, Inventory, Marketplace
 ```
 
 ## Not included
@@ -265,9 +265,9 @@ These remain outside the tagged history on `main`:
 - Warehouse Scanner, POS barcode expansion, Inventory expansion, Marketplace payouts
 - `feat/commerce-framework-v1` design system / `stash@{0}` (archive — do not merge)
 - CMS static `page.blade.php` (not the blog archive / article)
-- Checkout, confirmation, and account / login / register bodies (still layout default `max-w-5xl`)
+- Shopper chrome bodies until v1.15.0 lands (still layout default `max-w-5xl`)
 
-WS-002 Cart is next (specs locked; implement on `feat/ws002-cart-v1`). Cart is designed from current `main`, not archive. Appearance / CX / checkout stay out.
+WS-002 Shopper Chrome is next (specs locked; implement on `feat/ws002-shopper-chrome-v1`). Designed from current `main`, not archive. Appearance / CX stay out.
 
 Safety net (do not delete, do not merge):
 
