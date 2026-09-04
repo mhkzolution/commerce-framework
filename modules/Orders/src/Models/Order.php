@@ -13,8 +13,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model
 {
-    use HasUuid;
     use BelongsToTenant;
+    use HasUuid;
     use SoftDeletes;
 
     public const REFERENCE_TYPE = 'order';
@@ -40,6 +40,9 @@ class Order extends Model
         'shipping_method_name',
         'shipping_total',
         'channel',
+        'created_by_user_uuid',
+        'updated_by_user_uuid',
+        'idempotency_key',
         'confirmed_at',
         'completed_at',
         'cancelled_at',
@@ -61,6 +64,16 @@ class Order extends Model
     public function lineItems(): HasMany
     {
         return $this->hasMany(OrderLineItem::class);
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(OrderEvent::class)->latest();
+    }
+
+    public function shipments(): HasMany
+    {
+        return $this->hasMany(OrderShipment::class)->latest();
     }
 
     public function isPending(): bool

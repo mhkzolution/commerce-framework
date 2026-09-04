@@ -11,9 +11,9 @@ interface OrderServiceInterface
 {
     public function create(CreateOrderData $data): Order;
 
-    public function confirm(string $uuid): Order;
+    public function confirm(string $uuid, ?string $actorUserUuid = null): Order;
 
-    public function complete(string $uuid): Order;
+    public function complete(string $uuid, ?string $actorUserUuid = null): Order;
 
-    public function cancel(string $uuid): Order;
+    public function cancel(string $uuid, ?string $actorUserUuid = null): Order;
 }

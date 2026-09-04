@@ -1,0 +1,28 @@
+.order-detail-layout {
+    display: grid;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (min-width: 1024px) {
+    .order-detail-layout {
+        grid-template-columns: minmax(0, 1fr) 22rem;
+    }
+}
+
+.order-detail-timeline {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.order-detail-timeline li {
+    position: relative;
+    padding: 0 0 1rem 1rem;
+    border-left: 2px solid var(--color-border);
+}
+
+.order-detail-timeline li:last-child {
+    border-left-color: transparent;
+    padding-bottom: 0;
+}
