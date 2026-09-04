@@ -9,10 +9,11 @@ when the design system is merged.
 --}}
 @props([
     'items' => [],
+    'ariaLabel' => null,
 ])
 
 @if (count($items) > 0)
-    <nav {{ $attributes->merge(['class' => 'storefront-breadcrumb', 'aria-label' => __('cms::blog.breadcrumb')]) }}>
+    <nav {{ $attributes->merge(['class' => 'storefront-breadcrumb', 'aria-label' => $ariaLabel ?: __('cms::blog.breadcrumb')]) }}>
         <ol class="storefront-breadcrumb__list">
             @foreach ($items as $item)
                 <li class="storefront-breadcrumb__item">

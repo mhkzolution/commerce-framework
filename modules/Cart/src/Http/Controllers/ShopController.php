@@ -8,12 +8,12 @@ use Commerce\Cart\Contracts\CartServiceInterface;
 use Commerce\Cart\DTO\ShopListingFilters;
 use Commerce\Cart\Services\HomepageNavigationQuery;
 use Commerce\Cart\Services\ProductCardMapper;
+use Commerce\Cart\Services\ProductDetailBuilder;
 use Commerce\Cart\Services\ShopProductQuery;
 use Commerce\Contracts\Currency\CurrencyConverterInterface;
-use Commerce\Contracts\Inventory\InventoryQueryServiceInterface;
 use Commerce\Contracts\Storefront\ProductCardData;
+use Commerce\Contracts\Storefront\ProductDetailData;
 use Commerce\Product\Models\Product;
-use Commerce\Product\Services\ProductQueryService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\View\View;
@@ -21,12 +21,11 @@ use Illuminate\View\View;
 final class ShopController extends Controller
 {
     public function __construct(
-        private readonly ProductQueryService $productQueryService,
         private readonly ShopProductQuery $listing,
         private readonly HomepageNavigationQuery $navigation,
         private readonly CartServiceInterface $cartService,
-        private readonly InventoryQueryServiceInterface $inventoryQueryService,
         private readonly ProductCardMapper $cards,
+        private readonly ProductDetailBuilder $details,
     ) {}
 
     public function index(Request $request): View
@@ -58,28 +57,14 @@ final class ShopController extends Controller
 
     public function show(string $slug): View
     {
-        $product = $this->productQueryService->findStorefrontBySlug($slug);
+        $product = $this->details->fromSlug($slug);
 
-        if ($product === null) {
+        if (! $product instanceof ProductDetailData) {
             abort(404);
         }
 
-        $variant = $product->defaultVariant();
-        $cart = $this->cartService->get();
-        $converter = app()->bound(CurrencyConverterInterface::class)
-            ? app(CurrencyConverterInterface::class)
-            : null;
-        $available = $variant !== null
-            ? $this->inventoryQueryService->getAvailable($variant->uuid)
-            : 0;
-
         return view('cart::storefront.product', [
             'product' => $product,
-            'variant' => $variant,
-            'available' => $available,
-            'displayCurrency' => $cart->currency,
-            'baseCurrency' => $converter?->baseCurrency() ?? $cart->currency,
-            'currencyConverter' => $converter,
         ]);
     }
 }
