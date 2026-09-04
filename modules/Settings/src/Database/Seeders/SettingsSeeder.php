@@ -23,12 +23,23 @@ final class SettingsSeeder extends Seeder
             'store.timezone' => ['type' => 'string', 'label' => 'Timezone', 'group' => 'store', 'default' => 'Asia/Bangkok'],
             'store.locale' => ['type' => 'string', 'label' => 'Locale', 'group' => 'store', 'default' => 'en', 'is_public' => true],
             'store.email' => ['type' => 'string', 'label' => 'Store Email', 'group' => 'store', 'default' => 'superadmin@example.com'],
+            'store.phone' => ['type' => 'string', 'label' => 'Store Phone', 'group' => 'store', 'default' => null, 'is_public' => true],
             'store.logo_media_uuid' => ['type' => 'string', 'label' => 'Store Logo', 'group' => 'store', 'default' => null, 'is_public' => true],
             'store.description' => ['type' => 'string', 'label' => 'Store Description', 'group' => 'store', 'default' => null, 'is_public' => true],
             'social.facebook' => ['type' => 'string', 'label' => 'Facebook', 'group' => 'social', 'default' => null, 'is_public' => true],
             'social.instagram' => ['type' => 'string', 'label' => 'Instagram', 'group' => 'social', 'default' => null, 'is_public' => true],
             'social.tiktok' => ['type' => 'string', 'label' => 'TikTok', 'group' => 'social', 'default' => null, 'is_public' => true],
             'social.line' => ['type' => 'string', 'label' => 'LINE', 'group' => 'social', 'default' => null, 'is_public' => true],
+            'website.seo.title_suffix' => ['type' => 'string', 'label' => 'SEO title suffix', 'group' => 'website', 'default' => null, 'is_public' => true],
+            'website.seo.default_description' => ['type' => 'string', 'label' => 'SEO default description', 'group' => 'website', 'default' => null, 'is_public' => true],
+            'website.seo.default_og_image_media_uuid' => ['type' => 'string', 'label' => 'SEO default OG image', 'group' => 'website', 'default' => null, 'is_public' => true],
+            'theme.primary' => ['type' => 'string', 'label' => 'Primary color', 'group' => 'theme', 'default' => '#2563eb', 'is_public' => true],
+            'theme.primary_hover' => ['type' => 'string', 'label' => 'Primary hover', 'group' => 'theme', 'default' => '#1d4ed8', 'is_public' => true],
+            'theme.primary_active' => ['type' => 'string', 'label' => 'Primary active', 'group' => 'theme', 'default' => '#1e40af', 'is_public' => true],
+            'theme.background' => ['type' => 'string', 'label' => 'Background', 'group' => 'theme', 'default' => '#f4f6f8', 'is_public' => true],
+            'theme.surface' => ['type' => 'string', 'label' => 'Surface', 'group' => 'theme', 'default' => '#ffffff', 'is_public' => true],
+            'theme.accent' => ['type' => 'string', 'label' => 'Accent', 'group' => 'theme', 'default' => '#2563eb', 'is_public' => true],
+            'theme.accent_hover' => ['type' => 'string', 'label' => 'Accent hover', 'group' => 'theme', 'default' => '#1d4ed8', 'is_public' => true],
         ];
 
         foreach ($definitions as $key => $schema) {

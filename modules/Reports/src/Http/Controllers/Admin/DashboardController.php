@@ -27,6 +27,7 @@ final class DashboardController extends Controller
             'summary' => $this->dashboard->summary($range),
             'revenueSeries' => $this->dashboard->revenueSeries($range),
             'ordersByStatus' => $this->dashboard->ordersByStatus($range),
+            'salesByChannel' => $this->dashboard->salesByChannel($range),
             'recentOrders' => $this->dashboard->recentOrders(range: $range),
             'orderStatuses' => config('orders.statuses', []),
             'range' => $range,

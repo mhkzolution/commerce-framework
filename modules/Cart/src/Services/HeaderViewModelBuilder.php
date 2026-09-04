@@ -25,6 +25,7 @@ final class HeaderViewModelBuilder
         private readonly ?NavigationQueryServiceInterface $navigation = null,
         private readonly ?CurrencyConverterInterface $currencies = null,
         private readonly ?CartStorageInterface $cartStorage = null,
+        private readonly ?StorefrontPrimaryNavigation $primaryNavigation = null,
     ) {}
 
     public function build(): HeaderViewData
@@ -33,6 +34,7 @@ final class HeaderViewModelBuilder
             brand: $this->brand(),
             navigation: $this->navigation(),
             actions: $this->actions(),
+            primaryNav: $this->primaryNav(),
         );
     }
 
@@ -109,7 +111,141 @@ final class HeaderViewModelBuilder
             currencyCodes: $codes,
             currentCurrency: $current,
             currencyActionUrl: $currencyActionUrl,
+            searchQuery: $this->searchQuery(),
+            customerName: $this->customerName(),
+            customerInitials: $this->customerInitials(),
         );
+    }
+
+    /**
+     * @return array{promo: array{enabled: bool, message: string, dismissible: bool}, items: list<array<string, mixed>>}
+     */
+    private function primaryNav(): array
+    {
+        $empty = [
+            'promo' => ['enabled' => false, 'message' => '', 'dismissible' => true],
+            'items' => [],
+        ];
+
+        if ($this->primaryNavigation === null) {
+            return $this->primaryNavFromLinks($empty);
+        }
+
+        try {
+            $nav = $this->primaryNavigation->build();
+        } catch (Throwable) {
+            return $this->primaryNavFromLinks($empty);
+        }
+
+        if (($nav['items'] ?? []) === []) {
+            return $this->primaryNavFromLinks($nav);
+        }
+
+        return $this->appendMainLinks($nav);
+    }
+
+    /**
+     * @param  array{promo: array{enabled: bool, message: string, dismissible: bool}, items: list<array<string, mixed>>}  $nav
+     * @return array{promo: array{enabled: bool, message: string, dismissible: bool}, items: list<array<string, mixed>>}
+     */
+    private function primaryNavFromLinks(array $nav): array
+    {
+        $items = [];
+
+        foreach ($this->navigation()->links as $link) {
+            $items[] = [
+                'id' => $link->key ?? $link->label,
+                'label' => $link->label,
+                'type' => 'link',
+                'url' => $link->url,
+                'active' => false,
+                'columns' => [],
+            ];
+        }
+
+        $nav['items'] = $items;
+
+        return $nav;
+    }
+
+    /**
+     * @param  array{promo: array{enabled: bool, message: string, dismissible: bool}, items: list<array<string, mixed>>}  $nav
+     * @return array{promo: array{enabled: bool, message: string, dismissible: bool}, items: list<array<string, mixed>>}
+     */
+    private function appendMainLinks(array $nav): array
+    {
+        $seen = [];
+
+        foreach ($nav['items'] as $item) {
+            $seen[mb_strtolower((string) ($item['label'] ?? ''))] = true;
+            $url = rtrim((string) ($item['url'] ?? ''), '/');
+            if ($url !== '') {
+                $seen[$url] = true;
+            }
+        }
+
+        foreach ($this->navigation()->links as $link) {
+            $labelKey = mb_strtolower($link->label);
+            $urlKey = rtrim($link->url, '/');
+
+            if (isset($seen[$labelKey]) || ($urlKey !== '' && isset($seen[$urlKey]))) {
+                continue;
+            }
+
+            $nav['items'][] = [
+                'id' => $link->key ?? $link->label,
+                'label' => $link->label,
+                'type' => 'link',
+                'url' => $link->url,
+                'active' => false,
+                'columns' => [],
+            ];
+            $seen[$labelKey] = true;
+            if ($urlKey !== '') {
+                $seen[$urlKey] = true;
+            }
+        }
+
+        return $nav;
+    }
+
+    private function customerName(): string
+    {
+        try {
+            $user = Auth::guard('customer')->user();
+        } catch (Throwable) {
+            return '';
+        }
+
+        return is_object($user) && isset($user->name) ? trim((string) $user->name) : '';
+    }
+
+    private function customerInitials(): string
+    {
+        $name = $this->customerName();
+        if ($name === '') {
+            return '';
+        }
+
+        $parts = preg_split('/\s+/', $name) ?: [];
+        $initials = '';
+
+        foreach (array_slice($parts, 0, 2) as $part) {
+            $initials .= mb_strtoupper(mb_substr($part, 0, 1));
+        }
+
+        return $initials;
+    }
+
+    private function searchQuery(): string
+    {
+        try {
+            $search = trim((string) request()->query('search', ''));
+        } catch (Throwable) {
+            return '';
+        }
+
+        return $search;
     }
 
     private function authenticated(): bool

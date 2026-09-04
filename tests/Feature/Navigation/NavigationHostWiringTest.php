@@ -25,6 +25,6 @@ final class NavigationHostWiringTest extends TestCase
         $this->assertNotNull($this->app->getProvider(NavigationServiceProvider::class));
         $this->assertNotNull($this->app['router']->getRoutes()->getByName('admin.navigation.show'));
         $this->assertNotNull($this->app['router']->getRoutes()->getByName('admin.navigation.menus.edit'));
-        $this->assertNull($this->app['router']->getRoutes()->getByName('admin.storefront.navigation.show'));
+        $this->assertNotNull($this->app['router']->getRoutes()->getByName('admin.storefront.navigation.show'));
     }
 }

@@ -64,9 +64,16 @@ final class Ws002HeaderIsolationTest extends TestCase
         $this->assertNotFalse($contents);
 
         $this->assertStringContainsString('HeaderViewData', $contents);
+        $this->assertStringContainsString('class="storefront-header', $contents);
         $this->assertStringContainsString('storefront-site-header', $contents);
+        $this->assertStringContainsString('storefront-primary-nav', $contents);
+        $this->assertStringContainsString('data-search-open', $contents);
+        $this->assertStringContainsString('x-storefront.navigation.cart-drawer', $contents);
+        $this->assertStringContainsString('x-storefront.navigation.wishlist-drawer', $contents);
         $this->assertStringContainsString('x-storefront.layout.page-container', $contents);
         $this->assertStringContainsString('name="search"', $contents);
+        $this->assertStringContainsString('searchQuery', $contents);
+        $this->assertStringNotContainsString('x-site.logo', $contents);
 
         foreach (self::FORBIDDEN as $token) {
             $this->assertStringNotContainsString($token, $contents, $token);
@@ -88,7 +95,7 @@ final class Ws002HeaderIsolationTest extends TestCase
 
         $actions = file_get_contents($this->dtoPath('HeaderActionData'));
         $this->assertNotFalse($actions);
-        foreach (['searchUrl', 'cartUrl', 'cartCount', 'authenticated', 'accountUrl', 'loginUrl', 'logoutUrl'] as $field) {
+        foreach (['searchUrl', 'cartUrl', 'cartCount', 'authenticated', 'accountUrl', 'loginUrl', 'logoutUrl', 'searchQuery'] as $field) {
             $this->assertStringContainsString('$'.$field, $actions);
         }
     }
@@ -107,7 +114,8 @@ final class Ws002HeaderIsolationTest extends TestCase
     {
         $css = $this->headerCss();
         $this->assertNotSame('', $css);
-        $this->assertStringContainsString('storefront-site-header', $css);
+        $this->assertStringContainsString('.storefront-header {', $css);
+        $this->assertStringContainsString('.storefront-primary-nav', $css);
         $this->assertStringNotContainsString('77.5rem', $css);
         $this->assertStringNotContainsString('feat/commerce-framework-v1', $css);
     }

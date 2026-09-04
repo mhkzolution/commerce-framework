@@ -132,7 +132,11 @@ final class NavigationIsolationTest extends TestCase
         $this->assertStringContainsString("'route' => 'admin.navigation.show'", $contents);
         $this->assertStringContainsString("'permission' => 'navigation.menu.view'", $contents);
         $this->assertStringContainsString("'module' => 'navigation'", $contents);
-        $this->assertStringNotContainsString("'route' => 'admin.storefront.navigation.show'", $contents);
+        $this->assertStringContainsString("'route' => 'admin.storefront.navigation.show'", $contents);
+        $this->assertTrue(
+            strpos($contents, "'route' => 'admin.navigation.show'") < strpos($contents, "'route' => 'admin.storefront.navigation.show'"),
+            'Website → Navigation must remain the Navigation module; storefront promo navigation is additional.',
+        );
     }
 
     public function test_footer_renderer_and_dtos_do_not_import_navigation(): void

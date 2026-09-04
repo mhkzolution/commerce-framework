@@ -1,5 +1,5 @@
 @php
-    $overrides = config('design.overrides', []);
+    $overrides = \Commerce\Settings\Support\ThemeDesignTokens::resolve();
 @endphp
 
 @if (count($overrides))

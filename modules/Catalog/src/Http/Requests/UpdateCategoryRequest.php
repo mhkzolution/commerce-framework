@@ -19,9 +19,15 @@ final class UpdateCategoryRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'image_media_uuid' => ['nullable', 'uuid'],
             'parent_id' => ['nullable', 'integer', 'exists:categories,id'],
             'is_active' => ['nullable', 'boolean'],
             'position' => ['nullable', 'integer', 'min:0'],
+            'seo.meta_title' => ['nullable', 'string', 'max:255'],
+            'seo.meta_description' => ['nullable', 'string'],
+            'seo.meta_keywords' => ['nullable', 'string', 'max:255'],
+            'seo.canonical_url' => ['nullable', 'url', 'max:2048'],
+            'seo.og_image_media_uuid' => ['nullable', 'uuid'],
         ];
     }
 }

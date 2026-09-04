@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Cache;
 
 final class HomeContentCache
 {
-    public const PREFIX = 'storefront.home.v1';
+    public const PREFIX = 'storefront.home.v2';
 
     public static function ttl(): int
     {

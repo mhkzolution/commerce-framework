@@ -22,16 +22,21 @@ final class Ws002HomepageContractTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('data-storefront-home', false)
-            ->assertSee('storefront-home-arrivals', false);
+            ->assertSee('storefront-home-main', false);
     }
 
-    public function test_homepage_html_uses_page_container(): void
+    public function test_empty_homepage_hides_arrivals_and_emits_seo(): void
     {
         $html = $this->get('/')
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString('storefront-page-container', $html);
-        $this->assertStringContainsString('storefront-home__inner', $html);
+        $this->assertStringNotContainsString('storefront-home-arrivals', $html);
+        $this->assertStringContainsString('twitter:card', $html);
+        $this->assertStringContainsString('"@type":"WebSite"', $html);
+        $this->assertStringContainsString('"@type":"WebPage"', $html);
+        $this->assertStringContainsString('"@type":"Organization"', $html);
+        $this->assertStringContainsString('"@type":"BreadcrumbList"', $html);
+        $this->assertStringContainsString('"@type":"SearchAction"', $html);
     }
 }

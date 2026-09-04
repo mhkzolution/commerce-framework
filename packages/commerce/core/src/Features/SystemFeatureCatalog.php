@@ -48,6 +48,33 @@ final class SystemFeatureCatalog
                 'sort_order' => 40,
                 'is_core' => false,
             ],
+            [
+                'code' => 'pos-hold',
+                'name' => 'POS Hold / Resume',
+                'description' => 'Hold and resume POS sales',
+                'module_code' => 'pos',
+                'default_enabled' => true,
+                'sort_order' => 50,
+                'is_core' => false,
+            ],
+            [
+                'code' => 'pos-returns',
+                'name' => 'POS Returns',
+                'description' => 'Refund POS orders from the returns workspace',
+                'module_code' => 'pos',
+                'default_enabled' => true,
+                'sort_order' => 60,
+                'is_core' => false,
+            ],
+            [
+                'code' => 'warehouse-reports',
+                'name' => 'Warehouse Reports',
+                'description' => 'Warehouse scanner dashboard and scan history',
+                'module_code' => 'warehouse',
+                'default_enabled' => true,
+                'sort_order' => 70,
+                'is_core' => false,
+            ],
         ];
     }
 }

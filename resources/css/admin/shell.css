@@ -1,6 +1,7 @@
 html.admin-shell,
 html.admin-shell body {
     height: 100%;
+    font-family: var(--font-sans);
 }
 
 html.admin-shell body {

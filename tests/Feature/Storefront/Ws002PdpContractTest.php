@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Storefront;
 
+use Commerce\Cart\Services\ProductDetailBuilder;
 use Commerce\Contracts\Media\MediaQueryServiceInterface;
+use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Product\Models\ProductMedia;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesPurchasableProduct;
@@ -34,6 +36,9 @@ final class Ws002PdpContractTest extends TestCase
         $this->assertStringContainsString('storefront-page-container', $html);
         $this->assertStringContainsString('storefront-site-header', $html);
         $this->assertStringContainsString('storefront-pdp__add', $html);
+        $this->assertStringContainsString('storefront-pdp--market', $html);
+        $this->assertStringContainsString('storefront-buy-box', $html);
+        $this->assertStringContainsString(__('storefront::storefront.buy_now'), $html);
         $this->assertStringContainsString('name="purchasable_uuid"', $html);
         $this->assertStringContainsString($variant->uuid, $html);
         $this->assertStringContainsString(__('storefront::storefront.add_to_cart'), $html);
@@ -54,7 +59,8 @@ final class Ws002PdpContractTest extends TestCase
             'is_primary' => true,
         ]);
 
-        $this->app->instance(MediaQueryServiceInterface::class, new class($mediaUuid) implements MediaQueryServiceInterface {
+        $this->app->instance(MediaQueryServiceInterface::class, new class($mediaUuid) implements MediaQueryServiceInterface
+        {
             public function __construct(private readonly string $uuid) {}
 
             public function findByUuid(string $uuid): ?object
@@ -72,7 +78,7 @@ final class Ws002PdpContractTest extends TestCase
                 return [];
             }
         });
-        $this->app->forgetInstance(\Commerce\Cart\Services\ProductDetailBuilder::class);
+        $this->app->forgetInstance(ProductDetailBuilder::class);
 
         $html = $this->get(route('storefront.products.show', $variant->product->slug))
             ->assertOk()
@@ -85,7 +91,7 @@ final class Ws002PdpContractTest extends TestCase
     public function test_out_of_stock_hides_add_to_cart_form(): void
     {
         $variant = $this->createPurchasableProduct(price: 1800, stock: 1, sku: 'PDP-OOS-2');
-        app(\Commerce\Inventory\Contracts\InventoryServiceInterface::class)->setOnHand($variant->uuid, 0);
+        app(InventoryServiceInterface::class)->setOnHand($variant->uuid, 0);
 
         $html = $this->get(route('storefront.products.show', $variant->product->slug))
             ->assertOk()
@@ -94,5 +100,16 @@ final class Ws002PdpContractTest extends TestCase
 
         $this->assertStringNotContainsString('storefront-pdp__add', $html);
         $this->assertStringNotContainsString('name="purchasable_uuid"', $html);
+    }
+
+    public function test_buy_now_redirects_to_checkout(): void
+    {
+        $variant = $this->createPurchasableProduct(price: 2100, stock: 2, sku: 'PDP-BUY-1');
+
+        $this->post(route('storefront.cart.items.store'), [
+            'purchasable_uuid' => $variant->uuid,
+            'quantity' => 1,
+            'redirect_to' => 'checkout',
+        ])->assertRedirect(route('storefront.checkout'));
     }
 }

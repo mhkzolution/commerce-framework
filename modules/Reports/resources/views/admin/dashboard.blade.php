@@ -1,24 +1,29 @@
 @extends('layouts.admin')
 
-@section('title', 'Dashboard')
+@section('title', __('reports::admin.title'))
 
 @section('page')
-    <x-admin.page title="Dashboard" description="Commerce performance overview for the selected period.">
+    <x-admin.page :title="__('reports::admin.title')" :description="__('reports::admin.description')">
         <x-slot:breadcrumb>
-            <x-admin.breadcrumb :items="[['label' => 'Dashboard', 'active' => true]]" />
+            <x-admin.breadcrumb :items="[['label' => __('reports::admin.title'), 'active' => true]]" />
         </x-slot:breadcrumb>
 
         <x-slot:secondaryActions>
             <x-admin.button variant="secondary" :href="route('admin.dashboard.export', request()->query())">
                 <x-admin.icon name="arrow-down-tray" class="h-4 w-4" />
-                Export CSV
+                {{ __('reports::admin.export_csv') }}
             </x-admin.button>
+            @if (Route::has('admin.reports.index'))
+                <x-admin.button variant="secondary" :href="route('admin.reports.index')">
+                    {{ __('reports::admin.all_reports') }}
+                </x-admin.button>
+            @endif
         </x-slot:secondaryActions>
 
         <x-slot:filters>
             <div class="flex flex-wrap items-end gap-3">
                 <div class="flex flex-wrap gap-2">
-                    @foreach (['7d' => '7 days', '30d' => '30 days', '90d' => '90 days'] as $key => $label)
+                    @foreach (['7d' => __('reports::admin.range_7d'), '30d' => __('reports::admin.range_30d'), '90d' => __('reports::admin.range_90d')] as $key => $label)
                         <x-admin.button
                             :href="route('admin.dashboard', ['range' => $key])"
                             :variant="$summary['preset'] === $key ? 'primary' : 'secondary'"
@@ -28,54 +33,67 @@
                 <form method="GET" class="flex flex-wrap items-end gap-3">
                     <input type="hidden" name="range" value="custom">
                     <label class="text-sm">
-                        <span class="mb-1 block text-muted">From</span>
+                        <span class="mb-1 block text-muted">{{ __('reports::admin.from') }}</span>
                         <input type="date" name="from" value="{{ $summary['from'] }}" class="cf-input py-2">
                     </label>
                     <label class="text-sm">
-                        <span class="mb-1 block text-muted">To</span>
+                        <span class="mb-1 block text-muted">{{ __('reports::admin.to') }}</span>
                         <input type="date" name="to" value="{{ $summary['to'] }}" class="cf-input py-2">
                     </label>
-                    <x-admin.button type="submit" variant="secondary">Apply</x-admin.button>
+                    <x-admin.button type="submit" variant="secondary">{{ __('reports::admin.apply') }}</x-admin.button>
                 </form>
             </div>
         </x-slot:filters>
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <x-admin.stat-card
-                label="Revenue (period)"
+                :label="__('reports::admin.revenue_period')"
                 :value="number_format($summary['revenue_period'] / 100, 2) . ' ' . $summary['currency']"
-                :hint="'All time ' . number_format($summary['revenue_total'] / 100, 2)"
+                :hint="__('reports::admin.revenue_all_time', [
+                    'amount' => number_format($summary['revenue_total'] / 100, 2),
+                    'currency' => $summary['currency'],
+                ])"
             />
             <x-admin.stat-card
-                label="Orders (period)"
+                :label="__('reports::admin.orders_period')"
                 :value="(string) $summary['orders_period']"
-                :hint="$summary['orders_total'] . ' total orders'"
+                :hint="__('reports::admin.orders_total', ['count' => $summary['orders_total']])"
             />
             <x-admin.stat-card
-                label="Pending orders"
+                :label="__('reports::admin.orders_pending')"
                 :value="(string) $summary['orders_pending']"
-                hint="Awaiting payment or fulfillment"
+                :hint="__('reports::admin.orders_pending_hint')"
             />
             <x-admin.stat-card
-                label="Average order value"
+                :label="__('reports::admin.average_order_value')"
                 :value="number_format($summary['average_order_value'] / 100, 2) . ' ' . $summary['currency']"
-                hint="Paid orders in selected period"
+                :hint="__('reports::admin.average_order_value_hint')"
             />
             @if (module_active('blog') && isset($blogStats))
                 <x-admin.stat-card
-                    label="Blog posts"
+                    :label="__('reports::admin.blog_posts')"
                     :value="(string) $blogStats['published']"
-                    :hint="$blogStats['posts'] . ' total'"
+                    :hint="__('reports::admin.blog_posts_hint', ['count' => $blogStats['posts']])"
                 />
             @endif
         </div>
 
-        <div class="mt-6">
-            <x-admin.bar-chart :series="$revenueSeries" currency="{{ $summary['currency'] }}" title="Daily revenue" />
+        <div class="mt-6 grid gap-6 xl:grid-cols-2">
+            <x-admin.bar-chart
+                :series="$revenueSeries"
+                currency="{{ $summary['currency'] }}"
+                :title="__('reports::admin.daily_revenue')"
+            />
+            <x-admin.bar-chart
+                :series="$revenueSeries"
+                value-key="orders"
+                format="number"
+                :title="__('reports::admin.daily_orders')"
+            />
         </div>
 
         <div class="mt-6 grid gap-6 lg:grid-cols-2">
-            <x-admin.card title="Orders by status">
+            <x-admin.card :title="__('reports::admin.orders_by_status')">
                 <ul class="space-y-2 text-sm">
                     @forelse ($ordersByStatus as $status => $count)
                         <li class="flex items-center justify-between rounded-md bg-primary-subtle px-3 py-2">
@@ -83,18 +101,41 @@
                             <x-admin.badge>{{ $count }}</x-admin.badge>
                         </li>
                     @empty
-                        <li class="text-muted">No orders in this period.</li>
+                        <li class="text-muted">{{ __('reports::admin.no_orders') }}</li>
                     @endforelse
                 </ul>
             </x-admin.card>
 
+            <x-admin.card :title="__('reports::admin.sales_by_channel')">
+                <x-admin.table.shell>
+                    <x-slot:head>
+                        <tr class="text-left text-xs uppercase tracking-wide text-muted">
+                            <th class="px-4 py-3">{{ __('reports::admin.channel') }}</th>
+                            <th class="px-4 py-3">{{ __('reports::admin.orders') }}</th>
+                            <th class="px-4 py-3">{{ __('reports::admin.revenue') }}</th>
+                        </tr>
+                    </x-slot:head>
+                    @forelse ($salesByChannel as $row)
+                        <tr>
+                            <td class="px-4 py-3">{{ $row['label'] }}</td>
+                            <td class="px-4 py-3">{{ $row['orders'] }}</td>
+                            <td class="px-4 py-3">{{ number_format($row['revenue'] / 100, 2) }} {{ $summary['currency'] }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="3" class="px-4 py-8 text-center text-muted">{{ __('reports::admin.no_sales') }}</td></tr>
+                    @endforelse
+                </x-admin.table.shell>
+            </x-admin.card>
+        </div>
+
+        <x-admin.card :title="__('reports::admin.recent_orders')" class="mt-6">
             <x-admin.table.shell>
                 <x-slot:head>
                     <tr class="text-left text-xs uppercase tracking-wide text-muted">
-                        <th class="px-4 py-3">Order</th>
-                        <th class="px-4 py-3">Customer</th>
-                        <th class="px-4 py-3">Total</th>
-                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">{{ __('reports::admin.order') }}</th>
+                        <th class="px-4 py-3">{{ __('reports::admin.customer') }}</th>
+                        <th class="px-4 py-3">{{ __('reports::admin.total') }}</th>
+                        <th class="px-4 py-3">{{ __('reports::admin.status') }}</th>
                     </tr>
                 </x-slot:head>
 
@@ -117,7 +158,7 @@
                                 <span class="font-medium text-text">{{ $order->order_number }}</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-muted">{{ $order->customer_name ?? $order->customer_email ?? 'Guest' }}</td>
+                        <td class="px-4 py-3 text-muted">{{ $order->customer_name ?? $order->customer_email ?? __('reports::admin.guest') }}</td>
                         <td class="px-4 py-3">{{ number_format($order->grand_total / 100, 2) }} {{ $order->currency }}</td>
                         <td class="px-4 py-3">
                             <x-admin.badge :variant="$orderBadge">
@@ -126,9 +167,9 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="px-4 py-8 text-center text-muted">No orders in this period.</td></tr>
+                    <tr><td colspan="4" class="px-4 py-8 text-center text-muted">{{ __('reports::admin.no_orders') }}</td></tr>
                 @endforelse
             </x-admin.table.shell>
-        </div>
+        </x-admin.card>
     </x-admin.page>
 @endsection

@@ -45,8 +45,15 @@ final class Ws002PdpIsolationTest extends TestCase
         $this->assertStringContainsString('name="purchasable_uuid"', $blade);
         $this->assertStringContainsString('name="quantity"', $blade);
         $this->assertStringContainsString('storefront::storefront.add_to_cart', $blade);
-        $this->assertStringContainsString("<img", $blade);
-        $this->assertStringContainsString('@vite(\'resources/css/storefront/pdp.css\')', $blade);
+        $this->assertStringContainsString('x-storefront.commerce.product-gallery', $blade);
+        $this->assertStringContainsString('resources/css/storefront/pdp.css', $blade);
+        $this->assertStringContainsString('resources/js/storefront/product.js', $blade);
+
+        $gallery = file_get_contents(
+            $this->repoRoot().'/resources/views/components/storefront/commerce/product-gallery.blade.php',
+        );
+        $this->assertNotFalse($gallery);
+        $this->assertStringContainsString('<img', $gallery);
     }
 
     public function test_pdp_blade_has_no_eloquent_admin_chrome_or_header_extract(): void
@@ -116,6 +123,7 @@ final class Ws002PdpIsolationTest extends TestCase
         $vite = file_get_contents($this->repoRoot().'/vite.config.js');
         $this->assertNotFalse($vite);
         $this->assertStringContainsString('resources/css/storefront/pdp.css', $vite);
+        $this->assertStringContainsString('resources/js/storefront/product.js', $vite);
     }
 
     public function test_shop_blog_and_header_do_not_embed_pdp_chrome(): void

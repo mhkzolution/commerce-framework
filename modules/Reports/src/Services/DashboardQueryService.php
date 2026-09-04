@@ -77,17 +77,21 @@ final class DashboardQueryService extends BaseQueryService
             ->orderBy('day')
             ->get();
 
-        $indexed = $rows->keyBy('day');
+        $indexed = [];
+        foreach ($rows as $row) {
+            $indexed[Carbon::parse((string) $row->day)->toDateString()] = $row;
+        }
+
         $series = [];
         $cursor = $range->from->copy()->startOfDay();
         $end = $range->to->copy()->startOfDay();
 
         while ($cursor->lessThanOrEqualTo($end)) {
             $key = $cursor->toDateString();
-            $row = $indexed->get($key);
+            $row = $indexed[$key] ?? null;
             $series[] = [
                 'date' => $key,
-                'label' => $cursor->format('M j'),
+                'label' => $cursor->format('d/m'),
                 'revenue' => (int) ($row->revenue ?? 0),
                 'orders' => (int) ($row->orders ?? 0),
             ];
@@ -95,6 +99,30 @@ final class DashboardQueryService extends BaseQueryService
         }
 
         return $series;
+    }
+
+    /**
+     * @return list<array{channel: string, label: string, orders: int, revenue: int}>
+     */
+    public function salesByChannel(?DashboardDateRange $range = null): array
+    {
+        $range ??= DashboardDateRange::fromRequest();
+        $revenueStatuses = [OrderStatus::Confirmed->value, OrderStatus::Completed->value];
+
+        return $this->paidOrdersQuery($revenueStatuses, $range)
+            ->select('channel')
+            ->selectRaw('COUNT(*) as orders')
+            ->selectRaw('SUM(grand_total) as revenue')
+            ->groupBy('channel')
+            ->orderByDesc('revenue')
+            ->get()
+            ->map(fn ($row): array => [
+                'channel' => (string) $row->channel,
+                'label' => $this->channelLabel((string) $row->channel),
+                'orders' => (int) $row->orders,
+                'revenue' => (int) $row->revenue,
+            ])
+            ->all();
     }
 
     /**
@@ -153,5 +181,23 @@ final class DashboardQueryService extends BaseQueryService
     private function ordersInRange(DashboardDateRange $range): Builder
     {
         return Order::query()->whereBetween('created_at', [$range->from, $range->to]);
+    }
+
+    private function channelLabel(string $channel): string
+    {
+        $translationKey = 'reports::admin.channel_'.$channel;
+        $translated = __($translationKey);
+
+        if ($translated !== $translationKey) {
+            return $translated;
+        }
+
+        $configured = (string) (config('reports.channels.'.$channel) ?? '');
+
+        if ($configured !== '') {
+            return $configured;
+        }
+
+        return $channel !== '' ? $channel : __('reports::admin.channel_unknown');
     }
 }

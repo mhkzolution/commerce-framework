@@ -61,14 +61,18 @@ final class WebsiteSettingsIsolationTest extends TestCase
         $this->assertSame([], $hits, implode("\n", $hits));
     }
 
-    public function test_admin_sidebar_points_at_website_settings_not_site_identity(): void
+    public function test_admin_sidebar_keeps_website_settings_and_adds_site_identity(): void
     {
         $path = $this->repoRoot().'/config/admin.php';
         $contents = file_get_contents($path);
         $this->assertNotFalse($contents);
 
         $this->assertStringContainsString("'route' => 'admin.settings.website.show'", $contents);
-        $this->assertStringNotContainsString("'route' => 'admin.settings.site-identity.show'", $contents);
+        $this->assertStringContainsString("'route' => 'admin.settings.site-identity.show'", $contents);
+        $this->assertTrue(
+            strpos($contents, "'route' => 'admin.settings.website.show'") < strpos($contents, "'route' => 'admin.settings.site-identity.show'"),
+            'Website Settings must remain the primary settings entry; Site Identity is an additional page.',
+        );
     }
 
     public function test_footer_social_query_reads_website_settings_contract_without_eloquent(): void
@@ -165,6 +169,9 @@ final class WebsiteSettingsIsolationTest extends TestCase
             $root.'/resources/views/admin/website/index.blade.php',
             $this->repoRoot().'/packages/commerce/contracts/src/Settings/WebsiteSettingsQueryServiceInterface.php',
             $this->repoRoot().'/packages/commerce/contracts/src/Settings/WebsiteSocialLinkData.php',
+            $this->repoRoot().'/packages/commerce/contracts/src/Settings/WebsiteBrandData.php',
+            $this->repoRoot().'/packages/commerce/contracts/src/Settings/WebsiteContactData.php',
+            $this->repoRoot().'/packages/commerce/contracts/src/Settings/WebsiteSeoDefaultsData.php',
         ];
     }
 

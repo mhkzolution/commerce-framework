@@ -14,6 +14,11 @@
                 <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $item->is_active))> Active
             </label>
         </x-admin.form.section>
-        <x-slot:actions><x-admin.button variant="primary" type="submit">Save register</x-admin.button></x-slot:actions>
+        <x-slot:actions>
+            @if ($item->is_active)
+                <x-admin.button variant="secondary" :href="route('pos.index', ['register' => $item->uuid])">Open POS</x-admin.button>
+            @endif
+            <x-admin.button variant="primary" type="submit">Save register</x-admin.button>
+        </x-slot:actions>
     </x-admin.form.shell>
 @endsection

@@ -162,6 +162,7 @@ final class HomepageIsolationTest extends TestCase
             $root.'/partials/home-promo-banner.blade.php',
             $root.'/partials/home-section-arrivals.blade.php',
             $root.'/partials/home-section-articles.blade.php',
+            $root.'/partials/home-section-categories.blade.php',
             $root.'/partials/home-section-faq.blade.php',
             $root.'/partials/home-section-hero.blade.php',
             $root.'/partials/home-section-promotions.blade.php',

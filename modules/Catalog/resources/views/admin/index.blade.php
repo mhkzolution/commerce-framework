@@ -18,7 +18,9 @@
             @foreach ([
                 ['Categories', 'Organize products in a hierarchy', route('admin.catalog.categories.index'), 'collection'],
                 ['Brands', 'Manage product brands', route('admin.catalog.brands.index'), 'tag'],
+                ['Collections', 'Curated product groups', route('admin.catalog.collections.index'), 'collection'],
                 ['Tags', 'Flexible labeling', route('admin.catalog.tags.index'), 'tag'],
+                ['Variant options', 'Reusable option names and values', route('admin.catalog.variant-options.index'), 'cube'],
                 ['Attributes', 'Define product properties', route('admin.catalog.attributes.index'), 'cube'],
                 ['Attribute Sets', 'Group attributes for products', route('admin.catalog.attribute-sets.index'), 'cube'],
             ] as [$title, $description, $url, $icon])

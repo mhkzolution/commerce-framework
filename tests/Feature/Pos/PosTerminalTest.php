@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Pos;
 
+use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
 use Commerce\Orders\Models\Order;
 use Commerce\Pos\Models\Register;
@@ -19,7 +20,7 @@ final class PosTerminalTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(\Commerce\Iam\Database\Seeders\IamSeeder::class);
+        $this->seed(IamSeeder::class);
     }
 
     public function test_cashier_can_complete_pos_sale(): void
@@ -38,6 +39,12 @@ final class PosTerminalTest extends TestCase
             ->get(route('admin.pos.terminal.show', $register))
             ->assertOk()
             ->assertSee('Front Counter');
+
+        $this->actingAs($admin)
+            ->post(route('admin.pos.terminal.open', $register), [
+                'opening_balance' => 0,
+            ])
+            ->assertRedirect(route('admin.pos.terminal.show', $register));
 
         $response = $this->actingAs($admin)
             ->post(route('admin.pos.terminal.items.store', $register), [

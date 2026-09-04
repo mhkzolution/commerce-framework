@@ -22,8 +22,10 @@ use Commerce\Orders\Events\OrderCompleted;
 use Commerce\Orders\Events\OrderConfirmed;
 use Commerce\Orders\Events\OrderCreated;
 use Commerce\Orders\Models\Order;
+use Commerce\Orders\Models\OrderEvent;
 use Commerce\Orders\Models\OrderLineItem;
 use Commerce\Orders\Support\OrderNumberGenerator;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 final class OrderService extends BaseService implements OrderServiceInterface
@@ -33,6 +35,7 @@ final class OrderService extends BaseService implements OrderServiceInterface
         private readonly ProductQueryServiceInterface $productQueryService,
         private readonly InventoryQueryServiceInterface $inventoryQueryService,
         private readonly InventoryServiceInterface $inventoryService,
+        private readonly OrderEventRecorder $events,
     ) {}
 
     public function create(CreateOrderData $data): Order
@@ -41,62 +44,92 @@ final class OrderService extends BaseService implements OrderServiceInterface
             throw new DomainException('An order must have at least one line item.');
         }
 
-        return DB::transaction(function () use ($data): Order {
-            $resolvedLines = $this->resolveLines($data->lines);
-            $customer = $this->resolveCustomerSnapshot($data);
-            $subtotal = array_sum(array_column($resolvedLines, 'line_total'));
-            $discountTotal = max(0, $data->discountTotal);
-            $taxTotal = max(0, $data->taxTotal);
-            $shippingTotal = $data->shippingTotal ?? 0;
+        if (is_string($data->idempotencyKey) && $data->idempotencyKey !== '') {
+            $existing = Order::query()->where('idempotency_key', $data->idempotencyKey)->first();
+            if ($existing !== null) {
+                return $existing->load('lineItems');
+            }
+        }
 
-            $order = Order::query()->create([
-                'order_number' => OrderNumberGenerator::next(),
-                'status' => OrderStatus::Pending->value,
-                'currency' => $data->currency ?? config('orders.default_currency', 'USD'),
-                'subtotal' => $subtotal,
-                'discount_total' => $discountTotal,
-                'promotion_uuid' => $data->promotionUuid,
-                'promotion_code' => $data->promotionCode,
-                'tax_total' => $taxTotal,
-                'shipping_total' => $shippingTotal,
-                'grand_total' => max(0, $subtotal - $discountTotal + $taxTotal + $shippingTotal),
-                'customer_uuid' => $customer['uuid'],
-                'customer_email' => $customer['email'],
-                'customer_name' => $customer['name'],
-                'billing_address' => $data->billingAddress,
-                'shipping_address' => $data->shippingAddress,
-                'shipping_method_uuid' => $data->shippingMethodUuid,
-                'shipping_method_name' => $data->shippingMethodName,
-                'channel' => $data->channel ?? config('orders.default_channel', 'web'),
-            ]);
+        try {
+            return DB::transaction(function () use ($data): Order {
+                $resolvedLines = $this->resolveLines($data->lines, $data->requirePurchasable);
+                $customer = $this->resolveCustomerSnapshot($data);
+                $subtotal = array_sum(array_column($resolvedLines, 'line_total'));
+                $discountTotal = max(0, $data->discountTotal);
+                $taxTotal = max(0, $data->taxTotal);
+                $shippingTotal = $data->shippingTotal ?? 0;
 
-            foreach ($resolvedLines as $line) {
-                OrderLineItem::query()->create([
-                    'order_id' => $order->id,
-                    'purchasable_uuid' => $line['purchasable_uuid'],
-                    'sku' => $line['sku'],
-                    'name' => $line['name'],
-                    'quantity' => $line['quantity'],
-                    'unit_price' => $line['unit_price'],
-                    'line_total' => $line['line_total'],
+                $order = Order::query()->create([
+                    'order_number' => OrderNumberGenerator::next(),
+                    'status' => OrderStatus::Pending->value,
+                    'currency' => $data->currency ?? config('orders.default_currency', 'USD'),
+                    'subtotal' => $subtotal,
+                    'discount_total' => $discountTotal,
+                    'promotion_uuid' => $data->promotionUuid,
+                    'promotion_code' => $data->promotionCode,
+                    'tax_total' => $taxTotal,
+                    'shipping_total' => $shippingTotal,
+                    'grand_total' => max(0, $subtotal - $discountTotal + $taxTotal + $shippingTotal),
+                    'customer_uuid' => $customer['uuid'],
+                    'customer_email' => $customer['email'],
+                    'customer_name' => $customer['name'],
+                    'billing_address' => $data->billingAddress,
+                    'shipping_address' => $data->shippingAddress,
+                    'shipping_method_uuid' => $data->shippingMethodUuid,
+                    'shipping_method_name' => $data->shippingMethodName,
+                    'channel' => $data->channel ?? config('orders.default_channel', 'web'),
+                    'created_by_user_uuid' => $data->createdByUserUuid,
+                    'updated_by_user_uuid' => $data->createdByUserUuid,
+                    'idempotency_key' => $data->idempotencyKey,
+                    'meta' => $data->meta,
                 ]);
+
+                foreach ($resolvedLines as $line) {
+                    OrderLineItem::query()->create([
+                        'order_id' => $order->id,
+                        'purchasable_uuid' => $line['purchasable_uuid'],
+                        'sku' => $line['sku'],
+                        'name' => $line['name'],
+                        'quantity' => $line['quantity'],
+                        'unit_price' => $line['unit_price'],
+                        'line_total' => $line['line_total'],
+                        'meta' => $line['meta'],
+                    ]);
+                }
+
+                $order->load('lineItems');
+
+                $this->eventBus->dispatchReliable(new OrderCreated(
+                    orderUuid: $order->uuid,
+                    orderNumber: $order->order_number,
+                    tenantId: $order->tenant_id,
+                ));
+
+                $this->events->record(
+                    $order,
+                    OrderEvent::TYPE_CREATED,
+                    'Order created',
+                    $data->createdByUserUuid,
+                );
+
+                return $order;
+            });
+        } catch (QueryException $exception) {
+            if (is_string($data->idempotencyKey) && $data->idempotencyKey !== '') {
+                $existing = Order::query()->where('idempotency_key', $data->idempotencyKey)->first();
+                if ($existing !== null) {
+                    return $existing->load('lineItems');
+                }
             }
 
-            $order = $order->fresh(['lineItems']);
-
-            $this->eventBus->dispatchReliable(new OrderCreated(
-                orderUuid: $order->uuid,
-                orderNumber: $order->order_number,
-                tenantId: $order->tenant_id,
-            ));
-
-            return $order;
-        });
+            throw $exception;
+        }
     }
 
-    public function confirm(string $uuid): Order
+    public function confirm(string $uuid, ?string $actorUserUuid = null): Order
     {
-        return DB::transaction(function () use ($uuid): Order {
+        return DB::transaction(function () use ($uuid, $actorUserUuid): Order {
             $order = $this->findOrFail($uuid);
 
             if (! $order->isPending()) {
@@ -137,6 +170,7 @@ final class OrderService extends BaseService implements OrderServiceInterface
             $order->update([
                 'status' => OrderStatus::Confirmed->value,
                 'confirmed_at' => now(),
+                'updated_by_user_uuid' => $actorUserUuid ?? $order->updated_by_user_uuid,
             ]);
 
             $order = $order->fresh(['lineItems']);
@@ -147,13 +181,15 @@ final class OrderService extends BaseService implements OrderServiceInterface
                 tenantId: $order->tenant_id,
             ));
 
+            $this->events->record($order, OrderEvent::TYPE_CONFIRMED, 'Order confirmed', $actorUserUuid);
+
             return $order;
         });
     }
 
-    public function complete(string $uuid): Order
+    public function complete(string $uuid, ?string $actorUserUuid = null): Order
     {
-        return DB::transaction(function () use ($uuid): Order {
+        return DB::transaction(function () use ($uuid, $actorUserUuid): Order {
             $order = $this->findOrFail($uuid);
 
             if (! $order->isConfirmed()) {
@@ -163,6 +199,7 @@ final class OrderService extends BaseService implements OrderServiceInterface
             $order->update([
                 'status' => OrderStatus::Completed->value,
                 'completed_at' => now(),
+                'updated_by_user_uuid' => $actorUserUuid ?? $order->updated_by_user_uuid,
             ]);
 
             $order = $order->fresh(['lineItems']);
@@ -173,13 +210,15 @@ final class OrderService extends BaseService implements OrderServiceInterface
                 tenantId: $order->tenant_id,
             ));
 
+            $this->events->record($order, OrderEvent::TYPE_COMPLETED, 'Order completed', $actorUserUuid);
+
             return $order;
         });
     }
 
-    public function cancel(string $uuid): Order
+    public function cancel(string $uuid, ?string $actorUserUuid = null): Order
     {
-        return DB::transaction(function () use ($uuid): Order {
+        return DB::transaction(function () use ($uuid, $actorUserUuid): Order {
             $order = $this->findOrFail($uuid);
 
             if ($order->isCompleted() || $order->isCancelled()) {
@@ -217,6 +256,7 @@ final class OrderService extends BaseService implements OrderServiceInterface
             $order->update([
                 'status' => OrderStatus::Cancelled->value,
                 'cancelled_at' => now(),
+                'updated_by_user_uuid' => $actorUserUuid ?? $order->updated_by_user_uuid,
             ]);
 
             $order = $order->fresh(['lineItems']);
@@ -227,15 +267,17 @@ final class OrderService extends BaseService implements OrderServiceInterface
                 tenantId: $order->tenant_id,
             ));
 
+            $this->events->record($order, OrderEvent::TYPE_CANCELLED, 'Order cancelled', $actorUserUuid);
+
             return $order;
         });
     }
 
     /**
      * @param  list<OrderLineData>  $lines
-     * @return list<array{purchasable_uuid: string, sku: ?string, name: string, quantity: int, unit_price: int, line_total: int}>
+     * @return list<array{purchasable_uuid: string, sku: ?string, name: string, quantity: int, unit_price: int, line_total: int, meta: array<string, mixed>}>
      */
-    private function resolveLines(array $lines): array
+    private function resolveLines(array $lines, bool $requirePurchasable = true): array
     {
         $resolved = [];
 
@@ -250,13 +292,17 @@ final class OrderService extends BaseService implements OrderServiceInterface
                 throw new EntityNotFoundException("Purchasable variant [{$line->purchasableUuid}] not found.");
             }
 
-            if ($variant instanceof PurchasableInterface && ! $variant->isPurchasable()) {
+            if ($requirePurchasable && $variant instanceof PurchasableInterface && ! $variant->isPurchasable()) {
                 throw new DomainException("Variant [{$line->purchasableUuid}] is not available for purchase.");
             }
 
-            $unitPrice = (int) $variant->price;
-            $name = $variant->name
-                ?? ($variant->product->name ?? 'Product');
+            $catalogPrice = (int) $variant->price;
+            $unitPrice = $line->unitPrice ?? $catalogPrice;
+            $productName = $variant->product?->name ?? $variant->name ?? 'Product';
+            $variantName = $variant->name;
+            $name = (is_string($variantName) && $variantName !== '' && $variantName !== $productName)
+                ? $productName.' — '.$variantName
+                : $productName;
 
             $resolved[] = [
                 'purchasable_uuid' => $line->purchasableUuid,
@@ -265,6 +311,12 @@ final class OrderService extends BaseService implements OrderServiceInterface
                 'quantity' => $line->quantity,
                 'unit_price' => $unitPrice,
                 'line_total' => $unitPrice * $line->quantity,
+                'meta' => [
+                    'product_name' => $productName,
+                    'variant_name' => $variantName,
+                    'catalog_unit_price' => $catalogPrice,
+                    'price_overridden' => $line->unitPrice !== null && $unitPrice !== $catalogPrice,
+                ],
             ];
         }
 

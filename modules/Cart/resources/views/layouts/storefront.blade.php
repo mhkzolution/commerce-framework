@@ -3,7 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Shop') — {{ config('commerce.name', 'Commerce Framework') }}</title>
+    <x-app-fonts />
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/css/storefront/footer.css'])
     <x-admin.design-tokens />
     @stack('head')
@@ -14,6 +16,7 @@
         @yield('content')
     </main>
     <x-storefront.layout.partials.site-footer />
+    <x-storefront.layout.partials.site-overlays />
     @stack('scripts')
 </body>
 </html>

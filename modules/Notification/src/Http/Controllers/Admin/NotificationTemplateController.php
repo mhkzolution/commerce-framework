@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Commerce\Notification\Http\Controllers\Admin;
 
+use Commerce\Notification\Http\Requests\Admin\UpdateNotificationTemplateRequest;
 use Commerce\Notification\Models\NotificationTemplate;
 use Commerce\Notification\Services\NotificationTemplateService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\View\View;
 
@@ -31,23 +31,17 @@ final class NotificationTemplateController extends Controller
         ]);
     }
 
-    public function update(Request $request, NotificationTemplate $template): RedirectResponse
+    public function update(UpdateNotificationTemplateRequest $request, NotificationTemplate $template): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'subject' => ['required', 'string', 'max:255'],
-            'view' => ['required', 'string', 'max:255'],
-        ]);
-
         $template->update([
-            'name' => $validated['name'],
-            'subject' => $validated['subject'],
-            'view' => $validated['view'],
+            'name' => $request->validated('name'),
+            'subject' => $request->validated('subject'),
+            'view' => $request->validated('view'),
             'is_active' => $request->boolean('is_active'),
         ]);
 
         return redirect()
             ->route('admin.notification.templates.edit', $template)
-            ->with('status', 'Template updated.');
+            ->with('status', __('notification::admin.saved'));
     }
 }

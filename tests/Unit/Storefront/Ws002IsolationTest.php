@@ -49,6 +49,7 @@ final class Ws002IsolationTest extends TestCase
     private const HOMEPAGE_INNER_VIEWS = [
         'modules/Cart/resources/views/storefront/partials/home-section-arrivals.blade.php',
         'modules/Cart/resources/views/storefront/partials/home-section-articles.blade.php',
+        'modules/Cart/resources/views/storefront/partials/home-section-categories.blade.php',
         'modules/Cart/resources/views/storefront/partials/home-section-faq.blade.php',
         'modules/Cart/resources/views/storefront/partials/home-section-promotions.blade.php',
     ];
@@ -261,6 +262,7 @@ final class Ws002IsolationTest extends TestCase
             $this->repoRoot().'/resources/css/storefront/home.css',
             $this->repoRoot().'/modules/Cart/resources/views/storefront/partials/home-section-arrivals.blade.php',
             $this->repoRoot().'/modules/Cart/resources/views/storefront/partials/home-section-articles.blade.php',
+            $this->repoRoot().'/modules/Cart/resources/views/storefront/partials/home-section-categories.blade.php',
             $this->repoRoot().'/modules/Cart/resources/views/storefront/partials/home-section-faq.blade.php',
             $this->repoRoot().'/modules/Cart/resources/views/storefront/partials/home-section-promotions.blade.php',
         ];

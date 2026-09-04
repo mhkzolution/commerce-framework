@@ -5,11 +5,13 @@ declare(strict_types=1);
 use Commerce\Core\Http\Controllers\Admin\SystemFeatureController;
 use Commerce\Core\Http\Controllers\Admin\SystemModuleController;
 use Commerce\Core\Http\Controllers\Admin\TenantController;
+use Commerce\Core\Http\Controllers\LocaleController;
 use Commerce\Core\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('web')->group(function (): void {
     Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
+    Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
 
     Route::middleware(['auth', 'permission:system.module.view'])
         ->prefix('admin/system/modules')

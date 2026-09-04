@@ -11,6 +11,7 @@ use Commerce\Cart\DTO\CartLineData;
 use Commerce\Cart\DTO\ResolvedCartLineData;
 use Commerce\Contracts\Currency\CurrencyConverterInterface;
 use Commerce\Contracts\Inventory\InventoryQueryServiceInterface;
+use Commerce\Contracts\Media\MediaQueryServiceInterface;
 use Commerce\Contracts\Pricing\PriceResolverInterface;
 use Commerce\Contracts\Product\ProductQueryServiceInterface;
 use Commerce\Contracts\Promotion\PromotionServiceInterface;
@@ -27,6 +28,7 @@ final class CartService extends BaseService implements CartServiceInterface
         private readonly ProductQueryServiceInterface $productQueryService,
         private readonly InventoryQueryServiceInterface $inventoryQueryService,
         private readonly PriceResolverInterface $priceResolver,
+        private readonly ?MediaQueryServiceInterface $media = null,
     ) {}
 
     public function get(): CartData
@@ -208,6 +210,7 @@ final class CartService extends BaseService implements CartServiceInterface
                 lineTotal: $lineTotal,
                 available: $available,
                 isPurchasable: $isPurchasable,
+                imageUrl: $this->lineImageUrl($variant),
             );
 
             $subtotal += $lineTotal;
@@ -268,5 +271,30 @@ final class CartService extends BaseService implements CartServiceInterface
         if (! $this->inventoryQueryService->isAvailable($purchasableUuid, $quantity)) {
             throw new DomainException('Insufficient stock for this quantity.');
         }
+    }
+
+    private function lineImageUrl(object $variant): ?string
+    {
+        if ($this->media === null) {
+            return null;
+        }
+
+        $product = $variant->product ?? null;
+        if ($product === null) {
+            return null;
+        }
+
+        if (method_exists($product, 'loadMissing')) {
+            $product->loadMissing('media');
+        }
+
+        $mediaRows = $product->media ?? collect();
+        $row = $mediaRows->firstWhere('is_primary', true) ?? $mediaRows->first();
+        $uuid = is_string($row?->media_uuid) ? $row->media_uuid : null;
+        if ($uuid === null || $uuid === '') {
+            return null;
+        }
+
+        return $this->media->getUrl($uuid, 'medium') ?? $this->media->getUrl($uuid);
     }
 }

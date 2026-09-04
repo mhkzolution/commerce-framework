@@ -11,7 +11,9 @@ use Commerce\Media\Http\Requests\StoreMediaFolderRequest;
 use Commerce\Media\Http\Requests\UpdateMediaFolderRequest;
 use Commerce\Media\Models\MediaFolder;
 use Commerce\Media\Services\MediaFolderQueryService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\View\View;
 
@@ -30,36 +32,60 @@ final class MediaFolderController extends Controller
         ]);
     }
 
-    public function store(StoreMediaFolderRequest $request): RedirectResponse
+    public function store(StoreMediaFolderRequest $request): RedirectResponse|JsonResponse
     {
-        $this->folderService->create(new CreateMediaFolderData(
+        $folder = $this->folderService->create(new CreateMediaFolderData(
             name: $request->validated('name'),
             parentUuid: $request->validated('parent_uuid'),
         ));
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => [
+                    'uuid' => $folder->uuid,
+                    'name' => $folder->name,
+                    'parent_uuid' => $request->validated('parent_uuid'),
+                ],
+            ], 201);
+        }
+
         return redirect()
-            ->route('admin.media.index', ['folder' => $request->validated('parent_uuid')])
+            ->route('admin.media.index', ['folder' => $folder->uuid])
             ->with('status', 'Folder created.');
     }
 
-    public function update(UpdateMediaFolderRequest $request, string $folder): RedirectResponse
+    public function update(UpdateMediaFolderRequest $request, string $folder): RedirectResponse|JsonResponse
     {
-        $this->folderService->update($folder, new UpdateMediaFolderData(
+        $model = $this->folderService->update($folder, new UpdateMediaFolderData(
             name: $request->validated('name'),
             parentUuid: $request->validated('parent_uuid'),
         ));
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => [
+                    'uuid' => $model->uuid,
+                    'name' => $model->name,
+                    'parent_uuid' => $request->validated('parent_uuid'),
+                ],
+            ]);
+        }
 
         return redirect()
             ->route('admin.media.index', ['folder' => $folder])
             ->with('status', 'Folder updated.');
     }
 
-    public function destroy(string $folder): RedirectResponse
+    public function destroy(Request $request, string $folder): RedirectResponse|JsonResponse
     {
         $model = MediaFolder::query()->where('uuid', $folder)->firstOrFail();
         $parentUuid = $model->parent?->uuid;
 
         $this->folderService->delete($folder);
+
+        if ($request->expectsJson()) {
+            return response()->json(['deleted' => true]);
+        }
 
         return redirect()
             ->route('admin.media.index', array_filter(['folder' => $parentUuid]))

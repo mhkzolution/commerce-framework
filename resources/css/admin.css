@@ -5,3 +5,8 @@
 @import './admin/shell.css';
 @import './admin/components.css';
 @import './admin/footer-settings.css';
+@import './admin/customer-experience.css';
+@import './admin/media-library.css';
+@import './admin/collection-rule-builder.css';
+@import './admin/order-create.css';
+@import './admin/order-detail.css';

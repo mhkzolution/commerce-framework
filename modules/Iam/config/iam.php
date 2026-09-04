@@ -17,6 +17,7 @@ return [
     ],
     'teams' => [
         'enabled' => false,
+        'header' => 'X-Team',
     ],
     'impersonation' => [
         'enabled' => true,

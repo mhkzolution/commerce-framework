@@ -23,7 +23,7 @@
                     <td class="px-4 py-3">{{ $item->is_active ? 'Active' : 'Inactive' }}</td>
                     <td class="px-4 py-3 text-right space-x-2">
                         @if ($item->is_active)
-                            <x-admin.button variant="link" :href="route('admin.pos.terminal.show', $item)">Open terminal</x-admin.button>
+                            <x-admin.button variant="link" :href="route('pos.index', ['register' => $item->uuid])">Open POS</x-admin.button>
                         @endif
                         <x-admin.button variant="link" :href="route('admin.pos.registers.edit', $item)">Edit</x-admin.button>
                     </td>

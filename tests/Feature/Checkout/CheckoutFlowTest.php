@@ -57,7 +57,7 @@ final class CheckoutFlowTest extends TestCase
 
         $this->get(route('storefront.cart.index'))
             ->assertOk()
-            ->assertSee('Your cart is empty', false);
+            ->assertSee(__('storefront::storefront.cart_empty'), false);
     }
 
     public function test_checkout_with_empty_cart_fails(): void

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Commerce\Api\Responses\ApiResponse;
+use Commerce\Product\Http\Controllers\Api\V1\ProductWorkspaceApiController;
 use Commerce\Product\Http\Resources\ProductResource;
 use Commerce\Product\Services\ProductQueryService;
 use Illuminate\Support\Facades\Route;
@@ -30,4 +31,18 @@ Route::prefix('api/v1')->middleware(['api'])->group(function (): void {
 
         return ApiResponse::success(new ProductResource($product));
     })->name('api.v1.products.show');
+
+    Route::prefix('admin/products')->middleware(['auth', 'web'])->group(function (): void {
+        Route::post('/workspace', [ProductWorkspaceApiController::class, 'store'])
+            ->middleware('permission:product.product.create')
+            ->name('api.v1.admin.products.workspace.store');
+
+        Route::get('/{uuid}/workspace', [ProductWorkspaceApiController::class, 'show'])
+            ->middleware('permission:product.product.view')
+            ->name('api.v1.admin.products.workspace.show');
+
+        Route::put('/{uuid}/workspace', [ProductWorkspaceApiController::class, 'update'])
+            ->middleware('permission:product.product.update')
+            ->name('api.v1.admin.products.workspace.update');
+    });
 });

@@ -28,10 +28,13 @@ final class TerminalController extends Controller
     {
         abort_if(! $register->is_active, 404);
 
-        $session = $this->sessionService->openSession(
-            $register,
-            (string) auth()->user()?->name,
-        );
+        $session = $this->sessionService->activeSession($register);
+
+        if ($session === null) {
+            return view('pos::admin.terminal.open', [
+                'register' => $register,
+            ]);
+        }
 
         $cart = $this->saleService->cart($register)->get();
 
@@ -40,6 +43,26 @@ final class TerminalController extends Controller
             'session' => $session,
             'cart' => $cart,
         ]);
+    }
+
+    public function open(Register $register, Request $request): RedirectResponse
+    {
+        abort_if(! $register->is_active, 404);
+
+        $data = $request->validate([
+            'opening_balance' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $this->sessionService->openSession(
+            register: $register,
+            openedBy: (string) auth()->user()?->name,
+            openingBalance: (int) ($data['opening_balance'] ?? 0),
+            openedByUserId: auth()->id(),
+        );
+
+        return redirect()
+            ->route('admin.pos.terminal.show', $register)
+            ->with('status', 'Session opened.');
     }
 
     public function search(Register $register, Request $request): JsonResponse
@@ -51,8 +74,8 @@ final class TerminalController extends Controller
                 'uuid' => $variant->uuid,
                 'sku' => $variant->sku,
                 'name' => $variant->name ?: $variant->product?->name,
-                'price' => $variant->price,
-                'currency' => config('cart.default_currency', 'USD'),
+                'price' => (int) $variant->price,
+                'currency' => config('cart.default_currency', 'THB'),
             ])->values(),
         ]);
     }
@@ -120,6 +143,10 @@ final class TerminalController extends Controller
 
         $session = $this->sessionService->activeSession($register);
 
+        if ($session === null) {
+            return back()->withErrors(['terminal' => 'No active session. Open a session first.']);
+        }
+
         try {
             $order = $this->saleService->completeSale(
                 register: $register,
@@ -136,14 +163,33 @@ final class TerminalController extends Controller
             ->with('status', "Sale completed: {$order->order_number}");
     }
 
-    public function closeSession(Register $register): RedirectResponse
+    public function closeSession(Register $register, Request $request): RedirectResponse
     {
         $session = $this->sessionService->activeSession($register);
 
-        if ($session !== null) {
-            $this->sessionService->closeSession($session);
-            $this->saleService->cart($register)->clear();
+        if ($session === null) {
+            return redirect()
+                ->route('admin.pos.registers.index')
+                ->with('status', 'No active session.');
         }
+
+        $cart = $this->saleService->cart($register)->get();
+
+        if ($cart->lines !== []) {
+            return back()->withErrors(['terminal' => 'Clear the cart before closing the session.']);
+        }
+
+        $data = $request->validate([
+            'counted_cash' => ['required', 'integer', 'min:0'],
+        ]);
+
+        $this->sessionService->closeSession(
+            $session,
+            (string) auth()->user()?->name,
+            (int) $data['counted_cash'],
+        );
+
+        $this->saleService->cart($register)->clear();
 
         return redirect()
             ->route('admin.pos.registers.index')

@@ -25,6 +25,7 @@ use Commerce\Core\Features\FeatureService;
 use Commerce\Core\Hooks\HookRegistry;
 use Commerce\Core\Http\Middleware\EnsureFeatureEnabled;
 use Commerce\Core\Http\Middleware\EnsureModuleEnabled;
+use Commerce\Core\Http\Middleware\ResolveLocale;
 use Commerce\Core\Http\Middleware\ResolveTenant;
 use Commerce\Core\Http\Middleware\ResolveUrlRedirect;
 use Commerce\Core\Models\SystemFeature;
@@ -112,6 +113,7 @@ class CommerceServiceProvider extends ServiceProvider
         $kernel = $this->app->make(HttpKernel::class);
         $kernel->prependMiddlewareToGroup('web', ResolveUrlRedirect::class);
         $kernel->prependMiddlewareToGroup('web', ResolveTenant::class);
+        $kernel->appendMiddlewareToGroup('web', ResolveLocale::class);
         $kernel->prependMiddlewareToGroup('api', ResolveTenant::class);
 
         $this->loadRoutesFrom(__DIR__.'/../routes/api.php');

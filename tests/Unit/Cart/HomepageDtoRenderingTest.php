@@ -55,9 +55,22 @@ final class HomepageDtoRenderingTest extends TestCase
             url: '/shop?category=dto-mugs',
         );
 
+        $card = new ProductCardData(
+            uuid: '11111111-1111-1111-1111-111111111111',
+            name: 'DTO Harbor Mug',
+            slug: 'dto-harbor-mug',
+            url: '/products/dto-harbor-mug',
+            variantUuid: '22222222-2222-2222-2222-222222222222',
+            price: 1250,
+            compareAtPrice: null,
+            imageUrl: 'https://cdn.test/mug.jpg',
+            available: 4,
+            inStock: true,
+        );
+
         $html = view('cart::storefront.partials.home-section-arrivals', [
             'arrivalCategories' => [$tab],
-            'arrivalProducts' => [],
+            'arrivalProducts' => [$card],
             'activeArrivalCategory' => 'dto-mugs',
             'displayCurrency' => 'THB',
         ])->render();

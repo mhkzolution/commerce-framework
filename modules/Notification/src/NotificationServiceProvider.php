@@ -17,7 +17,10 @@ use Illuminate\Support\Facades\Event;
 
 final class NotificationServiceProvider extends BaseModuleServiceProvider
 {
-    public function getModuleAlias(): string { return 'notification'; }
+    public function getModuleAlias(): string
+    {
+        return 'notification';
+    }
 
     public function register(): void
     {
@@ -32,6 +35,7 @@ final class NotificationServiceProvider extends BaseModuleServiceProvider
         $this->loadMigrationsFrom($this->modulePath('database/migrations'));
         $this->loadRoutesFrom($this->modulePath('routes/web.php'));
         $this->loadViewsFrom($this->modulePath('resources/views'), 'notification');
+        $this->loadTranslationsFrom($this->modulePath('resources/lang'), 'notification');
         Event::listen(OrderConfirmed::class, SendOrderConfirmationEmail::class);
         Event::listen(PaymentPaid::class, [SendPaymentNotifications::class, 'handlePaid']);
         Event::listen(PaymentFailed::class, [SendPaymentNotifications::class, 'handleFailed']);

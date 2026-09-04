@@ -47,7 +47,7 @@ final class PaymentService extends BaseService implements PaymentServiceInterfac
 
             $payment->update([
                 'status' => PaymentStatus::Paid->value,
-                'gateway_reference' => $gatewayReference ?? ('SIM-' . strtoupper(substr($payment->uuid, 0, 8))),
+                'gateway_reference' => $gatewayReference ?? ('SIM-'.strtoupper(substr($payment->uuid, 0, 8))),
                 'paid_at' => now(),
             ]);
 
@@ -101,6 +101,33 @@ final class PaymentService extends BaseService implements PaymentServiceInterfac
             ));
 
             return $payment;
+        });
+    }
+
+    public function refund(string $uuid, ?int $amount = null): Payment
+    {
+        return DB::transaction(function () use ($uuid, $amount): Payment {
+            $payment = $this->findOrFail($uuid);
+
+            if (! $payment->isPaid()) {
+                throw new DomainException('Only paid payments can be refunded.');
+            }
+
+            $refundAmount = $amount ?? (int) $payment->amount;
+
+            if ($refundAmount <= 0 || $refundAmount > (int) $payment->amount) {
+                throw new DomainException('Invalid refund amount.');
+            }
+
+            $payment->update([
+                'status' => PaymentStatus::Refunded->value,
+                'meta' => array_merge($payment->meta ?? [], [
+                    'refunded_at' => now()->toIso8601String(),
+                    'refund_amount' => $refundAmount,
+                ]),
+            ]);
+
+            return $payment->fresh();
         });
     }
 

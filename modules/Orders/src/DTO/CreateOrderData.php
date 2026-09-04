@@ -12,6 +12,7 @@ final readonly class CreateOrderData extends DataTransferObject
      * @param  list<OrderLineData>  $lines
      * @param  array<string, mixed>|null  $billingAddress
      * @param  array<string, mixed>|null  $shippingAddress
+     * @param  array<string, mixed>|null  $meta
      */
     public function __construct(
         public array $lines,
@@ -29,5 +30,9 @@ final readonly class CreateOrderData extends DataTransferObject
         public ?string $promotionUuid = null,
         public ?string $promotionCode = null,
         public int $taxTotal = 0,
+        public ?array $meta = null,
+        public ?string $idempotencyKey = null,
+        public ?string $createdByUserUuid = null,
+        public bool $requirePurchasable = true,
     ) {}
 }

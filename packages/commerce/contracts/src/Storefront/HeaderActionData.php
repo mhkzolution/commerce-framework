@@ -20,5 +20,8 @@ final readonly class HeaderActionData
         public array $currencyCodes = [],
         public ?string $currentCurrency = null,
         public ?string $currencyActionUrl = null,
+        public string $searchQuery = '',
+        public string $customerName = '',
+        public string $customerInitials = '',
     ) {}
 }

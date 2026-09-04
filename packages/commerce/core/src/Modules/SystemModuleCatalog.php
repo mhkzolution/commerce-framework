@@ -126,6 +126,22 @@ final class SystemModuleCatalog
                 'sort_order' => 80,
                 'is_core' => false,
             ],
+            [
+                'code' => 'pos',
+                'name' => 'POS',
+                'description' => 'Point of sale terminal, registers, and sessions',
+                'status' => ModuleStatus::Active->value,
+                'sort_order' => 85,
+                'is_core' => false,
+            ],
+            [
+                'code' => 'warehouse',
+                'name' => 'Warehouse Scanner',
+                'description' => 'Warehouse scanner for stock check, receiving, and counts',
+                'status' => ModuleStatus::Active->value,
+                'sort_order' => 90,
+                'is_core' => false,
+            ],
         ];
     }
 

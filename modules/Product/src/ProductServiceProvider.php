@@ -6,6 +6,9 @@ namespace Commerce\Product;
 
 use Commerce\Contracts\Product\ProductQueryServiceInterface;
 use Commerce\Core\Base\BaseModuleServiceProvider;
+use Commerce\Product\Console\ImportWooCommerceProductsCommand;
+use Commerce\Product\Console\PublishScheduledProductsCommand;
+use Commerce\Product\Console\ReindexProductsCommand;
 use Commerce\Product\Contracts\ProductServiceInterface;
 use Commerce\Product\Events\ProductCreated;
 use Commerce\Product\Events\ProductPublished;
@@ -13,6 +16,9 @@ use Commerce\Product\Listeners\SyncProductSearchIndex;
 use Commerce\Product\Services\ProductQueryService;
 use Commerce\Product\Services\ProductSearchIndexer;
 use Commerce\Product\Services\ProductService;
+use Commerce\Product\Services\ProductWorkspaceSaveService;
+use Commerce\Product\Services\ProductWorkspaceStateBuilder;
+use Commerce\Product\Services\VariantOptionPresetService;
 use Illuminate\Support\Facades\Event;
 
 final class ProductServiceProvider extends BaseModuleServiceProvider
@@ -29,6 +35,9 @@ final class ProductServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(ProductQueryService::class);
         $this->app->singleton(ProductService::class);
         $this->app->singleton(ProductSearchIndexer::class);
+        $this->app->singleton(ProductWorkspaceSaveService::class);
+        $this->app->singleton(ProductWorkspaceStateBuilder::class);
+        $this->app->singleton(VariantOptionPresetService::class);
 
         $this->app->bind(ProductQueryServiceInterface::class, ProductQueryService::class);
         $this->app->bind(ProductServiceInterface::class, ProductService::class);
@@ -44,8 +53,9 @@ final class ProductServiceProvider extends BaseModuleServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
-                \Commerce\Product\Console\PublishScheduledProductsCommand::class,
-                \Commerce\Product\Console\ReindexProductsCommand::class,
+                PublishScheduledProductsCommand::class,
+                ReindexProductsCommand::class,
+                ImportWooCommerceProductsCommand::class,
             ]);
         }
 

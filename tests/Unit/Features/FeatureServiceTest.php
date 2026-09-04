@@ -27,11 +27,11 @@ final class FeatureServiceTest extends TestCase
     public function test_seeded_features_are_enabled_by_default(): void
     {
         $this->assertSame(
-            ['scheduled-publishing', 'advanced-seo', 'ai-writer', 'review-monitor'],
+            ['scheduled-publishing', 'advanced-seo', 'ai-writer', 'review-monitor', 'pos-hold', 'pos-returns', 'warehouse-reports'],
             SystemFeature::query()->orderBy('sort_order')->orderBy('name')->pluck('code')->all(),
         );
 
-        foreach (['scheduled-publishing', 'advanced-seo', 'ai-writer', 'review-monitor'] as $code) {
+        foreach (['scheduled-publishing', 'advanced-seo', 'ai-writer', 'review-monitor', 'pos-hold', 'pos-returns', 'warehouse-reports'] as $code) {
             $row = SystemFeature::query()->where('code', $code)->first();
             $this->assertNotNull($row);
             $this->assertSame(FeatureStatus::Enabled, $row->status);
@@ -74,7 +74,7 @@ final class FeatureServiceTest extends TestCase
     public function test_all_returns_catalog_codes_in_sort_order(): void
     {
         $this->assertSame(
-            ['scheduled-publishing', 'advanced-seo', 'ai-writer', 'review-monitor'],
+            ['scheduled-publishing', 'advanced-seo', 'ai-writer', 'review-monitor', 'pos-hold', 'pos-returns', 'warehouse-reports'],
             FeatureService::all()->pluck('code')->all(),
         );
     }
@@ -233,7 +233,7 @@ final class FeatureServiceTest extends TestCase
 
         DB::enableQueryLog();
 
-        $this->assertCount(4, FeatureService::all());
+        $this->assertCount(7, FeatureService::all());
         $this->assertSame([], DB::getQueryLog());
     }
 
