@@ -1,0 +1,159 @@
+.storefront-pdp-main {
+    flex: 1 0 auto;
+    width: 100%;
+    padding-block: var(--space-32) var(--space-48);
+}
+
+.storefront-pdp {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-32);
+    font-family: var(--font-store);
+}
+
+.storefront-pdp .storefront-breadcrumb {
+    padding: 0;
+}
+
+.storefront-pdp__layout {
+    display: grid;
+    gap: var(--store-gutter);
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 64rem) {
+    .storefront-pdp__layout {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: var(--space-48);
+        align-items: start;
+    }
+}
+
+.storefront-pdp__media {
+    overflow: hidden;
+    aspect-ratio: 1;
+    border-radius: var(--radius-store);
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+}
+
+.storefront-pdp__image,
+.storefront-pdp__placeholder {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.storefront-pdp__placeholder {
+    background: color-mix(in srgb, var(--color-border) 40%, var(--color-surface));
+}
+
+.storefront-pdp__info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+}
+
+.storefront-pdp__title {
+    margin: 0;
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: var(--color-text);
+}
+
+.storefront-pdp__description {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.65;
+    color: var(--color-text-secondary);
+}
+
+.storefront-pdp__price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-12);
+    margin: 0;
+}
+
+.storefront-pdp__amount {
+    font-size: 1.5rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text);
+}
+
+.storefront-pdp__compare {
+    font-size: 1rem;
+    color: var(--color-muted);
+    text-decoration: line-through;
+    font-variant-numeric: tabular-nums;
+}
+
+.storefront-pdp__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-12);
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-muted);
+}
+
+.storefront-pdp__form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-12);
+    align-items: end;
+    margin-top: var(--space-8);
+}
+
+.storefront-pdp__qty-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+}
+
+.storefront-pdp__qty-label {
+    font-size: 0.8125rem;
+    color: var(--color-muted);
+}
+
+.storefront-pdp__qty {
+    width: 5rem;
+    padding: var(--space-8) var(--space-12);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font: inherit;
+}
+
+.storefront-pdp__qty:focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+}
+
+.storefront-pdp__add {
+    flex: 1 1 12rem;
+    padding: var(--space-12) var(--space-24);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.storefront-pdp__add:hover {
+    background: var(--color-primary-hover);
+}
+
+.storefront-pdp__add:focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 3px;
+}

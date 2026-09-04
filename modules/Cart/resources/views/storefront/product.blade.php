@@ -1,62 +1,86 @@
 @extends('cart::layouts.storefront')
 
 @section('title', $product->name)
+@section('main_class', 'storefront-pdp-main')
+
+@push('head')
+    @vite('resources/css/storefront/pdp.css')
+@endpush
+
+@php
+    if (! $product instanceof \Commerce\Contracts\Storefront\ProductDetailData) {
+        throw new \InvalidArgumentException('PDP requires ProductDetailData.');
+    }
+@endphp
 
 @section('content')
-    <nav class="mb-6 text-sm text-muted">
-        <a href="{{ route('storefront.shop.index') }}" class="hover:text-text">Shop</a>
-        <span class="mx-2">/</span>
-        <span class="text-text">{{ $product->name }}</span>
-    </nav>
+    <x-storefront.layout.page-container class="storefront-pdp">
+        <x-storefront.breadcrumb
+            :aria-label="__('storefront::storefront.breadcrumb')"
+            :items="[
+                ['label' => __('storefront::storefront.shop'), 'url' => $product->shopUrl],
+                ['label' => $product->name],
+            ]"
+        />
 
-    <div class="grid gap-8 lg:grid-cols-2">
-        <div class="rounded-lg border border-border bg-surface p-6">
-            @if ($product->media->isNotEmpty())
-                <div class="aspect-square rounded-md bg-background"></div>
-            @else
-                <div class="flex aspect-square items-center justify-center rounded-md bg-background text-muted">No image</div>
-            @endif
-        </div>
+        <div class="storefront-pdp__layout">
+            <div class="storefront-pdp__media">
+                @if ($product->imageUrl)
+                    <img
+                        src="{{ $product->imageUrl }}"
+                        alt="{{ $product->name }}"
+                        class="storefront-pdp__image"
+                    >
+                @else
+                    <span class="storefront-pdp__placeholder"></span>
+                @endif
+            </div>
 
-        <div>
-            <h1 class="text-3xl font-semibold text-text">{{ $product->name }}</h1>
-            @if ($product->description)
-                <div class="prose prose-sm mt-4 max-w-none text-text-secondary">{!! nl2br(e($product->description)) !!}</div>
-            @endif
+            <div class="storefront-pdp__info">
+                <h1 class="storefront-pdp__title">{{ $product->name }}</h1>
 
-            @if ($variant)
-                <p class="mt-6 text-2xl font-semibold text-text">
-                    @php
-                        $displayPrice = $variant->price;
-                        if ($currencyConverter && $displayCurrency !== $baseCurrency) {
-                            $displayPrice = $currencyConverter->convert($displayPrice, $baseCurrency, $displayCurrency);
-                        }
-                    @endphp
-                    {{ number_format($displayPrice / 100, 2) }} {{ $displayCurrency }}
+                @if ($product->description)
+                    <div class="storefront-pdp__description">{!! nl2br(e($product->description)) !!}</div>
+                @endif
+
+                <p class="storefront-pdp__price">
+                    @if ($product->compareAtPrice)
+                        <span class="storefront-pdp__compare">{{ number_format($product->compareAtPrice / 100, 2) }} {{ $product->displayCurrency }}</span>
+                    @endif
+                    <span class="storefront-pdp__amount">{{ number_format($product->price / 100, 2) }} {{ $product->displayCurrency }}</span>
                 </p>
 
-                <p class="mt-2 text-sm text-muted">
-                    @if ($available > 0)
-                        {{ $available }} in stock
-                    @else
-                        Out of stock
+                <p class="storefront-pdp__meta">
+                    <span>{{ $product->inStock ? __('storefront::storefront.in_stock') : __('storefront::storefront.out_of_stock') }}</span>
+                    @if ($product->available !== null)
+                        <span>{{ $product->available }}</span>
                     @endif
-                    @if ($variant->sku)
-                        · SKU {{ $variant->sku }}
+                    @if ($product->sku)
+                        <span>{{ __('storefront::storefront.sku') }} {{ $product->sku }}</span>
                     @endif
                 </p>
 
-                @if ($available > 0)
-                    <form method="POST" action="{{ route('storefront.cart.items.store') }}" class="mt-6 flex gap-3">
+                @if ($product->inStock)
+                    <form method="POST" action="{{ route('storefront.cart.items.store') }}" class="storefront-pdp__form">
                         @csrf
-                        <input type="hidden" name="purchasable_uuid" value="{{ $variant->uuid }}">
-                        <input type="number" name="quantity" value="1" min="1" max="{{ $available }}" class="cf-input w-20 py-2">
-                        <button type="submit" class="cf-btn cf-btn--primary flex-1">Add to cart</button>
+                        <input type="hidden" name="purchasable_uuid" value="{{ $product->variantUuid }}">
+                        <label class="storefront-pdp__qty-field">
+                            <span class="storefront-pdp__qty-label">{{ __('storefront::storefront.quantity') }}</span>
+                            <input
+                                type="number"
+                                name="quantity"
+                                value="1"
+                                min="1"
+                                @if ($product->available !== null) max="{{ $product->available }}" @endif
+                                class="storefront-pdp__qty"
+                            >
+                        </label>
+                        <button type="submit" class="storefront-pdp__add">
+                            {{ __('storefront::storefront.add_to_cart') }}
+                        </button>
                     </form>
                 @endif
-            @else
-                <p class="mt-6 text-muted">This product is not available.</p>
-            @endif
+            </div>
         </div>
-    </div>
+    </x-storefront.layout.page-container>
 @endsection

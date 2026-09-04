@@ -16,6 +16,12 @@ final class StorefrontProductTest extends TestCase
     use CreatesPurchasableProduct;
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutVite();
+    }
+
     public function test_product_detail_page_is_accessible(): void
     {
         $variant = $this->createPurchasableProduct(price: 3200, stock: 3, sku: 'DETAIL-001');
@@ -26,7 +32,7 @@ final class StorefrontProductTest extends TestCase
         $this->get(route('storefront.products.show', $product->slug))
             ->assertOk()
             ->assertSee($product->name)
-            ->assertSee('Add to cart');
+            ->assertSee(__('storefront::storefront.add_to_cart'));
     }
 
     public function test_unknown_product_returns_404(): void
