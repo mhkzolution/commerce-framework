@@ -22,13 +22,18 @@
             @foreach (collect($query)->except('search') as $name => $value)
                 <input type="hidden" name="{{ $name }}" value="{{ $value }}">
             @endforeach
-            <x-admin.search-input
-                name="search"
-                :placeholder="__('cms::blog.search_placeholder')"
-                :value="$filters->search"
-                data-blog-search-input
-                autocomplete="off"
-            />
+            <label class="storefront-blog-toolbar__search-field">
+                <span class="sr-only">{{ __('cms::blog.search_placeholder') }}</span>
+                <input
+                    type="search"
+                    name="search"
+                    value="{{ $filters->search }}"
+                    placeholder="{{ __('cms::blog.search_placeholder') }}"
+                    class="storefront-blog-search"
+                    data-blog-search-input
+                    autocomplete="off"
+                >
+            </label>
         </form>
 
         @if (count($categories) > 0)

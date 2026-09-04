@@ -385,7 +385,7 @@ final class CmsBlogV1Test extends TestCase
             ->assertSee('Read Article', false)
             ->assertSee('Latest', false)
             ->assertSee('Popular', false)
-            ->assertSee('storefront-blog-shell', false)
+            ->assertSee('storefront-blog-main', false)
             ->assertDontSee('Stay informed', false)
             ->assertDontSee('Recent posts', false);
     }
