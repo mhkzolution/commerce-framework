@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Commerce\Customers\Http\Controllers\Storefront;
 
+use Commerce\Contracts\Media\MediaQueryServiceInterface;
 use Commerce\Contracts\Order\OrderQueryServiceInterface;
+use Commerce\Contracts\Settings\SettingQueryServiceInterface;
 use Commerce\Customers\Contracts\CustomerAddressServiceInterface;
 use Commerce\Customers\Contracts\CustomerAuthServiceInterface;
 use Commerce\Customers\Contracts\CustomerServiceInterface;
@@ -15,8 +17,8 @@ use Commerce\Customers\Http\Requests\StoreAddressRequest;
 use Commerce\Customers\Http\Requests\StorefrontLoginRequest;
 use Commerce\Customers\Http\Requests\StorefrontRegisterRequest;
 use Commerce\Customers\Http\Requests\UpdateProfileRequest;
-use Commerce\Customers\Services\CustomerAddressQueryService;
 use Commerce\Customers\Models\Customer;
+use Commerce\Customers\Services\CustomerAddressQueryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -51,7 +53,7 @@ final class AccountController extends Controller
 
     public function showLogin(): View
     {
-        return view('customers::storefront.login');
+        return view('customers::storefront.login', $this->authPageData());
     }
 
     public function login(StorefrontLoginRequest $request): RedirectResponse
@@ -61,7 +63,7 @@ final class AccountController extends Controller
             $request->validated('password'),
             (bool) $request->boolean('remember'),
         )) {
-            return back()->withErrors(['email' => 'Invalid credentials.'])->onlyInput('email');
+            return back()->withErrors(['email' => __('customers::auth.invalid_credentials')])->onlyInput('email');
         }
 
         return redirect()->intended(route('storefront.account'));
@@ -69,7 +71,7 @@ final class AccountController extends Controller
 
     public function showRegister(): View
     {
-        return view('customers::storefront.register');
+        return view('customers::storefront.register', $this->authPageData());
     }
 
     public function register(StorefrontRegisterRequest $request): RedirectResponse
@@ -81,7 +83,7 @@ final class AccountController extends Controller
             phone: $request->validated('phone'),
         ));
 
-        return redirect()->route('storefront.account');
+        return redirect()->intended(route('storefront.account'));
     }
 
     public function logout(): RedirectResponse
@@ -157,5 +159,62 @@ final class AccountController extends Controller
         }
 
         return back()->with('status', 'Profile updated.');
+    }
+
+    /**
+     * @return array{storeName: string, logoUrl: ?string, supportEmail: ?string, supportPhone: ?string}
+     */
+    private function authPageData(): array
+    {
+        $storeName = config('app.name', 'Commerce Framework');
+        $logoUrl = null;
+        $supportEmail = null;
+        $supportPhone = null;
+
+        if (app()->bound(SettingQueryServiceInterface::class)) {
+            $settings = app(SettingQueryServiceInterface::class);
+
+            try {
+                $name = $settings->get('store.name');
+                if (is_string($name) && trim($name) !== '') {
+                    $storeName = trim($name);
+                }
+
+                $supportEmail = $this->nullableString($settings->get('store.email'));
+                $supportPhone = $this->nullableString($settings->get('store.phone'));
+                $logoUuid = $this->nullableString($settings->get('store.logo_media_uuid'));
+            } catch (\Throwable) {
+                $logoUuid = null;
+            }
+
+            if (is_string($logoUuid) && $logoUuid !== '' && app()->bound(MediaQueryServiceInterface::class)) {
+                try {
+                    $media = app(MediaQueryServiceInterface::class);
+                    $logoUrl = $media->getUrl($logoUuid, 'large')
+                        ?? $media->getUrl($logoUuid, 'medium')
+                        ?? $media->getUrl($logoUuid);
+                } catch (\Throwable) {
+                    $logoUrl = null;
+                }
+            }
+        }
+
+        return [
+            'storeName' => is_string($storeName) && $storeName !== '' ? $storeName : 'Commerce Framework',
+            'logoUrl' => $logoUrl,
+            'supportEmail' => $supportEmail,
+            'supportPhone' => $supportPhone,
+        ];
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        return $value === '' ? null : $value;
     }
 }

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Commerce\Iam\Models;
 
+use Commerce\Contracts\Identifiable\IdentifiableInterface;
 use Commerce\Core\Concerns\HasUuid;
 use Commerce\Core\Tenant\BelongsToTenant;
-use Commerce\Contracts\Identifiable\IdentifiableInterface;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -16,8 +16,8 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable implements IdentifiableInterface
 {
-    use HasUuid;
     use BelongsToTenant;
+    use HasUuid;
     use Notifiable;
     use SoftDeletes;
 
@@ -60,6 +60,13 @@ class User extends Authenticatable implements IdentifiableInterface
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'user_roles');
+    }
+
+    public function teams(): BelongsToMany
+    {
+        return $this->belongsToMany(Team::class, 'iam_team_user')
+            ->withPivot('role')
+            ->withTimestamps();
     }
 
     public function apiTokens(): HasMany

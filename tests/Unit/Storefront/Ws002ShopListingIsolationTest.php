@@ -42,6 +42,12 @@ final class Ws002ShopListingIsolationTest extends TestCase
         $this->assertStringContainsString('<x-storefront.empty-state', $shop);
         $this->assertStringContainsString("links('pagination::storefront')", $shop);
         $this->assertStringContainsString('<x-storefront.cards.product', $shop);
+        $this->assertStringContainsString('storefront-shop-filters-sidebar', $shop);
+        $this->assertStringContainsString('x-storefront.breadcrumb', $shop);
+        $this->assertStringContainsString('data-shop', $shop);
+        $this->assertStringContainsString('x-storefront.shop.filters-sidebar', $shop);
+        $this->assertStringContainsString('x-storefront.shop.filters-sheet', $shop);
+        $this->assertStringContainsString('x-storefront.shop.active-filters', $shop);
     }
 
     public function test_shop_view_has_no_admin_search_eloquent_or_header_extract(): void
@@ -62,6 +68,7 @@ final class Ws002ShopListingIsolationTest extends TestCase
         $this->assertStringContainsString('storefront-shop-toolbar', $contents);
         $this->assertStringContainsString('x-storefront.forms.sort-dropdown', $contents);
         $this->assertStringContainsString('storefront-shop-toolbar__view', $contents);
+        $this->assertStringContainsString('data-filters-sheet-open', $contents);
         $this->assertStringNotContainsString('x-admin.search-input', $contents);
     }
 
@@ -79,6 +86,8 @@ final class Ws002ShopListingIsolationTest extends TestCase
         $this->assertNotFalse($contents);
         $this->assertStringContainsString('.storefront-shop', $contents);
         $this->assertStringContainsString('.storefront-pagination', $contents);
+        $this->assertStringContainsString('.storefront-filters', $contents);
+        $this->assertStringContainsString('.storefront-product-grid', $contents);
         $this->assertStringContainsString('var(--font-store)', $contents);
         $this->assertStringNotContainsString('77.5rem', $contents);
         $this->assertStringNotContainsString('x-storefront.layout.partials.site-header', $contents);

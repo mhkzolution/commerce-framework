@@ -14,6 +14,7 @@ use Commerce\Core\Exceptions\EntityNotFoundException;
 use Commerce\Product\Contracts\ProductServiceInterface;
 use Commerce\Product\DTO\CreateProductData;
 use Commerce\Product\DTO\CreateVariantData;
+use Commerce\Product\DTO\SeoData;
 use Commerce\Product\DTO\UpdateProductData;
 use Commerce\Product\Events\ProductCreated;
 use Commerce\Product\Events\ProductPublished;
@@ -140,6 +141,22 @@ final class ProductService extends BaseService implements ProductServiceInterfac
         $this->slugService->unregister(Product::SEO_ENTITY_TYPE, $product->uuid);
         $this->searchIndexer->delete($product->uuid);
         $product->delete();
+    }
+
+    public function deleteMany(array $uuids): int
+    {
+        $deleted = 0;
+
+        foreach (array_values(array_unique($uuids)) as $uuid) {
+            try {
+                $this->delete($uuid);
+                $deleted++;
+            } catch (EntityNotFoundException) {
+                continue;
+            }
+        }
+
+        return $deleted;
     }
 
     public function publish(string $uuid): Product
@@ -304,7 +321,7 @@ final class ProductService extends BaseService implements ProductServiceInterfac
         }
     }
 
-    private function syncSeo(Product $product, ?\Commerce\Product\DTO\SeoData $seo): void
+    private function syncSeo(Product $product, ?SeoData $seo): void
     {
         if ($seo === null) {
             return;
@@ -375,6 +392,6 @@ final class ProductService extends BaseService implements ProductServiceInterfac
 
     private function productPath(string $slug): string
     {
-        return '/products/' . ltrim($slug, '/');
+        return '/products/'.ltrim($slug, '/');
     }
 }

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Commerce\Product\Models;
 
-use Commerce\Core\Concerns\HasUuid;
-use Commerce\Core\Tenant\BelongsToTenant;
 use Commerce\Catalog\Models\AttributeSet;
 use Commerce\Catalog\Models\Category;
+use Commerce\Catalog\Models\Collection;
 use Commerce\Catalog\Models\Tag;
+use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Tenant\BelongsToTenant;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -19,8 +21,8 @@ class Product extends Model
 {
     public const SEO_ENTITY_TYPE = 'product';
 
-    use HasUuid;
     use BelongsToTenant;
+    use HasUuid;
     use SoftDeletes;
 
     protected $fillable = [
@@ -75,6 +77,11 @@ class Product extends Model
         return $this->belongsToMany(Tag::class, 'product_tags');
     }
 
+    public function collections(): BelongsToMany
+    {
+        return $this->belongsToMany(Collection::class, 'product_collections');
+    }
+
     public function attributeValues(): HasMany
     {
         return $this->hasMany(ProductAttributeValue::class);
@@ -109,8 +116,8 @@ class Product extends Model
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
     public function scopePublished($query)
     {
@@ -123,8 +130,8 @@ class Product extends Model
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
     public function scopeVisibleOnStorefront($query)
     {

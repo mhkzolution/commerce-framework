@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
-import { bunny } from 'laravel-vite-plugin/fonts';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
@@ -15,20 +14,24 @@ export default defineConfig({
                 'resources/js/admin/cms-editor.js',
                 'resources/css/storefront/home.css',
                 'resources/css/storefront/shop.css',
+                'resources/js/storefront/shop.js',
                 'resources/css/storefront/pdp.css',
+                'resources/js/storefront/product.js',
                 'resources/css/storefront/shopper.css',
+                'resources/js/storefront/shopper.js',
+                'resources/css/storefront/auth.css',
+                'resources/js/storefront/auth.js',
                 'resources/css/storefront/footer.css',
                 'resources/js/storefront/home.js',
                 'resources/css/barcode.css',
                 'resources/js/barcode/index.js',
                 'resources/js/barcode/history.js',
+                'resources/css/pos.css',
+                'resources/js/pos/index.js',
+                'resources/css/scanner.css',
+                'resources/js/scanner/index.js',
             ],
             refresh: true,
-            fonts: [
-                bunny('Instrument Sans', {
-                    weights: [400, 500, 600],
-                }),
-            ],
         }),
         tailwindcss(),
     ],

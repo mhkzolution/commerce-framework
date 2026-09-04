@@ -56,7 +56,8 @@ return [
                 ['type' => 'link', 'label' => 'Orders', 'route' => 'admin.orders.index', 'permission' => 'orders.order.view'],
                 ['type' => 'link', 'label' => 'Customers', 'route' => 'admin.customers.index', 'permission' => 'customers.customer.view'],
                 ['type' => 'link', 'label' => 'Payments', 'route' => 'admin.payments.index', 'permission' => 'payment.payment.view'],
-                ['type' => 'link', 'label' => 'POS', 'route' => 'admin.pos.registers.index', 'permission' => 'pos.register.view'],
+                ['type' => 'link', 'label' => 'POS', 'route' => 'pos.index', 'permission' => 'pos.terminal.use', 'module' => 'pos'],
+                ['type' => 'link', 'label' => 'POS Registers', 'route' => 'admin.pos.registers.index', 'permission' => 'pos.register.view', 'module' => 'pos'],
             ],
         ],
         [
@@ -72,7 +73,7 @@ return [
                 ['type' => 'link', 'label' => 'Inventory', 'route' => 'admin.inventory.index', 'permission' => 'inventory.stock.view'],
                 ['type' => 'link', 'label' => 'Media', 'route' => 'admin.media.index', 'permission' => 'media.media.view', 'module' => 'media'],
                 ['type' => 'link', 'label' => 'Barcode Center', 'route' => 'admin.barcode.index', 'permission' => 'barcode.print'],
-                ['type' => 'link', 'label' => 'Warehouse Scanner', 'route' => 'warehouse.index', 'permission' => 'warehouse.scan'],
+                ['type' => 'link', 'label' => 'Warehouse Scanner', 'route' => 'warehouse.index', 'permission' => 'warehouse.scan', 'module' => 'warehouse'],
                 ['type' => 'link', 'label' => 'Product Settings', 'route' => 'admin.products.settings.show', 'permission' => 'product.product.view'],
             ],
         ],
@@ -97,6 +98,7 @@ return [
             'children' => [
                 ['type' => 'link', 'label' => 'Storefront', 'route' => 'admin.settings.appearance.show', 'permission' => 'settings.setting.view', 'module' => 'settings'],
                 ['type' => 'link', 'label' => 'Navigation', 'route' => 'admin.navigation.show', 'permission' => 'navigation.menu.view', 'module' => 'navigation'],
+                ['type' => 'link', 'label' => 'Storefront Navigation', 'route' => 'admin.storefront.navigation.show', 'permission' => 'settings.setting.view'],
                 ['type' => 'link', 'label' => 'Customer Experience', 'route' => 'admin.settings.customer-experience.show', 'permission' => 'settings.setting.view', 'module' => 'customer-experience'],
                 ['type' => 'link', 'label' => 'Footer', 'route' => 'admin.settings.footer.show', 'permission' => 'settings.setting.view', 'module' => 'footer-management'],
             ],
@@ -155,6 +157,7 @@ return [
             'order' => 80,
             'children' => [
                 ['type' => 'link', 'label' => 'Website Settings', 'route' => 'admin.settings.website.show', 'permission' => 'settings.setting.view', 'module' => 'settings'],
+                ['type' => 'link', 'label' => 'Site Identity', 'route' => 'admin.settings.site-identity.show', 'permission' => 'settings.setting.view', 'module' => 'settings'],
                 ['type' => 'link', 'label' => 'Email', 'route' => 'admin.settings.mail.show', 'permission' => 'settings.setting.view', 'module' => 'settings'],
                 ['type' => 'link', 'label' => 'Login & Security', 'route' => 'admin.settings.auth.show', 'permission' => 'settings.setting.view', 'module' => 'settings'],
                 ['type' => 'link', 'label' => 'Languages', 'route' => 'admin.settings.translations.index', 'permission' => 'settings.setting.view', 'module' => 'settings'],

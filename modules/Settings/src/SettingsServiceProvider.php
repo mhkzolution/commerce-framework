@@ -8,10 +8,12 @@ use Commerce\Contracts\Settings\SettingQueryServiceInterface;
 use Commerce\Contracts\Settings\SettingRegistryServiceInterface;
 use Commerce\Contracts\Settings\WebsiteSettingsQueryServiceInterface;
 use Commerce\Core\Base\BaseModuleServiceProvider;
+use Commerce\Core\Modules\ModuleService;
 use Commerce\Settings\Contracts\SettingServiceInterface;
 use Commerce\Settings\Footer\DTO\FooterBuildContext;
 use Commerce\Settings\Footer\DTO\FooterPageData;
 use Commerce\Settings\Footer\Registry\FooterSectionRegistry;
+use Commerce\Settings\Services\CustomerExperienceConfig;
 use Commerce\Settings\Services\FooterBrandingQuery;
 use Commerce\Settings\Services\FooterConfigService;
 use Commerce\Settings\Services\FooterNavigationQuery;
@@ -20,7 +22,10 @@ use Commerce\Settings\Services\FooterViewModelBuilder;
 use Commerce\Settings\Services\SettingQueryService;
 use Commerce\Settings\Services\SettingRegistryService;
 use Commerce\Settings\Services\SettingService;
+use Commerce\Settings\Services\TranslationCatalogService;
 use Commerce\Settings\Services\WebsiteSettingsQueryService;
+use Commerce\Settings\Support\AuthConfigurator;
+use Commerce\Settings\Support\MailConfigurator;
 use Illuminate\Support\Facades\View;
 
 final class SettingsServiceProvider extends BaseModuleServiceProvider
@@ -44,6 +49,8 @@ final class SettingsServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(FooterNavigationQuery::class);
         $this->app->singleton(FooterSocialQuery::class);
         $this->app->singleton(WebsiteSettingsQueryService::class);
+        $this->app->singleton(CustomerExperienceConfig::class);
+        $this->app->singleton(TranslationCatalogService::class);
 
         $this->app->bind(SettingRegistryServiceInterface::class, SettingRegistryService::class);
         $this->app->bind(SettingQueryServiceInterface::class, SettingQueryService::class);
@@ -59,6 +66,9 @@ final class SettingsServiceProvider extends BaseModuleServiceProvider
         $this->loadViewsFrom($this->modulePath('resources/views'), 'settings');
         $this->loadTranslationsFrom($this->modulePath('resources/lang'), 'settings');
 
+        MailConfigurator::apply();
+        AuthConfigurator::apply();
+
         View::composer('components.storefront.layout.partials.site-footer', function ($view): void {
             $data = $view->getData();
 
@@ -73,6 +83,18 @@ final class SettingsServiceProvider extends BaseModuleServiceProvider
                 $footerConfig->resolve(),
                 new FooterBuildContext(device: null),
             ));
+        });
+
+        View::composer('components.storefront.layout.partials.site-overlays', function ($view): void {
+            if (ModuleService::isDisabled('customer-experience')) {
+                $view->with('cx', null);
+
+                return;
+            }
+
+            $config = $this->app->make(CustomerExperienceConfig::class);
+            $config->ensureRegistered();
+            $view->with('cx', $config->resolve());
         });
     }
 }

@@ -26,10 +26,12 @@ return [
         'currency' => true,
         'cms' => true,
         'pos' => true,
+        'warehouse' => true,
         'crm' => true,
         'marketplace' => true,
         'barcode' => true,
         'navigation' => true,
+        'wishlist' => true,
     ],
 
     'plugins' => [

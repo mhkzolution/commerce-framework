@@ -14,5 +14,7 @@ final readonly class CreateBrandData extends DataTransferObject
         public ?string $description = null,
         public ?string $logoMediaUuid = null,
         public bool $isActive = true,
+        /** @var array<string, mixed>|null */
+        public ?array $seo = null,
     ) {}
 }

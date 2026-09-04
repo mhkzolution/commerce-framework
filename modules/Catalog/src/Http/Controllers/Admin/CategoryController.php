@@ -12,6 +12,8 @@ use Commerce\Catalog\Http\Requests\StoreCategoryRequest;
 use Commerce\Catalog\Http\Requests\UpdateCategoryRequest;
 use Commerce\Catalog\Models\Category;
 use Commerce\Catalog\Services\CategoryQueryService;
+use Commerce\Catalog\Support\CatalogMediaResolver;
+use Commerce\Contracts\Seo\SeoServiceInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\View\View;
@@ -21,12 +23,35 @@ final class CategoryController extends Controller
     public function __construct(
         private readonly CategoryQueryService $queryService,
         private readonly CategoryServiceInterface $categoryService,
+        private readonly CatalogMediaResolver $mediaResolver,
+        private readonly SeoServiceInterface $seoService,
     ) {}
 
     public function index(): View
     {
+        $tree = $this->queryService->tree();
+        $imageUrls = [];
+
+        $mediaResolver = $this->mediaResolver;
+
+        $collect = static function ($categories) use (&$collect, &$imageUrls, $mediaResolver): void {
+            foreach ($categories as $category) {
+                $url = $mediaResolver->url($category->image_media_uuid);
+                if ($url !== null) {
+                    $imageUrls[$category->uuid] = $url;
+                }
+
+                if ($category->children->isNotEmpty()) {
+                    $collect($category->children);
+                }
+            }
+        };
+
+        $collect($tree);
+
         return view('catalog::admin.categories.index', [
-            'tree' => $this->queryService->tree(),
+            'tree' => $tree,
+            'imageUrls' => $imageUrls,
         ]);
     }
 
@@ -43,9 +68,11 @@ final class CategoryController extends Controller
             name: $request->validated('name'),
             slug: $request->validated('slug'),
             description: $request->validated('description'),
+            imageMediaUuid: $request->validated('image_media_uuid'),
             parentId: $request->validated('parent_id'),
             isActive: (bool) $request->validated('is_active', true),
             position: (int) $request->validated('position', 0),
+            seo: $request->validated('seo'),
         ));
 
         return redirect()->route('admin.catalog.categories.index')->with('status', 'Category created.');
@@ -58,6 +85,7 @@ final class CategoryController extends Controller
         return view('catalog::admin.categories.edit', [
             'category' => $model,
             'parents' => Category::query()->where('id', '!=', $model->id)->orderBy('name')->get(),
+            'seo' => $this->seoService->getForEntity(Category::SEO_ENTITY_TYPE, $model->uuid),
         ]);
     }
 
@@ -67,9 +95,11 @@ final class CategoryController extends Controller
             name: $request->validated('name'),
             slug: $request->validated('slug'),
             description: $request->validated('description'),
+            imageMediaUuid: $request->validated('image_media_uuid'),
             parentId: $request->validated('parent_id'),
             isActive: (bool) $request->validated('is_active', true),
             position: (int) $request->validated('position', 0),
+            seo: $request->validated('seo'),
         ));
 
         return redirect()->route('admin.catalog.categories.index')->with('status', 'Category updated.');

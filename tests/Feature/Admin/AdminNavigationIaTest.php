@@ -38,7 +38,7 @@ final class AdminNavigationIaTest extends TestCase
         }
 
         $this->assertSame(
-            ['Orders', 'Customers', 'Payments', 'POS'],
+            ['Orders', 'Customers', 'Payments', 'POS', 'POS Registers'],
             array_column($byId['sales']['children'], 'label'),
         );
         $this->assertSame(
@@ -50,7 +50,7 @@ final class AdminNavigationIaTest extends TestCase
             array_column($byId['marketing']['children'], 'label'),
         );
         $this->assertSame(
-            ['Storefront', 'Navigation', 'Customer Experience', 'Footer'],
+            ['Storefront', 'Navigation', 'Storefront Navigation', 'Customer Experience', 'Footer'],
             array_column($byId['website']['children'], 'label'),
         );
         $this->assertSame(
@@ -68,6 +68,7 @@ final class AdminNavigationIaTest extends TestCase
         $this->assertSame(
             [
                 'Website Settings',
+                'Site Identity',
                 'Email',
                 'Login & Security',
                 'Languages',
@@ -116,8 +117,78 @@ final class AdminNavigationIaTest extends TestCase
             ['cms.post.view', 'cms.category.view', 'cms.tag.view', 'cms.page.view', 'cms.page.view', 'cms.page.view', 'cms.page.view', 'cms.page.view'],
             array_column($byId['content']['children'], 'permission'),
         );
-        $this->assertSame('admin.tax.index', $byId['configuration']['children'][5]['route']);
-        $this->assertSame('tax.rate.view', $byId['configuration']['children'][5]['permission']);
+        $this->assertSame('admin.tax.index', $byId['configuration']['children'][6]['route']);
+        $this->assertSame('tax.rate.view', $byId['configuration']['children'][6]['permission']);
+        $this->assertSame('admin.settings.website.show', $byId['configuration']['children'][0]['route']);
+        $this->assertSame('admin.settings.site-identity.show', $byId['configuration']['children'][1]['route']);
+        $this->assertSame('admin.navigation.show', $byId['website']['children'][1]['route']);
+        $this->assertSame('admin.storefront.navigation.show', $byId['website']['children'][2]['route']);
+    }
+
+    public function test_sidebar_shows_configured_links_that_have_live_routes(): void
+    {
+        app()->setLocale('en');
+
+        $nav = app(AdminNavigationBuilderInterface::class)->build(User::query()->first());
+        $byId = $this->indexById($nav);
+
+        $this->assertArrayHasKey('reports', $byId);
+        $this->assertSame(
+            ['Overview', 'Sales Reports', 'Order Reports', 'Product Reports'],
+            array_column($byId['reports']['children'], 'label'),
+        );
+
+        $this->assertSame(
+            ['POS', 'POS Registers'],
+            array_column(
+                array_values(array_filter(
+                    $byId['sales']['children'],
+                    static fn (array $child): bool => str_starts_with((string) $child['label'], 'POS'),
+                )),
+                'label',
+            ),
+        );
+
+        $this->assertContains('Teams', array_column($byId['identity']['children'], 'label'));
+
+        $settings = array_column($byId['configuration']['children'], 'label');
+        $this->assertSame(
+            [
+                'Website Settings',
+                'Site Identity',
+                'Email',
+                'Login & Security',
+                'Languages',
+                'Currency',
+                'Tax',
+                'Shipping',
+                'Webhooks',
+                'Notifications',
+                'System Settings',
+            ],
+            $settings,
+        );
+
+        $website = array_column($byId['website']['children'], 'label');
+        $this->assertSame(
+            ['Storefront', 'Navigation', 'Storefront Navigation', 'Customer Experience', 'Footer'],
+            $website,
+        );
+
+        foreach ([
+            'admin.reports.index',
+            'admin.reports.sales.index',
+            'admin.reports.orders.index',
+            'admin.reports.products.index',
+            'admin.iam.teams.index',
+            'admin.settings.mail.show',
+            'admin.settings.auth.show',
+            'admin.settings.translations.index',
+            'admin.settings.site-identity.show',
+            'admin.storefront.navigation.show',
+        ] as $route) {
+            $this->assertTrue(Route::has($route), $route.' must be registered so the sidebar can show it');
+        }
     }
 
     public function test_sidebar_is_grouped_by_merchant_domains(): void

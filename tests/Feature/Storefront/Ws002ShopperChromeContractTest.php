@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Storefront;
 
+use Commerce\Cart\Contracts\CartServiceInterface;
+use Commerce\Cart\Services\CartService;
+use Commerce\Contracts\Media\MediaQueryServiceInterface;
+use Commerce\Product\Models\ProductMedia;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesPurchasableProduct;
 use Tests\TestCase;
@@ -52,24 +56,71 @@ final class Ws002ShopperChromeContractTest extends TestCase
         $this->assertStringContainsString('name="quantity"', $html);
         $this->assertStringContainsString(__('storefront::storefront.checkout'), $html);
         $this->assertStringContainsString('storefront-btn', $html);
+        $this->assertStringContainsString('storefront-cart__layout', $html);
         $this->assertStringNotContainsString('cf-btn', $html);
     }
 
-    public function test_login_and_register_use_shopper_chrome(): void
+    public function test_cart_line_shows_image_when_media_url_exists(): void
+    {
+        $variant = $this->createPurchasableProduct(price: 1500, stock: 4, sku: 'CART-IMG-1');
+        $mediaUuid = 'media-cart-line';
+
+        ProductMedia::query()->create([
+            'product_id' => $variant->product->id,
+            'media_uuid' => $mediaUuid,
+            'position' => 0,
+            'is_primary' => true,
+        ]);
+
+        $this->app->instance(MediaQueryServiceInterface::class, new class($mediaUuid) implements MediaQueryServiceInterface
+        {
+            public function __construct(private readonly string $uuid) {}
+
+            public function findByUuid(string $uuid): ?object
+            {
+                return null;
+            }
+
+            public function getUrl(string $uuid, ?string $variant = null): ?string
+            {
+                return $uuid === $this->uuid ? 'https://cdn.example.test/cart-line.jpg' : null;
+            }
+
+            public function findByUuids(array $uuids): array
+            {
+                return [];
+            }
+        });
+        $this->app->forgetInstance(CartService::class);
+        $this->app->forgetInstance(CartServiceInterface::class);
+
+        $this->post(route('storefront.cart.items.store'), [
+            'purchasable_uuid' => $variant->uuid,
+            'quantity' => 1,
+        ])->assertRedirect(route('storefront.cart.index'));
+
+        $this->get(route('storefront.cart.index'))
+            ->assertOk()
+            ->assertSee('https://cdn.example.test/cart-line.jpg', false)
+            ->assertSee('storefront-cart-line__image', false);
+    }
+
+    public function test_login_and_register_use_auth_card_without_admin_chrome(): void
     {
         $login = $this->get(route('storefront.account.login'))
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString('storefront-shopper-main', $login);
-        $this->assertStringContainsString('storefront-input', $login);
+        $this->assertStringContainsString(__('customers::auth.welcome'), $login);
+        $this->assertStringContainsString('storefront-auth-page', $login);
         $this->assertStringNotContainsString('cf-btn', $login);
+        $this->assertStringNotContainsString('storefront-site-header', $login);
 
         $register = $this->get(route('storefront.account.register'))
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString('storefront-shopper-main', $register);
+        $this->assertStringContainsString('storefront-auth-page', $register);
         $this->assertStringNotContainsString('cf-input', $register);
     }
 

@@ -36,6 +36,7 @@ final class ProductCardMapper
         }
 
         $available = $this->available((string) $variant->uuid);
+        $imageUrls = $this->imageUrls($product);
 
         return new ProductCardData(
             uuid: (string) $product->uuid,
@@ -45,9 +46,10 @@ final class ProductCardMapper
             variantUuid: (string) $variant->uuid,
             price: (int) $variant->price,
             compareAtPrice: $variant->compare_at_price !== null ? (int) $variant->compare_at_price : null,
-            imageUrl: $this->imageUrl($product),
+            imageUrl: $imageUrls[0] ?? null,
             available: $available,
             inStock: $this->inStock($available),
+            secondaryImageUrl: $imageUrls[1] ?? null,
         );
     }
 
@@ -60,20 +62,44 @@ final class ProductCardMapper
         return $variants->firstWhere('is_default', true) ?? $variants->first();
     }
 
-    private function imageUrl(Product $product): ?string
+    /**
+     * @return list<string>
+     */
+    private function imageUrls(Product $product, int $limit = 2): array
     {
         $mediaRows = $product->relationLoaded('media')
             ? $product->media
             : $product->media()->get();
 
-        /** @var ProductMedia|null $row */
-        $row = $mediaRows->firstWhere('is_primary', true) ?? $mediaRows->first();
-        $uuid = is_string($row?->media_uuid) ? $row->media_uuid : null;
-        if ($uuid === null || $uuid === '') {
-            return null;
+        $ordered = $mediaRows
+            ->sortBy(static function (ProductMedia $row): string {
+                $priority = $row->is_primary ? '0' : '1';
+
+                return $priority.'-'.str_pad((string) (int) $row->position, 6, '0', STR_PAD_LEFT);
+            })
+            ->values();
+
+        $urls = [];
+
+        foreach ($ordered as $row) {
+            if (count($urls) >= $limit) {
+                break;
+            }
+
+            $uuid = is_string($row->media_uuid) ? $row->media_uuid : null;
+            if ($uuid === null || $uuid === '') {
+                continue;
+            }
+
+            $url = $this->media->getUrl($uuid, 'medium') ?? $this->media->getUrl($uuid);
+            if (! is_string($url) || $url === '' || in_array($url, $urls, true)) {
+                continue;
+            }
+
+            $urls[] = $url;
         }
 
-        return $this->media->getUrl($uuid, 'medium') ?? $this->media->getUrl($uuid);
+        return $urls;
     }
 
     private function available(string $variantUuid): ?int

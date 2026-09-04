@@ -1,3 +1,7 @@
+@php
+    $brand = $brand ?? null;
+@endphp
+
 <div>
     <label class="block text-sm font-medium text-text" for="name">Name</label>
     <input id="name" name="name" value="{{ old('name', $brand?->name) }}" required class="cf-input mt-1">
@@ -24,3 +28,5 @@
         Active
     </label>
 </div>
+
+@include('catalog::admin.partials.seo-fields', ['seo' => $seo ?? null])

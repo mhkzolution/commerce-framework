@@ -100,7 +100,12 @@ final class FooterIsolationTest extends TestCase
             $contents = file_get_contents($path);
             $this->assertNotFalse($contents, $path);
 
-            foreach (self::FORBIDDEN as $token) {
+            foreach ([
+                'SiteIdentityServiceInterface',
+                'SiteIdentityService',
+                'StorefrontNavigationConfig',
+                'WebsiteSettingsService',
+            ] as $token) {
                 if (str_contains($contents, $token)) {
                     $hits[] = $path.' contains '.$token;
                 }

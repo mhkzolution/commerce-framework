@@ -20,6 +20,7 @@ final class StorefrontRegisterRequest extends FormRequest
             'email' => ['required', 'email', 'max:255', 'unique:customers,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'phone' => ['nullable', 'string', 'max:50'],
+            'website' => ['prohibited'],
         ];
     }
 }

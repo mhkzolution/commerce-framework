@@ -23,6 +23,7 @@ use Commerce\Iam\Contracts\TwoFactor\TwoFactorServiceInterface;
 use Commerce\Iam\Contracts\User\UserServiceInterface;
 use Commerce\Iam\Http\Middleware\AuthenticateApiToken;
 use Commerce\Iam\Http\Middleware\PermissionMiddleware;
+use Commerce\Iam\Http\Middleware\ResolveTeam;
 use Commerce\Iam\Listeners\LogSystemFeatureStatusChanged;
 use Commerce\Iam\Listeners\LogSystemModuleStatusChanged;
 use Commerce\Iam\OAuth\GitHubOAuthProvider;
@@ -38,10 +39,13 @@ use Commerce\Iam\Services\PermissionRegistryService;
 use Commerce\Iam\Services\ProfileService;
 use Commerce\Iam\Services\RoleService;
 use Commerce\Iam\Services\SessionService;
+use Commerce\Iam\Services\TeamService;
 use Commerce\Iam\Services\TwoFactorService;
 use Commerce\Iam\Services\UserPreferenceService;
 use Commerce\Iam\Services\UserService;
 use Commerce\Iam\Support\TotpGenerator;
+use Commerce\Iam\Team\TeamContext;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Event;
 
@@ -59,6 +63,8 @@ final class IamServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(PermissionRegistryService::class);
         $this->app->singleton(AuthorizationService::class);
         $this->app->singleton(TotpGenerator::class);
+        $this->app->singleton(TeamContext::class);
+        $this->app->singleton(TeamService::class);
 
         $this->app->bind(PermissionRegistryInterface::class, PermissionRegistryService::class);
         $this->app->bind(AuthorizationServiceInterface::class, AuthorizationService::class);
@@ -91,6 +97,12 @@ final class IamServiceProvider extends BaseModuleServiceProvider
         $router = $this->app->make(Router::class);
         $router->aliasMiddleware('permission', PermissionMiddleware::class);
         $router->aliasMiddleware('api.token', AuthenticateApiToken::class);
+        $router->aliasMiddleware('team', ResolveTeam::class);
+
+        /** @var Kernel $kernel */
+        $kernel = $this->app->make(Kernel::class);
+        $kernel->prependMiddlewareToGroup('web', ResolveTeam::class);
+        $kernel->prependMiddlewareToGroup('api', ResolveTeam::class);
 
         Event::listen(SystemModuleStatusChanged::class, LogSystemModuleStatusChanged::class);
         Event::listen(SystemFeatureStatusChanged::class, LogSystemFeatureStatusChanged::class);

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "89a6c20a9eb1a217ab2016a0a2803f5e",
+    "content-hash": "084045bf448660c84d202298d522fd68",
     "packages": [
         {
             "name": "brick/math",
@@ -136,7 +136,7 @@
         },
         {
             "name": "commerce/api",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "packages/commerce/api",
@@ -172,7 +172,7 @@
         },
         {
             "name": "commerce/barcode",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Barcode",
@@ -205,7 +205,7 @@
         },
         {
             "name": "commerce/cart",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Cart",
@@ -246,7 +246,7 @@
         },
         {
             "name": "commerce/catalog",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Catalog",
@@ -276,7 +276,7 @@
         },
         {
             "name": "commerce/cms",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Cms",
@@ -307,7 +307,7 @@
         },
         {
             "name": "commerce/contracts",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "packages/commerce/contracts",
@@ -332,7 +332,7 @@
         },
         {
             "name": "commerce/core",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "packages/commerce/core",
@@ -372,7 +372,7 @@
         },
         {
             "name": "commerce/crm",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Crm",
@@ -403,7 +403,7 @@
         },
         {
             "name": "commerce/currency",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Currency",
@@ -436,7 +436,7 @@
         },
         {
             "name": "commerce/customers",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Customers",
@@ -470,7 +470,7 @@
         },
         {
             "name": "commerce/iam",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Iam",
@@ -499,7 +499,7 @@
         },
         {
             "name": "commerce/inventory",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Inventory",
@@ -531,7 +531,7 @@
         },
         {
             "name": "commerce/marketplace",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Marketplace",
@@ -562,7 +562,7 @@
         },
         {
             "name": "commerce/media",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Media",
@@ -592,7 +592,7 @@
         },
         {
             "name": "commerce/module-manager",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "packages/commerce/module-manager",
@@ -629,7 +629,7 @@
         },
         {
             "name": "commerce/navigation",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Navigation",
@@ -659,7 +659,7 @@
         },
         {
             "name": "commerce/notification",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Notification",
@@ -691,7 +691,7 @@
         },
         {
             "name": "commerce/orders",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Orders",
@@ -727,7 +727,7 @@
         },
         {
             "name": "commerce/payment",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Payment",
@@ -761,7 +761,7 @@
         },
         {
             "name": "commerce/plugin-manager",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "packages/commerce/plugin-manager",
@@ -797,7 +797,7 @@
         },
         {
             "name": "commerce/pos",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Pos",
@@ -828,7 +828,7 @@
         },
         {
             "name": "commerce/product",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Product",
@@ -860,7 +860,7 @@
         },
         {
             "name": "commerce/promotion",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Promotion",
@@ -891,7 +891,7 @@
         },
         {
             "name": "commerce/reports",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Reports",
@@ -922,7 +922,7 @@
         },
         {
             "name": "commerce/settings",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Settings",
@@ -951,7 +951,7 @@
         },
         {
             "name": "commerce/shipping",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Shipping",
@@ -984,7 +984,7 @@
         },
         {
             "name": "commerce/support",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "packages/commerce/support",
@@ -1010,7 +1010,7 @@
         },
         {
             "name": "commerce/tax",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Tax",
@@ -1040,8 +1040,39 @@
             }
         },
         {
+            "name": "commerce/warehouse-scanner",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
+            "dist": {
+                "type": "path",
+                "url": "modules/WarehouseScanner",
+                "reference": "99a1ab9a5d14b65d3c62d5aab756a9587d04918c"
+            },
+            "require": {
+                "commerce/contracts": "*",
+                "commerce/core": "*",
+                "commerce/module-manager": "*",
+                "commerce/support": "*",
+                "illuminate/database": "^13.0",
+                "illuminate/support": "^13.0",
+                "php": "^8.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Commerce\\WarehouseScanner\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Warehouse scanner workspace for warehouse staff operations",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "commerce/webhooks",
-            "version": "dev-feat/navigation-management-v1",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
                 "type": "path",
                 "url": "modules/Webhooks",
@@ -1071,6 +1102,40 @@
                 "MIT"
             ],
             "description": "Outbound webhook delivery for domain events",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "commerce/wishlist",
+            "version": "dev-feat/pos-warehouse-scanner-v1",
+            "dist": {
+                "type": "path",
+                "url": "modules/Wishlist",
+                "reference": "6d8385e56875cd0cb316f0e78591b95e4c8a64c3"
+            },
+            "require": {
+                "commerce/api": "*",
+                "commerce/contracts": "*",
+                "commerce/core": "*",
+                "commerce/customers": "*",
+                "commerce/module-manager": "*",
+                "commerce/product": "*",
+                "illuminate/database": "^13.0",
+                "illuminate/http": "^13.0",
+                "illuminate/support": "^13.0",
+                "php": "^8.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Commerce\\Wishlist\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Customer wishlist management",
             "transport-options": {
                 "relative": true
             }
@@ -9804,6 +9869,7 @@
         "commerce/promotion": 20,
         "commerce/reports": 20,
         "commerce/webhooks": 20,
+        "commerce/wishlist": 20,
         "commerce/currency": 20,
         "commerce/notification": 20,
         "commerce/plugin-manager": 20,
@@ -9814,6 +9880,7 @@
         "commerce/tax": 20,
         "commerce/cms": 20,
         "commerce/pos": 20,
+        "commerce/warehouse-scanner": 20,
         "commerce/crm": 20,
         "commerce/marketplace": 20
     },

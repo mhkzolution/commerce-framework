@@ -1,54 +1,51 @@
 @extends('cart::layouts.storefront')
 
-@section('title', __('storefront::storefront.shop'))
+@php
+    $pageTitle = __('storefront::storefront.shop');
+
+    if (is_string($filters->search) && $filters->search !== '') {
+        $pageTitle = $filters->search;
+    } elseif (is_string($filters->category) && $filters->category !== '') {
+        foreach ($categories as $category) {
+            if ($category->slug === $filters->category) {
+                $pageTitle = $category->name;
+                break;
+            }
+        }
+    } elseif (is_string($filters->brand) && $filters->brand !== '') {
+        foreach ($filterCatalog->brands as $brand) {
+            if ($brand['slug'] === $filters->brand) {
+                $pageTitle = $brand['name'];
+                break;
+            }
+        }
+    }
+@endphp
+
+@section('title', $pageTitle)
 @section('main_class', 'storefront-shop-main')
 
 @push('head')
-    @vite('resources/css/storefront/shop.css')
+    @vite(['resources/css/storefront/shop.css', 'resources/js/storefront/shop.js'])
 @endpush
 
 @section('content')
-    <x-storefront.layout.page-container class="storefront-shop">
-        <header class="storefront-shop__header">
-            <h1 class="storefront-shop__title">{{ __('storefront::storefront.shop') }}</h1>
+    <x-storefront.layout.page-container
+        class="storefront-shop"
+        data-shop
+        data-shop-url="{{ route('storefront.shop.index') }}"
+    >
+        @if ($breadcrumbItems !== [])
+            <div class="storefront-shop__breadcrumb">
+                <x-storefront.breadcrumb :items="$breadcrumbItems" :aria-label="__('storefront::storefront.breadcrumb')" />
+            </div>
+        @endif
 
-            <form method="GET" action="{{ route('storefront.shop.index') }}" class="storefront-shop-filters">
-                @foreach (collect($filters->toQueryArray())->except(['search', 'category', 'availability']) as $name => $value)
-                    <input type="hidden" name="{{ $name }}" value="{{ $value }}">
-                @endforeach
-
-                <label class="storefront-shop-filters__field">
-                    <span class="storefront-shop-filters__label">{{ __('storefront::storefront.filter_category') }}</span>
-                    <select name="category" class="storefront-shop-filters__select" onchange="this.form.submit()">
-                        <option value="">{{ __('storefront::storefront.filter_all') }}</option>
-                        @foreach ($categories as $category)
-                            <option value="{{ $category->slug }}" @selected($filters->category === $category->slug)>
-                                {{ $category->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </label>
-
-                <label class="storefront-shop-filters__field">
-                    <span class="storefront-shop-filters__label">{{ __('storefront::storefront.filter_availability') }}</span>
-                    <select name="availability" class="storefront-shop-filters__select" onchange="this.form.submit()">
-                        <option value="all" @selected($filters->availability === 'all')>{{ __('storefront::storefront.availability_all') }}</option>
-                        <option value="in_stock" @selected($filters->availability === 'in_stock')>{{ __('storefront::storefront.availability_in_stock') }}</option>
-                    </select>
-                </label>
-
-                <label class="storefront-shop-filters__field storefront-shop-filters__field--search">
-                    <span class="storefront-shop-filters__label">{{ __('storefront::storefront.search') }}</span>
-                    <input
-                        type="search"
-                        name="search"
-                        value="{{ $filters->search }}"
-                        placeholder="{{ __('storefront::storefront.search_placeholder') }}"
-                        class="storefront-shop-search"
-                    >
-                </label>
-            </form>
-        </header>
+        @if ($filters->hasListingConstraints())
+            <header class="storefront-shop__context">
+                <h1 class="storefront-shop__context-title">{{ $pageTitle }}</h1>
+            </header>
+        @endif
 
         <x-storefront.shop.toolbar
             :count="$products->total()"
@@ -56,22 +53,45 @@
             :query="$filters->toQueryArray()"
         />
 
-        <div class="storefront-shop__grid">
-            @forelse ($products as $product)
-                <x-storefront.cards.product
-                    :product="$product"
-                    :display-currency="$displayCurrency"
-                    :base-currency="$baseCurrency"
-                    :currency-converter="$currencyConverter"
-                    :quick-add="true"
-                />
-            @empty
-                <x-storefront.empty-state :title="__('storefront::storefront.no_products')" />
-            @endforelse
+        <x-storefront.shop.active-filters
+            :filters="$filters"
+            :categories="$categories"
+            :filter-catalog="$filterCatalog"
+        />
+
+        <div class="storefront-shop__layout">
+            <x-storefront.shop.filters-sidebar
+                class="storefront-shop-filters-sidebar"
+                :filters="$filters"
+                :filter-catalog="$filterCatalog"
+                :categories="$categories"
+            />
+
+            <div class="storefront-shop__results" data-shop-results>
+                <div class="storefront-product-grid storefront-product-grid--shop storefront-shop__grid" data-shop-grid>
+                    @forelse ($products as $product)
+                        <x-storefront.cards.product
+                            :product="$product"
+                            :display-currency="$displayCurrency"
+                            :base-currency="$baseCurrency"
+                            :currency-converter="$currencyConverter"
+                            :quick-add="true"
+                        />
+                    @empty
+                        <x-storefront.empty-state :title="__('storefront::storefront.no_products')" />
+                    @endforelse
+                </div>
+
+                @if ($products->hasPages())
+                    <div class="storefront-shop__pagination">{{ $products->withQueryString()->links('pagination::storefront') }}</div>
+                @endif
+            </div>
         </div>
 
-        @if ($products->hasPages())
-            <div class="storefront-shop__pagination">{{ $products->withQueryString()->links('pagination::storefront') }}</div>
-        @endif
+        <x-storefront.shop.filters-sheet
+            :filters="$filters"
+            :filter-catalog="$filterCatalog"
+            :categories="$categories"
+        />
     </x-storefront.layout.page-container>
 @endsection

@@ -26,15 +26,13 @@ final class BarcodeHostWiringTest extends TestCase
         $this->assertNotNull($this->app['router']->getRoutes()->getByName('admin.barcode.index'));
     }
 
-    public function test_vite_lists_barcode_assets_and_not_scanner_or_pos(): void
+    public function test_vite_lists_barcode_assets(): void
     {
         $vite = (string) file_get_contents(base_path('vite.config.js'));
 
         $this->assertStringContainsString('resources/css/barcode.css', $vite);
         $this->assertStringContainsString('resources/js/barcode/index.js', $vite);
         $this->assertStringContainsString('resources/js/barcode/history.js', $vite);
-        $this->assertStringNotContainsString('pos.css', $vite);
-        $this->assertStringNotContainsString('scanner.css', $vite);
     }
 
     public function test_generator_exposes_four_strategies(): void

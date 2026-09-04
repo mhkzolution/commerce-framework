@@ -1,10 +1,14 @@
-@props(['categories', 'depth' => 0])
+@props(['categories', 'depth' => 0, 'imageUrls' => []])
 
 <ul class="{{ $depth === 0 ? 'divide-y divide-border' : 'mt-2 space-y-2 border-l border-border pl-4' }}">
     @foreach ($categories as $category)
         <li class="{{ $depth === 0 ? 'py-3' : 'py-1' }}">
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <div class="min-w-0">
+                <div class="min-w-0 flex items-center gap-3">
+                    @if (! empty($imageUrls[$category->uuid] ?? null))
+                        <img src="{{ $imageUrls[$category->uuid] }}" alt="" class="h-10 w-10 shrink-0 rounded object-cover">
+                    @endif
+                    <div>
                     <div class="flex items-center gap-2">
                         <span class="font-medium text-text">{{ $category->name }}</span>
                         <span class="text-xs text-muted">/{{ $category->slug }}</span>
@@ -15,6 +19,7 @@
                     @if ($category->description)
                         <p class="mt-1 truncate text-sm text-muted">{{ $category->description }}</p>
                     @endif
+                    </div>
                 </div>
 
                 <div class="flex items-center gap-3 text-sm">
@@ -38,6 +43,7 @@
                 @include('catalog::admin.categories._tree', [
                     'categories' => $category->children,
                     'depth' => $depth + 1,
+                    'imageUrls' => $imageUrls,
                 ])
             @endif
         </li>

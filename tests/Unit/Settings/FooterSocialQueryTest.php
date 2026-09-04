@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Settings;
 
+use Commerce\Contracts\Settings\WebsiteBrandData;
+use Commerce\Contracts\Settings\WebsiteContactData;
+use Commerce\Contracts\Settings\WebsiteSeoDefaultsData;
 use Commerce\Contracts\Settings\WebsiteSettingsQueryServiceInterface;
 use Commerce\Contracts\Settings\WebsiteSocialLinkData;
 use Commerce\Settings\Services\FooterSocialQuery;
@@ -21,11 +24,26 @@ final class FooterSocialQueryTest extends TestCase
     {
         $query = new FooterSocialQuery(new class implements WebsiteSettingsQueryServiceInterface
         {
+            public function brand(): WebsiteBrandData
+            {
+                return new WebsiteBrandData('', null, null);
+            }
+
             public function socialLinks(): array
             {
                 return [
                     new WebsiteSocialLinkData('facebook', 'Facebook', 'https://facebook.com/harbor'),
                 ];
+            }
+
+            public function contact(): WebsiteContactData
+            {
+                return new WebsiteContactData(null, null);
+            }
+
+            public function seoDefaults(): WebsiteSeoDefaultsData
+            {
+                return new WebsiteSeoDefaultsData(null, null, null);
             }
         });
 
@@ -42,7 +60,22 @@ final class FooterSocialQueryTest extends TestCase
     {
         $query = new FooterSocialQuery(new class implements WebsiteSettingsQueryServiceInterface
         {
+            public function brand(): WebsiteBrandData
+            {
+                throw new RuntimeException('unavailable');
+            }
+
             public function socialLinks(): array
+            {
+                throw new RuntimeException('unavailable');
+            }
+
+            public function contact(): WebsiteContactData
+            {
+                throw new RuntimeException('unavailable');
+            }
+
+            public function seoDefaults(): WebsiteSeoDefaultsData
             {
                 throw new RuntimeException('unavailable');
             }

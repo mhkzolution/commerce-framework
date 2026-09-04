@@ -49,6 +49,10 @@ final class StorefrontCartController extends Controller
             return redirect()->back()->withErrors(['cart' => $exception->getMessage()]);
         }
 
+        if ($request->validated('redirect_to') === 'checkout') {
+            return redirect()->route('storefront.checkout')->with('status', 'Item added to cart.');
+        }
+
         return redirect()->route('storefront.cart.index')->with('status', 'Item added to cart.');
     }
 

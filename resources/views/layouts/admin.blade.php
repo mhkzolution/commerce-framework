@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Admin') — {{ config('admin.name', config('commerce.name')) }}</title>
+    <x-app-fonts />
     @vite(['resources/css/app.css', 'resources/css/admin.css', 'resources/js/admin.js'])
     <x-admin.design-tokens />
     @stack('head')
@@ -77,8 +78,14 @@
                                 {{ strtoupper(app()->getLocale()) }}
                             </button>
                             <div data-admin-dropdown hidden class="admin-dropdown">
-                                @foreach (config('admin.locale.available', ['en' => 'English']) as $code => $label)
-                                    <button type="button" class="cf-command-item block w-full px-3 py-2 text-left text-sm" disabled>{{ $label }}</button>
+                                @foreach (config('admin.locale.available', ['th' => 'ไทย', 'en' => 'English']) as $code => $label)
+                                    <form method="POST" action="{{ route('locale.update') }}">
+                                        @csrf
+                                        <input type="hidden" name="locale" value="{{ $code }}">
+                                        <button type="submit" class="cf-command-item block w-full px-3 py-2 text-left text-sm @if (app()->getLocale() === $code) font-semibold text-primary @endif">
+                                            {{ $label }}
+                                        </button>
+                                    </form>
                                 @endforeach
                             </div>
                         </div>

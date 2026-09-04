@@ -1,7 +1,9 @@
 @php
     $tabs = $arrivalCategories ?? [];
+    $products = $arrivalProducts ?? [];
 @endphp
 
+@if ($products !== [])
 <section class="storefront-home__section storefront-home-arrivals" aria-labelledby="home-arrivals-title" data-home-reveal>
     <x-storefront.layout.page-container class="storefront-home__inner">
         <header class="storefront-home-section-header">
@@ -64,3 +66,4 @@
         </div>
     </x-storefront.layout.page-container>
 </section>
+@endif

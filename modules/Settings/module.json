@@ -17,7 +17,224 @@
         "settings.setting.view",
         "settings.setting.update"
     ],
-    "settings": [],
+    "settings": [
+        {
+            "key": "site.name",
+            "type": "string",
+            "label": "Site name",
+            "group": "site",
+            "default": "",
+            "is_public": true,
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "site.logo_media_uuid",
+            "type": "string",
+            "label": "Site logo",
+            "group": "site",
+            "default": null,
+            "validation": ["nullable", "uuid"]
+        },
+        {
+            "key": "site.favicon_media_uuid",
+            "type": "string",
+            "label": "Favicon",
+            "group": "site",
+            "default": null,
+            "validation": ["nullable", "uuid"]
+        },
+        {
+            "key": "site.contact_address",
+            "type": "string",
+            "label": "Address",
+            "group": "site",
+            "default": "",
+            "is_public": true,
+            "validation": ["nullable", "string", "max:1000"]
+        },
+        {
+            "key": "site.contact_email",
+            "type": "string",
+            "label": "Email",
+            "group": "site",
+            "default": "",
+            "is_public": true,
+            "validation": ["nullable", "email", "max:255"]
+        },
+        {
+            "key": "site.contact_phone",
+            "type": "string",
+            "label": "Phone",
+            "group": "site",
+            "default": "",
+            "is_public": true,
+            "validation": ["nullable", "string", "max:50"]
+        },
+        {
+            "key": "site.social_facebook",
+            "type": "string",
+            "label": "Facebook",
+            "group": "site",
+            "default": "",
+            "is_public": true,
+            "validation": ["nullable", "url", "max:500"]
+        },
+        {
+            "key": "site.social_instagram",
+            "type": "string",
+            "label": "Instagram",
+            "group": "site",
+            "default": "",
+            "is_public": true,
+            "validation": ["nullable", "url", "max:500"]
+        },
+        {
+            "key": "site.social_tiktok",
+            "type": "string",
+            "label": "TikTok",
+            "group": "site",
+            "default": "",
+            "is_public": true,
+            "validation": ["nullable", "url", "max:500"]
+        },
+        {
+            "key": "site.social_line",
+            "type": "string",
+            "label": "LINE",
+            "group": "site",
+            "default": "",
+            "is_public": true,
+            "validation": ["nullable", "string", "max:500"]
+        },
+        {
+            "key": "mail.mailer",
+            "type": "string",
+            "label": "Mail driver",
+            "group": "mail",
+            "default": "log",
+            "validation": ["required", "in:smtp,log,sendmail"]
+        },
+        {
+            "key": "mail.host",
+            "type": "string",
+            "label": "SMTP host",
+            "group": "mail",
+            "default": "",
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "mail.port",
+            "type": "string",
+            "label": "SMTP port",
+            "group": "mail",
+            "default": "587",
+            "validation": ["nullable", "integer", "min:1", "max:65535"]
+        },
+        {
+            "key": "mail.username",
+            "type": "string",
+            "label": "SMTP username",
+            "group": "mail",
+            "default": "",
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "mail.password",
+            "type": "string",
+            "label": "SMTP password",
+            "group": "mail",
+            "default": "",
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "mail.encryption",
+            "type": "string",
+            "label": "SMTP encryption",
+            "group": "mail",
+            "default": "tls",
+            "validation": ["nullable", "in:tls,ssl,"]
+        },
+        {
+            "key": "mail.from_address",
+            "type": "string",
+            "label": "From address",
+            "group": "mail",
+            "default": "",
+            "validation": ["nullable", "email", "max:255"]
+        },
+        {
+            "key": "mail.from_name",
+            "type": "string",
+            "label": "From name",
+            "group": "mail",
+            "default": "",
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "auth.recaptcha_enabled",
+            "type": "boolean",
+            "label": "reCAPTCHA enabled",
+            "group": "auth",
+            "default": false,
+            "validation": ["boolean"]
+        },
+        {
+            "key": "auth.recaptcha_site_key",
+            "type": "string",
+            "label": "reCAPTCHA site key",
+            "group": "auth",
+            "default": "",
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "auth.recaptcha_secret_key",
+            "type": "string",
+            "label": "reCAPTCHA secret key",
+            "group": "auth",
+            "default": "",
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "auth.recaptcha_min_score",
+            "type": "string",
+            "label": "reCAPTCHA minimum score",
+            "group": "auth",
+            "default": "0.5",
+            "validation": ["nullable", "numeric", "min:0", "max:1"]
+        },
+        {
+            "key": "auth.line_enabled",
+            "type": "boolean",
+            "label": "LINE login enabled",
+            "group": "auth",
+            "default": false,
+            "validation": ["boolean"]
+        },
+        {
+            "key": "auth.line_channel_id",
+            "type": "string",
+            "label": "LINE channel ID",
+            "group": "auth",
+            "default": "",
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "auth.line_channel_secret",
+            "type": "string",
+            "label": "LINE channel secret",
+            "group": "auth",
+            "default": "",
+            "validation": ["nullable", "string", "max:255"]
+        },
+        {
+            "key": "auth.registration_enabled",
+            "type": "boolean",
+            "label": "Customer registration enabled",
+            "group": "auth",
+            "default": true,
+            "validation": ["boolean"]
+        }
+    ],
     "admin_navigation": [
         {
             "type": "group",

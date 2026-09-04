@@ -17,5 +17,38 @@
         ]
     },
     "permissions": [],
-    "settings": []
+    "settings": [
+        {
+            "key": "storefront.navigation.promo_enabled",
+            "type": "boolean",
+            "label": "Promo bar enabled",
+            "group": "storefront",
+            "default": false,
+            "validation": ["nullable", "boolean"]
+        },
+        {
+            "key": "storefront.navigation.promo_message",
+            "type": "string",
+            "label": "Promo bar message",
+            "group": "storefront",
+            "default": "",
+            "validation": ["nullable", "string", "max:500"]
+        },
+        {
+            "key": "storefront.navigation.promo_dismissible",
+            "type": "boolean",
+            "label": "Promo bar dismissible",
+            "group": "storefront",
+            "default": true,
+            "validation": ["nullable", "boolean"]
+        },
+        {
+            "key": "storefront.navigation.items_json",
+            "type": "string",
+            "label": "Navigation items JSON",
+            "group": "storefront",
+            "default": null,
+            "validation": ["nullable", "string", "max:50000"]
+        }
+    ]
 }

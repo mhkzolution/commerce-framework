@@ -23,7 +23,9 @@
         "iam.role.update",
         "iam.role.delete",
         "iam.permission.view",
-        "iam.audit.view"
+        "iam.audit.view",
+        "iam.team.view",
+        "iam.team.manage"
     ],
     "settings": [],
     "admin_navigation": [

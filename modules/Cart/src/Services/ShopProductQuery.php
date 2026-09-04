@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Commerce\Cart\Services;
 
+use Commerce\Cart\DTO\ShopFilterCatalog;
 use Commerce\Cart\DTO\ShopListingFilters;
+use Commerce\Cart\Support\StorefrontAttributeFilterValue;
+use Commerce\Catalog\Models\Brand;
 use Commerce\Contracts\Search\SearchQueryInterface;
 use Commerce\Product\Models\Product;
 use Commerce\Product\Services\ProductSearchIndexer;
@@ -22,8 +25,11 @@ final class ShopProductQuery
     /**
      * @return LengthAwarePaginator<int, Product>
      */
-    public function paginate(ShopListingFilters $filters, int $perPage = 24): LengthAwarePaginator
-    {
+    public function paginate(
+        ShopListingFilters $filters,
+        ShopFilterCatalog $catalog,
+        int $perPage = 24,
+    ): LengthAwarePaginator {
         $query = Product::query()
             ->with(['variants', 'media', 'categories', 'tags', 'attributeValues.attribute'])
             ->visibleOnStorefront();
@@ -41,6 +47,11 @@ final class ShopProductQuery
                 $categoryQuery->where('slug', $filters->category);
             });
         }
+
+        $this->applyBrand($query, $filters->brand);
+        $this->applyPrice($query, $filters);
+        $this->applyAttributeGroupFilter($query, $catalog->sizeAttributeIds, $filters->size);
+        $this->applyAttributeGroupFilter($query, $catalog->colorAttributeIds, $filters->color);
 
         if ($filters->availability === 'in_stock') {
             $this->constrainInStock($query);
@@ -68,6 +79,70 @@ final class ShopProductQuery
             static fn (array $hit): ?string => isset($hit['uuid']) ? (string) $hit['uuid'] : null,
             $result->getHits(),
         )));
+    }
+
+    /**
+     * @param  Builder<Product>  $query
+     */
+    private function applyBrand(Builder $query, ?string $brand): void
+    {
+        if ($brand === null || $brand === '' || ! class_exists(Brand::class) || ! Schema::hasTable('brands')) {
+            return;
+        }
+
+        $match = Brand::query()
+            ->where('slug', $brand)
+            ->orWhere('uuid', $brand)
+            ->first();
+
+        if ($match === null) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        $query->where('brand_uuid', $match->uuid);
+    }
+
+    /**
+     * @param  Builder<Product>  $query
+     */
+    private function applyPrice(Builder $query, ShopListingFilters $filters): void
+    {
+        if ($filters->priceMin === null && $filters->priceMax === null) {
+            return;
+        }
+
+        $minCents = $filters->priceMin !== null ? $filters->priceMin * 100 : null;
+        $maxCents = $filters->priceMax !== null ? $filters->priceMax * 100 : null;
+
+        $query->whereHas('variants', static function (Builder $variantQuery) use ($minCents, $maxCents): void {
+            if ($minCents !== null) {
+                $variantQuery->where('price', '>=', $minCents);
+            }
+            if ($maxCents !== null) {
+                $variantQuery->where('price', '<=', $maxCents);
+            }
+        });
+    }
+
+    /**
+     * @param  Builder<Product>  $query
+     * @param  list<int>  $attributeIds
+     */
+    private function applyAttributeGroupFilter(Builder $query, array $attributeIds, ?string $value): void
+    {
+        if ($value === null || $value === '' || $attributeIds === []) {
+            return;
+        }
+
+        $query->whereHas('attributeValues', static function (Builder $valueQuery) use ($attributeIds, $value): void {
+            $valueQuery
+                ->whereIn('attribute_id', $attributeIds)
+                ->where(static function (Builder $matchQuery) use ($value): void {
+                    StorefrontAttributeFilterValue::applyStoredMatch($matchQuery, 'value', $value);
+                });
+        });
     }
 
     /**

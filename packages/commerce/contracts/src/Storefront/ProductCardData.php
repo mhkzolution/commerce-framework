@@ -17,5 +17,6 @@ final readonly class ProductCardData
         public ?string $imageUrl,
         public ?int $available,
         public bool $inStock,
+        public ?string $secondaryImageUrl = null,
     ) {}
 }

@@ -6,7 +6,9 @@ namespace Commerce\Cart\Services;
 
 use Commerce\Cart\DTO\HomepageNavigationData;
 use Commerce\Catalog\Models\Category;
+use Commerce\Contracts\Media\MediaQueryServiceInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
@@ -51,16 +53,31 @@ final class HomepageNavigationQuery
      */
     public function featured(): array
     {
-        return $this->mapCategories(
-            $this->activeCategories()
-                ->filter(static fn (Category $category): bool => $category->parent_id === null && filled($category->slug))
-                ->sortBy([
-                    ['position', 'asc'],
-                    ['name', 'asc'],
-                ])
-                ->take(8)
-                ->values(),
-        );
+        $categories = $this->activeCategories()
+            ->filter(static fn (Category $category): bool => $category->parent_id === null && filled($category->slug))
+            ->sortBy([
+                ['position', 'asc'],
+                ['name', 'asc'],
+            ])
+            ->take(8)
+            ->values();
+
+        $counts = $this->productCounts($categories);
+
+        return $categories
+            ->map(function (Category $category) use ($counts): HomepageNavigationData {
+                $slug = trim((string) $category->slug);
+
+                return new HomepageNavigationData(
+                    uuid: (string) $category->uuid,
+                    name: (string) $category->name,
+                    slug: $slug,
+                    url: $this->categoryUrl($slug),
+                    imageUrl: $this->categoryImageUrl($category),
+                    productCount: $counts[$category->id] ?? 0,
+                );
+            })
+            ->all();
     }
 
     /**
@@ -116,5 +133,47 @@ final class HomepageNavigationQuery
         }
 
         return null;
+    }
+
+    /**
+     * @param  Collection<int, Category>  $categories
+     * @return array<int, int>
+     */
+    private function productCounts(Collection $categories): array
+    {
+        $ids = $categories->pluck('id')->filter()->map(static fn (mixed $id): int => (int) $id)->all();
+        if ($ids === [] || ! Schema::hasTable('product_categories')) {
+            return [];
+        }
+
+        try {
+            return DB::table('product_categories')
+                ->whereIn('category_id', $ids)
+                ->selectRaw('category_id, COUNT(*) as aggregate')
+                ->groupBy('category_id')
+                ->pluck('aggregate', 'category_id')
+                ->map(static fn (mixed $count): int => (int) $count)
+                ->all();
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    private function categoryImageUrl(Category $category): ?string
+    {
+        $uuid = data_get($category->meta, 'image_media_uuid');
+        if (! is_string($uuid) || $uuid === '' || ! app()->bound(MediaQueryServiceInterface::class)) {
+            return null;
+        }
+
+        try {
+            $media = app(MediaQueryServiceInterface::class);
+
+            return $media->getUrl($uuid, 'medium')
+                ?? $media->getUrl($uuid, 'thumbnail')
+                ?? $media->getUrl($uuid);
+        } catch (Throwable) {
+            return null;
+        }
     }
 }

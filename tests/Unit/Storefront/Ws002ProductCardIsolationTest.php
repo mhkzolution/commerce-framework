@@ -39,6 +39,13 @@ final class Ws002ProductCardIsolationTest extends TestCase
         $contents = file_get_contents($this->repoRoot().'/resources/css/app.css');
         $this->assertNotFalse($contents);
         $this->assertStringContainsString("@import './storefront/product-card.css';", $contents);
+
+        $css = file_get_contents($this->cssPath());
+        $this->assertNotFalse($css);
+        $this->assertStringContainsString('var(--font-store)', $css);
+        $this->assertStringContainsString('.storefront-product-card__quick-actions', $css);
+        $this->assertStringContainsString('var(--radius-store)', $css);
+        $this->assertStringNotContainsString('77.5rem', $css);
     }
 
     public function test_dto_is_product_card_data_in_contracts(): void
@@ -78,6 +85,10 @@ final class Ws002ProductCardIsolationTest extends TestCase
         $this->assertNotFalse($contents);
         $this->assertStringContainsString('ProductCardData', $contents);
         $this->assertStringContainsString('storefront-product-card', $contents);
+        $this->assertStringContainsString('storefront-product-card__quick-actions', $contents);
+        $this->assertStringContainsString('storefront-product-card__media-link', $contents);
+        $this->assertStringNotContainsString('defaultVariant', $contents);
+        $this->assertStringNotContainsString('ProductImageResolver', $contents);
     }
 
     public function test_homepage_and_shop_consume_the_primitive(): void

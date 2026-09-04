@@ -15,18 +15,31 @@ Route::middleware('web')->group(function (): void {
             Route::get('/', [MediaController::class, 'index'])->name('index');
             Route::get('/picker', MediaPickerController::class)->name('picker');
             Route::get('/{media}/download', [MediaController::class, 'download'])->name('download');
+            Route::get('/{media}', [MediaController::class, 'show'])->name('show');
 
             Route::middleware('permission:media.media.upload')
                 ->post('/', [MediaController::class, 'store'])
                 ->name('store');
 
+            Route::middleware('permission:media.media.upload')
+                ->post('/import', [MediaController::class, 'import'])
+                ->name('import');
+
             Route::middleware('permission:media.media.update')
                 ->put('/{media}', [MediaController::class, 'update'])
                 ->name('update');
 
+            Route::middleware('permission:media.media.update')
+                ->post('/bulk-move', [MediaController::class, 'bulkMove'])
+                ->name('bulk-move');
+
             Route::middleware('permission:media.media.delete')
                 ->delete('/{media}', [MediaController::class, 'destroy'])
                 ->name('destroy');
+
+            Route::middleware('permission:media.media.delete')
+                ->post('/bulk-delete', [MediaController::class, 'bulkDelete'])
+                ->name('bulk-delete');
 
             Route::middleware('permission:media.folder.create')
                 ->post('/folders', [MediaFolderController::class, 'store'])

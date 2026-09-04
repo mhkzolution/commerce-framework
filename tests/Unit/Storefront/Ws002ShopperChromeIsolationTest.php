@@ -22,6 +22,9 @@ final class Ws002ShopperChromeIsolationTest extends TestCase
         'modules/Customers/resources/views/storefront/login.blade.php',
         'modules/Customers/resources/views/storefront/register.blade.php',
         'modules/Customers/resources/views/storefront/_address_form.blade.php',
+        'modules/Customers/resources/views/storefront/_auth_logo.blade.php',
+        'modules/Customers/resources/views/storefront/_auth_password_field.blade.php',
+        'modules/Customers/resources/views/storefront/_auth_support.blade.php',
     ];
 
     /**
@@ -34,8 +37,6 @@ final class Ws002ShopperChromeIsolationTest extends TestCase
         'modules/Payment/resources/views/storefront/pay.blade.php',
         'modules/Customers/resources/views/storefront/account.blade.php',
         'modules/Customers/resources/views/storefront/order.blade.php',
-        'modules/Customers/resources/views/storefront/login.blade.php',
-        'modules/Customers/resources/views/storefront/register.blade.php',
     ];
 
     /**
@@ -85,6 +86,7 @@ final class Ws002ShopperChromeIsolationTest extends TestCase
         $this->assertNotFalse($blade);
         $this->assertStringContainsString('x-storefront.empty-state', $blade);
         $this->assertStringContainsString('$cart->lines', $blade);
+        $this->assertStringContainsString('storefront-cart__layout', $blade);
         $this->assertStringNotContainsString('Your cart is empty', $blade);
         $this->assertStringNotContainsString('Clear cart', $blade);
     }

@@ -18,6 +18,7 @@ final class AddCartLineRequest extends FormRequest
         return [
             'purchasable_uuid' => ['required', 'uuid'],
             'quantity' => ['required', 'integer', 'min:1'],
+            'redirect_to' => ['nullable', 'in:checkout'],
         ];
     }
 }

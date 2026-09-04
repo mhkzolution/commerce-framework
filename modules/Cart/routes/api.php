@@ -6,6 +6,8 @@ use Commerce\Api\Responses\ApiResponse;
 use Commerce\Cart\Contracts\CartServiceInterface;
 use Commerce\Cart\Contracts\CheckoutServiceInterface;
 use Commerce\Cart\DTO\CartLineData;
+use Commerce\Cart\Http\Controllers\Api\V1\StorefrontNotificationFeedController;
+use Commerce\Cart\Http\Controllers\Api\V1\StorefrontQuickViewController;
 use Commerce\Cart\Http\Requests\AddCartLineRequest;
 use Commerce\Cart\Http\Requests\CheckoutRequest;
 use Commerce\Cart\Http\Requests\UpdateCartLineRequest;
@@ -82,4 +84,9 @@ Route::prefix('api/v1')->middleware(['api', 'web'])->group(function (): void {
             return ApiResponse::error('checkout.failed', $exception->getMessage(), status: 422);
         }
     })->name('api.v1.cart.checkout');
+});
+
+Route::prefix('api/v1/storefront')->middleware(['api', 'web'])->name('api.v1.storefront.')->group(function (): void {
+    Route::get('/products/{uuid}/quick-view', [StorefrontQuickViewController::class, 'show'])->name('products.quick-view');
+    Route::get('/customer-experience/notifications', [StorefrontNotificationFeedController::class, 'index'])->name('customer-experience.notifications');
 });

@@ -15,6 +15,8 @@ class Category extends Model
     use HasUuid;
     use SoftDeletes;
 
+    public const SEO_ENTITY_TYPE = 'category';
+
     protected $fillable = [
         'uuid',
         'tenant_id',
@@ -22,6 +24,7 @@ class Category extends Model
         'name',
         'slug',
         'description',
+        'image_media_uuid',
         'is_active',
         'position',
         'meta',

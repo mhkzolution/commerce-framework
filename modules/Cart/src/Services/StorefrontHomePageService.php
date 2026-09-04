@@ -46,6 +46,7 @@ final class StorefrontHomePageService
             'faqEntries' => module_disabled('cms') ? [] : $this->homeContent->faqEntries(),
             'homepageSections' => $this->visibleHomepageSections(),
             'arrivalCategories' => $this->navigation->arrivalTabs(),
+            'featuredCategories' => $this->navigation->featured(),
             'activeArrivalCategory' => $categorySlug,
             'arrivalProducts' => $cards,
             'latestPosts' => $latestPosts,
@@ -134,7 +135,7 @@ final class StorefrontHomePageService
         $ogImage = $heroBanners[0]['imageUrl'] ?? $branding->logoUrl;
 
         return [
-            'title' => __('storefront::storefront.home'),
+            'title' => $branding->name,
             'description' => __('storefront::storefront.home_seo_description'),
             'canonical' => $canonical,
             'url' => $canonical,
@@ -149,20 +150,76 @@ final class StorefrontHomePageService
      */
     private function structuredData(HomepageBrandingData $branding, array $pageSeo): array
     {
-        $data = [
-            '@context' => 'https://schema.org',
-            '@type' => 'WebSite',
+        $canonical = $pageSeo['canonical'];
+        $organizationId = $canonical.'#organization';
+        $websiteId = $canonical.'#website';
+        $searchUrl = Route::has('storefront.shop.index')
+            ? route('storefront.shop.index', ['search' => '{search_term_string}'])
+            : $canonical.'?search={search_term_string}';
+
+        $organization = [
+            '@type' => 'Organization',
+            '@id' => $organizationId,
             'name' => $branding->name,
-            'url' => $pageSeo['canonical'],
+            'url' => $canonical,
+        ];
+        if (is_string($branding->logoUrl) && $branding->logoUrl !== '') {
+            $organization['logo'] = $branding->logoUrl;
+        }
+
+        $website = [
+            '@type' => 'WebSite',
+            '@id' => $websiteId,
+            'name' => $branding->name,
+            'url' => $canonical,
             'description' => $pageSeo['description'],
+            'publisher' => ['@id' => $organizationId],
+            'potentialAction' => [
+                '@type' => 'SearchAction',
+                'target' => [
+                    '@type' => 'EntryPoint',
+                    'urlTemplate' => str_replace('%7Bsearch_term_string%7D', '{search_term_string}', $searchUrl),
+                ],
+                'query-input' => 'required name=search_term_string',
+            ],
+        ];
+
+        $webPage = [
+            '@type' => 'WebPage',
+            '@id' => $canonical.'#webpage',
+            'url' => $canonical,
+            'name' => $pageSeo['title'],
+            'description' => $pageSeo['description'],
+            'isPartOf' => ['@id' => $websiteId],
+            'about' => ['@id' => $organizationId],
         ];
 
         $image = $pageSeo['ogImage'] ?? $branding->logoUrl;
         if (is_string($image) && $image !== '') {
-            $data['image'] = $image;
+            $organization['image'] = $image;
+            $website['image'] = $image;
+            $webPage['primaryImageOfPage'] = $image;
         }
 
-        return $data;
+        return [
+            '@context' => 'https://schema.org',
+            '@graph' => [
+                $organization,
+                $website,
+                $webPage,
+                [
+                    '@type' => 'BreadcrumbList',
+                    'itemListElement' => [
+                        [
+                            '@type' => 'ListItem',
+                            'position' => 1,
+                            'name' => __('storefront::storefront.home'),
+                            'item' => $canonical,
+                        ],
+                    ],
+                ],
+            ],
+        ];
     }
 
     private function canonicalUrl(): string

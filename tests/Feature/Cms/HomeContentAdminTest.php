@@ -221,7 +221,7 @@ final class HomeContentAdminTest extends TestCase
             ->assertSee(__('cms::admin.homepage'));
 
         $sections = HomepageSection::query()->orderBy('sort_order')->get();
-        $this->assertCount(5, $sections);
+        $this->assertCount(6, $sections);
 
         $payload = [
             'sections' => $sections->values()->map(static function (HomepageSection $section): array {

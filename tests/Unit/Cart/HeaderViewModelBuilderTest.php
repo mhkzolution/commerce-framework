@@ -57,6 +57,15 @@ final class HeaderViewModelBuilderTest extends TestCase
         $this->assertNotContains('Cart', $labels);
     }
 
+    public function test_search_query_comes_from_request(): void
+    {
+        $this->get(route('storefront.shop.index', ['search' => 'harbor mug']));
+
+        $header = $this->builder()->build();
+
+        $this->assertSame('harbor mug', $header->actions->searchQuery);
+    }
+
     public function test_cart_count_comes_from_cart_service(): void
     {
         $header = $this->builder(itemCount: 4)->build();

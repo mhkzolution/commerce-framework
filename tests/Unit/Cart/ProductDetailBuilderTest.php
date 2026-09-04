@@ -10,6 +10,7 @@ use Commerce\Cart\Services\ProductDetailBuilder;
 use Commerce\Contracts\Currency\CurrencyConverterInterface;
 use Commerce\Contracts\Inventory\InventoryQueryServiceInterface;
 use Commerce\Contracts\Media\MediaQueryServiceInterface;
+use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Product\Models\ProductMedia;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use RuntimeException;
@@ -82,7 +83,8 @@ final class ProductDetailBuilderTest extends TestCase
             'is_primary' => true,
         ]);
 
-        $this->app->instance(MediaQueryServiceInterface::class, new class($mediaUuid) implements MediaQueryServiceInterface {
+        $this->app->instance(MediaQueryServiceInterface::class, new class($mediaUuid) implements MediaQueryServiceInterface
+        {
             public function __construct(private readonly string $uuid) {}
 
             public function findByUuid(string $uuid): ?object
@@ -106,6 +108,8 @@ final class ProductDetailBuilderTest extends TestCase
 
         $this->assertNotNull($data);
         $this->assertSame('https://cdn.example.test/pdp.jpg', $data->imageUrl);
+        $this->assertNotEmpty($data->gallery);
+        $this->assertSame('https://cdn.example.test/pdp.jpg', $data->gallery[0]['url']);
     }
 
     public function test_inventory_failure_fail_softs_to_in_stock(): void
@@ -128,7 +132,7 @@ final class ProductDetailBuilderTest extends TestCase
     public function test_zero_stock_is_out_of_stock(): void
     {
         $variant = $this->createPurchasableProduct(price: 1100, stock: 1, sku: 'PDP-OOS-1');
-        app(\Commerce\Inventory\Contracts\InventoryServiceInterface::class)->setOnHand($variant->uuid, 0);
+        app(InventoryServiceInterface::class)->setOnHand($variant->uuid, 0);
 
         $data = app(ProductDetailBuilder::class)->fromSlug($variant->product->slug);
 

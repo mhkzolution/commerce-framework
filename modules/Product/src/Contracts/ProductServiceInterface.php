@@ -18,6 +18,11 @@ interface ProductServiceInterface
 
     public function delete(string $uuid): void;
 
+    /**
+     * @param  list<string>  $uuids
+     */
+    public function deleteMany(array $uuids): int;
+
     public function publish(string $uuid): Product;
 
     public function archive(string $uuid): Product;

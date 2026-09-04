@@ -13,6 +13,8 @@ class Brand extends Model
     use HasUuid;
     use SoftDeletes;
 
+    public const SEO_ENTITY_TYPE = 'brand';
+
     protected $fillable = [
         'uuid',
         'tenant_id',

@@ -56,10 +56,12 @@ final class StorefrontHomePageTest extends TestCase
             ->assertOk()
             ->assertSee('storefront-home-hero', false)
             ->assertSee('storefront-home-promos', false)
+            ->assertSee('storefront-home-categories', false)
             ->assertSee('storefront-home-arrivals', false)
             ->assertSee('storefront-home-articles', false)
             ->assertSee('storefront-home-faq', false)
             ->assertSee(self::PROMO_TITLE)
+            ->assertSee('Mugs')
             ->assertSee(self::PRODUCT_NAME)
             ->assertSee(self::ARTICLE_TITLE)
             ->assertSee(self::FAQ_QUESTION)
@@ -122,6 +124,10 @@ final class StorefrontHomePageTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('"@type":"WebSite"', false)
+            ->assertSee('"@type":"Organization"', false)
+            ->assertSee('"@type":"WebPage"', false)
+            ->assertSee('"@type":"SearchAction"', false)
+            ->assertSee('twitter:card', false)
             ->assertSee('Harbor App');
     }
 
