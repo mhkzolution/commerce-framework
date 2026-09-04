@@ -16,12 +16,13 @@ v1.9.0
 v1.9.1
 v1.10.0
 v1.11.0
+v1.12.0
 ```
 
-v1.4.0 through v1.11.0 were squash-merged as PR #1 through PR #10. The tags on `main` are the source of history.
+v1.4.0 through v1.12.0 were squash-merged as PR #1 through PR #12. The tags on `main` are the source of history.
 
 ```text
-main = stable (active development line)   1faf8f5
+main = stable (active development line)   74daebd
 v1.4.0  Barcode Management     (9cf699f)
 v1.5.0  Homepage CMS           (6b63a8d)
 v1.6.0  Footer Management      (52a1a20)
@@ -31,6 +32,7 @@ v1.9.0  WS-002 Design System   (3b3e7cf)
 v1.9.1  Footer Token Adoption  (8341038)
 v1.10.0 Product Card System    (6369308)
 v1.11.0 Shop Listing Layout    (1faf8f5)
+v1.12.0 Header Foundation      (74daebd)
 ```
 
 Recovery is **closed**. Phase 1 = Barcode. Phase 2 = Homepage + Footer. Later work is a feature roadmap on `main`. Do not merge archive branches.
@@ -52,8 +54,9 @@ Recovery is **closed**. Phase 1 = Barcode. Phase 2 = Homepage + Footer. Later wo
 | `v1.9.1` | `8341038` | Storefront / Design | Footer CSS spacing / radius / type tokens |
 | `v1.10.0` | `6369308` | Storefront / Design | Shared product card primitive, Homepage + Shop consume |
 | `v1.11.0` | `1faf8f5` | Storefront / Design | Shop page-container, toolbar, empty-state, pagination, GET filters |
+| `v1.12.0` | `74daebd` | Storefront / Design | Header primitive, HeaderViewData, links('main'), search/cart/account, mobile `<details>` |
 
-v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 through v1.11.0 are separate so a barcode, homepage, footer, navigation, website-settings, or design-system defect rolls back only that surface.
+v1.2.0 and v1.3.0 are separate so a scheduler defect rolls back v1.2.0 and a blog layout defect rolls back v1.3.0. v1.4.0 through v1.12.0 are separate so a barcode, homepage, footer, navigation, website-settings, or design-system defect rolls back only that surface.
 
 ## v1.0.0 — Module Management
 
@@ -190,21 +193,34 @@ Implementation spec: `docs/superpowers/specs/2026-09-03-ws002-product-card-v1-im
 Feature lock: `docs/superpowers/specs/2026-09-03-ws002-shop-listing-feature.md`  
 Implementation spec: `docs/superpowers/specs/2026-09-03-ws002-shop-listing-v1-implementation.md`
 
-WS-002 through Shop listing is closed (Foundations, Footer tokens, Product Card, Shop listing). Header is next.
+WS-002 through Shop listing is closed (Foundations, Footer tokens, Product Card, Shop listing). Header landed in v1.12.0.
 
-## Next candidate
+## v1.12.0 — WS-002 Header Foundation
 
-**WS-002 Header Foundation (v1.12.0)** — new header on the current release line, not archive recovery. Inventory is locked in the feature spec (inline `max-w-5xl` header, no collapse, hardcoded Shop/Blog/Cart, no Settings brand, no `links('main')`, no search). Primitive + DTOs are locked in the implementation spec.
-
-Do not merge archive headers. Do not `git checkout 84e905c -- .`.
+- `x-storefront.layout.partials.site-header` consumes only `HeaderViewData` (no `Setting::`, `Navigation::`, `@auth`, `config('commerce.name')`, or `route()` in the Blade)
+- Inner width is `x-storefront.layout.page-container` (`--store-max-width` 80rem + `--store-gutter`); `<main>` still defaults to `max-w-5xl`
+- Navigation from `links('main')`; fail-soft Shop + Blog (never Cart in primary nav)
+- Search GET to Shop, cart count, account/login, currency switcher via `HeaderActionData`
+- Mobile collapse is `<details>` at 48rem / 768px (desktop `::details-content { content-visibility: visible }`)
+- Squash-merged as PR #11 (`d7309fd`). PR #12 (`74daebd`) is the same tree. Tag `v1.12.0` is on `74daebd`
 
 Feature lock: `docs/superpowers/specs/2026-09-03-ws002-header-foundation-feature.md`  
 Implementation spec: `docs/superpowers/specs/2026-09-03-ws002-header-v1-implementation.md`
 
+WS-002 through Header is closed (Foundations, Footer tokens, Product Card, Shop listing, Header). Blog is next.
+
+## Next candidate
+
+**WS-002 Blog Refresh (v1.13.0)** — Blog archive and single post join Homepage / Shop / Header width. Not archive recovery, not a v1.3.0 redo. Inventory is locked in the feature spec (`storefront-blog-shell` at 87.5rem, `x-admin.search-input`, Laravel default pagination, second `@vite` on blog pages).
+
+Do not merge archive blog markup. Do not `git checkout 84e905c -- .`.
+
+Feature lock: `docs/superpowers/specs/2026-09-04-ws002-blog-refresh-feature.md`  
+Implementation spec: `docs/superpowers/specs/2026-09-04-ws002-blog-v1-implementation.md`
+
 ```text
-v1.12.0  Header Foundation        ← next
-v1.13.0  Blog Refresh
-later    Scanner, POS, Inventory, Marketplace
+v1.13.0  Blog Refresh             ← next
+later    PDP Refresh, Appearance/Theming, Scanner, POS, Inventory, Marketplace
 ```
 
 ## Not included
@@ -214,9 +230,9 @@ These remain outside the tagged history on `main`:
 - Appearance / Customer Experience admin (not WS-002)
 - Warehouse Scanner, POS barcode expansion, Inventory expansion, Marketplace payouts
 - `feat/commerce-framework-v1` design system / `stash@{0}` (archive — do not merge)
-- UI-TECH-001 (`@vite/client` injected twice on blog pages)
+- CMS static `page.blade.php` (not the blog archive / article)
 
-WS-002 Header is next (specs locked; implement on `feat/ws002-header-v1`). Blog stays after v1.12. Header is designed from current `main`, not archive. Appearance / CX stay out.
+WS-002 Blog is next (specs locked; implement on `feat/ws002-blog-v1`). Blog is designed from current `main`, not archive. Appearance / CX / PDP stay out.
 
 Safety net (do not delete, do not merge):
 
