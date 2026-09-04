@@ -1,1 +1,1 @@
-//
+import './storefront/blog.js';

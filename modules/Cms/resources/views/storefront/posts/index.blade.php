@@ -1,14 +1,14 @@
 @extends('cart::layouts.storefront')
 
 @section('title', $archiveTitle ?? __('cms::blog.title'))
-@section('main_class', 'storefront-blog-shell')
+@section('main_class', 'storefront-blog-main')
 
 @push('head')
     <x-storefront.json-ld :data="$structuredData ?? null" />
 @endpush
 
 @section('content')
-    <div class="storefront-blog" data-blog>
+    <x-storefront.layout.page-container class="storefront-blog" data-blog>
         <x-storefront.blog.toolbar
             :filters="$filters"
             :categories="$categories"
@@ -31,12 +31,8 @@
             </x-storefront.blog.article-grid>
 
             @if ($posts->hasPages())
-                <div class="storefront-blog__pagination">{{ $posts->withQueryString()->links() }}</div>
+                <div class="storefront-blog__pagination">{{ $posts->withQueryString()->links('pagination::storefront') }}</div>
             @endif
         </div>
-    </div>
+    </x-storefront.layout.page-container>
 @endsection
-
-@push('scripts')
-    @vite('resources/js/storefront/blog.js')
-@endpush
