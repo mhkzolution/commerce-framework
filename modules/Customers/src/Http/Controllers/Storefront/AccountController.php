@@ -13,12 +13,19 @@ use Commerce\Customers\Contracts\CustomerServiceInterface;
 use Commerce\Customers\DTO\CreateAddressData;
 use Commerce\Customers\DTO\RegisterCustomerData;
 use Commerce\Customers\DTO\UpdateCustomerData;
+use Commerce\Customers\Http\Requests\ChangePasswordRequest;
+use Commerce\Customers\Http\Requests\DestroyAccountWishlistItemRequest;
 use Commerce\Customers\Http\Requests\StoreAddressRequest;
 use Commerce\Customers\Http\Requests\StorefrontLoginRequest;
 use Commerce\Customers\Http\Requests\StorefrontRegisterRequest;
 use Commerce\Customers\Http\Requests\UpdateProfileRequest;
 use Commerce\Customers\Models\Customer;
 use Commerce\Customers\Services\CustomerAddressQueryService;
+use Commerce\Customers\Support\StorefrontAuthRedirect;
+use Commerce\Wishlist\DTO\WishlistItemReferenceData;
+use Commerce\Wishlist\Services\StorefrontWishlistPresenter;
+use Commerce\Wishlist\Services\WishlistService;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -36,19 +43,165 @@ final class AccountController extends Controller
 
     public function show(): View
     {
-        $customer = $this->authService->current();
-        abort_if($customer === null, 403);
+        $customer = $this->requireCustomer();
+        $orders = $this->ordersForCustomer($customer, 5);
+        $addresses = $this->addressQueryService->forCustomer($customer->uuid);
+        $wishlistItems = $this->wishlistItems($customer);
 
-        $orders = app()->bound(OrderQueryServiceInterface::class)
-            ? $this->orderQueryService->paginateForCustomer($customer->uuid, 10)
-            : null;
-
-        return view('customers::storefront.account', [
+        return view('customers::storefront.account.dashboard', [
             'customer' => $customer,
-            'addresses' => $this->addressQueryService->forCustomer($customer->uuid),
             'orders' => $orders,
             'orderStatuses' => config('orders.statuses', []),
+            'addressCount' => $addresses->count(),
+            'wishlistCount' => count($wishlistItems),
+            'orderCount' => $orders?->total() ?? 0,
         ]);
+    }
+
+    public function orders(): View
+    {
+        $customer = $this->requireCustomer();
+
+        return view('customers::storefront.account.orders', [
+            'customer' => $customer,
+            'orders' => $this->ordersForCustomer($customer, 15),
+            'orderStatuses' => config('orders.statuses', []),
+        ]);
+    }
+
+    public function showOrder(string $order): View
+    {
+        $customer = $this->requireCustomer();
+
+        $model = $this->orderQueryService->findByUuid($order);
+        abort_if($model === null || $model->customer_uuid !== $customer->uuid, 404);
+
+        return view('customers::storefront.account.order', [
+            'customer' => $customer,
+            'order' => $model,
+            'orderStatuses' => config('orders.statuses', []),
+        ]);
+    }
+
+    public function addresses(): View
+    {
+        $customer = $this->requireCustomer();
+
+        return view('customers::storefront.account.addresses', [
+            'customer' => $customer,
+            'addresses' => $this->addressQueryService->forCustomer($customer->uuid),
+        ]);
+    }
+
+    public function storeAddress(StoreAddressRequest $request): RedirectResponse
+    {
+        $customer = $this->requireCustomer();
+
+        $this->addressService->create(new CreateAddressData(
+            customerUuid: $customer->uuid,
+            line1: $request->validated('line1'),
+            city: $request->validated('city'),
+            postalCode: $request->validated('postal_code'),
+            countryCode: $request->validated('country_code'),
+            type: $request->validated('type'),
+            label: $request->validated('label'),
+            line2: $request->validated('line2'),
+            state: $request->validated('state'),
+            isDefault: (bool) $request->boolean('is_default'),
+        ));
+
+        return redirect()
+            ->route('storefront.account.addresses')
+            ->with('status', __('storefront::storefront.address_added'));
+    }
+
+    public function destroyAddress(string $address): RedirectResponse
+    {
+        $customer = $this->requireCustomer();
+
+        $model = $this->addressQueryService->findByUuid($address);
+        abort_if($model === null || $model->customer_id !== $customer->id, 404);
+
+        $this->addressService->delete($address);
+
+        return redirect()
+            ->route('storefront.account.addresses')
+            ->with('status', __('storefront::storefront.address_removed'));
+    }
+
+    public function wishlist(): View
+    {
+        $customer = $this->requireCustomer();
+
+        return view('customers::storefront.account.wishlist', [
+            'customer' => $customer,
+            'items' => $this->wishlistItems($customer),
+        ]);
+    }
+
+    public function destroyWishlistItem(DestroyAccountWishlistItemRequest $request): RedirectResponse
+    {
+        $customer = $this->requireCustomer();
+        abort_unless(app()->bound(WishlistService::class), 404);
+
+        $reference = WishlistItemReferenceData::fromArray($request->validated());
+        abort_if($reference === null, 404);
+
+        app(WishlistService::class)->removeItem($customer, $reference);
+
+        return redirect()
+            ->route('storefront.account.wishlist')
+            ->with('status', __('storefront::storefront.wishlist_item_removed'));
+    }
+
+    public function profile(): View
+    {
+        return view('customers::storefront.account.profile', [
+            'customer' => $this->requireCustomer(),
+        ]);
+    }
+
+    public function updateProfile(UpdateProfileRequest $request): RedirectResponse
+    {
+        $customer = $this->requireCustomer();
+
+        $this->customerService->update($customer->uuid, new UpdateCustomerData(
+            email: $request->validated('email'),
+            name: $request->validated('name'),
+            phone: $request->validated('phone'),
+            status: $customer->status,
+        ));
+
+        $updated = Customer::query()->where('uuid', $customer->uuid)->first();
+        if ($updated !== null) {
+            Auth::guard('customer')->setUser($updated);
+        }
+
+        return redirect()
+            ->route('storefront.account.profile')
+            ->with('status', __('storefront::storefront.profile_updated'));
+    }
+
+    public function security(): View
+    {
+        return view('customers::storefront.account.security', [
+            'customer' => $this->requireCustomer(),
+        ]);
+    }
+
+    public function updatePassword(ChangePasswordRequest $request): RedirectResponse
+    {
+        $customer = $this->requireCustomer();
+        $this->authService->changePassword($customer, $request->validated('password'));
+
+        $updated = $customer->fresh();
+        if ($updated instanceof Customer) {
+            Auth::guard('customer')->setUser($updated);
+        }
+
+        return redirect()
+            ->route('storefront.account.security')
+            ->with('status', __('storefront::storefront.password_updated'));
     }
 
     public function showLogin(): View
@@ -66,7 +219,7 @@ final class AccountController extends Controller
             return back()->withErrors(['email' => __('customers::auth.invalid_credentials')])->onlyInput('email');
         }
 
-        return redirect()->intended(route('storefront.account'));
+        return StorefrontAuthRedirect::toIntended();
     }
 
     public function showRegister(): View
@@ -83,7 +236,7 @@ final class AccountController extends Controller
             phone: $request->validated('phone'),
         ));
 
-        return redirect()->intended(route('storefront.account'));
+        return StorefrontAuthRedirect::toIntended();
     }
 
     public function logout(): RedirectResponse
@@ -93,72 +246,37 @@ final class AccountController extends Controller
         return redirect()->route('storefront.shop.index');
     }
 
-    public function storeAddress(StoreAddressRequest $request): RedirectResponse
+    private function requireCustomer(): Customer
     {
         $customer = $this->authService->current();
         abort_if($customer === null, 403);
 
-        $this->addressService->create(new CreateAddressData(
-            customerUuid: $customer->uuid,
-            line1: $request->validated('line1'),
-            city: $request->validated('city'),
-            postalCode: $request->validated('postal_code'),
-            countryCode: $request->validated('country_code'),
-            type: $request->validated('type'),
-            label: $request->validated('label'),
-            line2: $request->validated('line2'),
-            state: $request->validated('state'),
-            isDefault: (bool) $request->boolean('is_default'),
-        ));
-
-        return back()->with('status', 'Address added.');
+        return $customer;
     }
 
-    public function destroyAddress(string $address): RedirectResponse
+    /**
+     * @return LengthAwarePaginator<int, object>|null
+     */
+    private function ordersForCustomer(Customer $customer, int $perPage): ?LengthAwarePaginator
     {
-        $customer = $this->authService->current();
-        abort_if($customer === null, 403);
-
-        $model = $this->addressQueryService->findByUuid($address);
-        abort_if($model === null || $model->customer_id !== $customer->id, 404);
-
-        $this->addressService->delete($address);
-
-        return back()->with('status', 'Address removed.');
-    }
-
-    public function showOrder(string $order): View
-    {
-        $customer = $this->authService->current();
-        abort_if($customer === null, 403);
-
-        $model = $this->orderQueryService->findByUuid($order);
-        abort_if($model === null || $model->customer_uuid !== $customer->uuid, 404);
-
-        return view('customers::storefront.order', [
-            'order' => $model,
-            'orderStatuses' => config('orders.statuses', []),
-        ]);
-    }
-
-    public function updateProfile(UpdateProfileRequest $request): RedirectResponse
-    {
-        $customer = $this->authService->current();
-        abort_if($customer === null, 403);
-
-        $this->customerService->update($customer->uuid, new UpdateCustomerData(
-            email: $request->validated('email'),
-            name: $request->validated('name'),
-            phone: $request->validated('phone'),
-            status: $customer->status,
-        ));
-
-        $updated = Customer::query()->where('uuid', $customer->uuid)->first();
-        if ($updated !== null) {
-            Auth::guard('customer')->setUser($updated);
+        if (! app()->bound(OrderQueryServiceInterface::class)) {
+            return null;
         }
 
-        return back()->with('status', 'Profile updated.');
+        return $this->orderQueryService->paginateForCustomer($customer->uuid, $perPage);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function wishlistItems(Customer $customer): array
+    {
+        if (! app()->bound(WishlistService::class) || ! app()->bound(StorefrontWishlistPresenter::class)) {
+            return [];
+        }
+
+        return app(StorefrontWishlistPresenter::class)
+            ->presentItems(app(WishlistService::class)->itemsForCustomer($customer));
     }
 
     /**

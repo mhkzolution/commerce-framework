@@ -133,15 +133,22 @@ final class Ws002ShopperChromeContractTest extends TestCase
             'password_confirmation' => 'password123',
         ])->assertRedirect(route('storefront.account'));
 
-        $html = $this->get(route('storefront.account'))
+        $dashboard = $this->get(route('storefront.account'))
             ->assertOk()
             ->assertSee('Chrome User')
             ->getContent();
 
-        $this->assertStringContainsString('storefront-shopper-main', $html);
+        $this->assertStringContainsString('storefront-shopper-main', $dashboard);
+        $this->assertStringContainsString('storefront-account__layout', $dashboard);
+        $this->assertStringNotContainsString('cf-btn', $dashboard);
+        $this->assertStringNotContainsString('cf-badge', $dashboard);
+
+        $html = $this->get(route('storefront.account.addresses'))
+            ->assertOk()
+            ->getContent();
+
         $this->assertStringContainsString('name="line1"', $html);
         $this->assertStringNotContainsString('cf-btn', $html);
-        $this->assertStringNotContainsString('cf-badge', $html);
         $this->assertStringNotContainsString('admin._address_form', $html);
     }
 

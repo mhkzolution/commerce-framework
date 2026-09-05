@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Storefront;
 
+use Commerce\Customers\Models\Customer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesPurchasableProduct;
 use Tests\TestCase;
@@ -92,5 +93,80 @@ final class StorefrontAuthPagesTest extends TestCase
         $this->get(route('storefront.account'))
             ->assertOk()
             ->assertSee('Auth Shopper');
+    }
+
+    public function test_registration_authenticates_customer_and_never_redirects_to_admin(): void
+    {
+        $this->withSession(['url.intended' => url('/admin/login')])
+            ->post(route('storefront.account.register.store'), [
+                'name' => 'Store Shopper',
+                'email' => 'store.shopper@example.com',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+            ])
+            ->assertRedirect(route('storefront.account'));
+
+        $customer = Customer::query()->where('email', 'store.shopper@example.com')->first();
+        $this->assertNotNull($customer);
+        $this->assertAuthenticatedAs($customer, 'customer');
+        $this->assertGuest('web');
+
+        $this->get('/admin')->assertRedirect('/admin/login');
+        $this->get(route('storefront.account'))->assertOk();
+    }
+
+    public function test_registration_preserves_storefront_intended_url(): void
+    {
+        $this->withSession(['url.intended' => route('storefront.checkout')])
+            ->post(route('storefront.account.register.store'), [
+                'name' => 'Checkout Shopper',
+                'email' => 'checkout.shopper@example.com',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+            ])
+            ->assertRedirect(route('storefront.checkout'));
+
+        $this->assertAuthenticatedAs(
+            Customer::query()->where('email', 'checkout.shopper@example.com')->first(),
+            'customer',
+        );
+    }
+
+    public function test_login_ignores_admin_intended_url(): void
+    {
+        $this->post(route('storefront.account.register.store'), [
+            'name' => 'Return Shopper',
+            'email' => 'return.shopper@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+        $this->post(route('storefront.account.logout'));
+
+        $this->withSession(['url.intended' => url('/admin')])
+            ->post(route('storefront.account.login.store'), [
+                'email' => 'return.shopper@example.com',
+                'password' => 'password123',
+            ])
+            ->assertRedirect(route('storefront.account'));
+    }
+
+    public function test_authenticated_customer_visiting_login_stays_on_storefront(): void
+    {
+        $this->post(route('storefront.account.register.store'), [
+            'name' => 'Signed In Shopper',
+            'email' => 'signed.in@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $this->withSession(['url.intended' => url('/admin/login')])
+            ->get(route('storefront.account.login'))
+            ->assertRedirect(route('storefront.account'));
+    }
+
+    public function test_guest_account_routes_redirect_to_storefront_login(): void
+    {
+        $this->get(route('storefront.account'))
+            ->assertRedirect(route('storefront.account.login'));
     }
 }

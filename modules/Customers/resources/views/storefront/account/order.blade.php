@@ -8,15 +8,15 @@
 @endpush
 
 @section('content')
-    <x-storefront.layout.page-container class="storefront-shopper storefront-order">
-        <div>
-            <a href="{{ route('storefront.account') }}" class="storefront-link">{{ __('storefront::storefront.back_to_account') }}</a>
-            <h1 class="storefront-shopper__title">{{ __('storefront::storefront.order') }} {{ $order->order_number }}</h1>
-            <p class="storefront-shopper__lede">
-                {{ __('storefront::storefront.placed') }} {{ $order->created_at?->format('F j, Y') }}
-                · {{ $orderStatuses[$order->status] ?? $order->status }}
-            </p>
-        </div>
+    <x-storefront.account.shell
+        :customer="$customer"
+        :title="__('storefront::storefront.order').' '.$order->order_number"
+        :description="__('storefront::storefront.placed').' '.$order->created_at?->format('F j, Y').' · '.($orderStatuses[$order->status] ?? $order->status)"
+        section="orders"
+    >
+        <p>
+            <a href="{{ route('storefront.account.orders') }}" class="storefront-link">{{ __('storefront::storefront.back_to_orders') }}</a>
+        </p>
 
         <div class="storefront-table-wrap">
             <table class="storefront-table">
@@ -44,5 +44,5 @@
                 </tfoot>
             </table>
         </div>
-    </x-storefront.layout.page-container>
+    </x-storefront.account.shell>
 @endsection

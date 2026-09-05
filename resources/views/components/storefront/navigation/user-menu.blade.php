@@ -23,6 +23,16 @@
         <a href="{{ $header?->actions->accountUrl ?? route('storefront.account') }}" class="storefront-user-menu__link" role="menuitem">
             {{ __('storefront::storefront.account_dashboard') }}
         </a>
+        @if (Route::has('storefront.account.orders'))
+            <a href="{{ route('storefront.account.orders') }}" class="storefront-user-menu__link" role="menuitem">
+                {{ __('storefront::storefront.orders') }}
+            </a>
+        @endif
+        @if (Route::has('storefront.account.wishlist'))
+            <a href="{{ route('storefront.account.wishlist') }}" class="storefront-user-menu__link" role="menuitem">
+                {{ __('storefront::storefront.wishlist') }}
+            </a>
+        @endif
 
         <div class="storefront-user-menu__divider"></div>
 

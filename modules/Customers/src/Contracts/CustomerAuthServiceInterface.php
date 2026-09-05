@@ -16,4 +16,6 @@ interface CustomerAuthServiceInterface
     public function logout(): void;
 
     public function current(): ?Customer;
+
+    public function changePassword(Customer $customer, string $password): void;
 }

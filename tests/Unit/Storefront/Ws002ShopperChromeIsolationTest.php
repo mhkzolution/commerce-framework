@@ -17,14 +17,21 @@ final class Ws002ShopperChromeIsolationTest extends TestCase
         'modules/Cart/resources/views/storefront/_checkout_address_fields.blade.php',
         'modules/Cart/resources/views/storefront/confirmation.blade.php',
         'modules/Payment/resources/views/storefront/pay.blade.php',
-        'modules/Customers/resources/views/storefront/account.blade.php',
-        'modules/Customers/resources/views/storefront/order.blade.php',
+        'modules/Customers/resources/views/storefront/account/dashboard.blade.php',
+        'modules/Customers/resources/views/storefront/account/orders.blade.php',
+        'modules/Customers/resources/views/storefront/account/order.blade.php',
+        'modules/Customers/resources/views/storefront/account/addresses.blade.php',
+        'modules/Customers/resources/views/storefront/account/wishlist.blade.php',
+        'modules/Customers/resources/views/storefront/account/profile.blade.php',
+        'modules/Customers/resources/views/storefront/account/security.blade.php',
+        'modules/Customers/resources/views/storefront/account/_orders_table.blade.php',
         'modules/Customers/resources/views/storefront/login.blade.php',
         'modules/Customers/resources/views/storefront/register.blade.php',
         'modules/Customers/resources/views/storefront/_address_form.blade.php',
         'modules/Customers/resources/views/storefront/_auth_logo.blade.php',
         'modules/Customers/resources/views/storefront/_auth_password_field.blade.php',
         'modules/Customers/resources/views/storefront/_auth_support.blade.php',
+        'resources/views/components/storefront/account/shell.blade.php',
     ];
 
     /**
@@ -35,8 +42,13 @@ final class Ws002ShopperChromeIsolationTest extends TestCase
         'modules/Cart/resources/views/storefront/checkout.blade.php',
         'modules/Cart/resources/views/storefront/confirmation.blade.php',
         'modules/Payment/resources/views/storefront/pay.blade.php',
-        'modules/Customers/resources/views/storefront/account.blade.php',
-        'modules/Customers/resources/views/storefront/order.blade.php',
+        'modules/Customers/resources/views/storefront/account/dashboard.blade.php',
+        'modules/Customers/resources/views/storefront/account/orders.blade.php',
+        'modules/Customers/resources/views/storefront/account/order.blade.php',
+        'modules/Customers/resources/views/storefront/account/addresses.blade.php',
+        'modules/Customers/resources/views/storefront/account/wishlist.blade.php',
+        'modules/Customers/resources/views/storefront/account/profile.blade.php',
+        'modules/Customers/resources/views/storefront/account/security.blade.php',
     ];
 
     /**
@@ -74,7 +86,11 @@ final class Ws002ShopperChromeIsolationTest extends TestCase
             $blade = file_get_contents($this->repoRoot().'/'.$relative);
             $this->assertNotFalse($blade, $relative);
             $this->assertStringContainsString('storefront-shopper-main', $blade, $relative);
-            $this->assertStringContainsString('<x-storefront.layout.page-container', $blade, $relative);
+            $this->assertTrue(
+                str_contains($blade, '<x-storefront.layout.page-container')
+                    || str_contains($blade, '<x-storefront.account.shell'),
+                $relative.' must use the storefront page container or account shell',
+            );
             $this->assertStringContainsString("@vite('resources/css/storefront/shopper.css')", $blade, $relative);
             $this->assertStringContainsString('storefront::', $blade, $relative);
         }

@@ -1,5 +1,6 @@
 <?php
 
+use Commerce\Customers\Support\StorefrontAuthRedirect;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -14,13 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(static function (Request $request): string {
-            if ($request->is('account') || $request->is('account/*')) {
-                return route('storefront.account.login');
-            }
-
-            return '/admin/login';
+            return StorefrontAuthRedirect::loginForRequest($request);
         });
-        $middleware->redirectUsersTo('/admin');
+        $middleware->redirectUsersTo(static function (Request $request): string {
+            return StorefrontAuthRedirect::homeForRequest($request);
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

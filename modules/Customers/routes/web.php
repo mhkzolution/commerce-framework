@@ -32,7 +32,7 @@ Route::middleware('web')->group(function (): void {
         });
 
     Route::prefix('account')->name('storefront.')->group(function (): void {
-        Route::middleware('guest:customer')->group(function (): void {
+        Route::middleware(['storefront.intended', 'guest:customer'])->group(function (): void {
             Route::get('/login', [AccountController::class, 'showLogin'])->name('account.login');
             Route::post('/login', [AccountController::class, 'login'])->name('account.login.store');
             Route::get('/register', [AccountController::class, 'showRegister'])->name('account.register');
@@ -41,11 +41,18 @@ Route::middleware('web')->group(function (): void {
 
         Route::middleware('auth:customer')->group(function (): void {
             Route::get('/', [AccountController::class, 'show'])->name('account');
-            Route::put('/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
+            Route::get('/orders', [AccountController::class, 'orders'])->name('account.orders');
             Route::get('/orders/{order}', [AccountController::class, 'showOrder'])->name('account.orders.show');
-            Route::post('/logout', [AccountController::class, 'logout'])->name('account.logout');
+            Route::get('/addresses', [AccountController::class, 'addresses'])->name('account.addresses');
             Route::post('/addresses', [AccountController::class, 'storeAddress'])->name('account.addresses.store');
             Route::delete('/addresses/{address}', [AccountController::class, 'destroyAddress'])->name('account.addresses.destroy');
+            Route::get('/wishlist', [AccountController::class, 'wishlist'])->name('account.wishlist');
+            Route::delete('/wishlist/items', [AccountController::class, 'destroyWishlistItem'])->name('account.wishlist.items.destroy');
+            Route::get('/profile', [AccountController::class, 'profile'])->name('account.profile');
+            Route::put('/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
+            Route::get('/security', [AccountController::class, 'security'])->name('account.security');
+            Route::put('/security/password', [AccountController::class, 'updatePassword'])->name('account.security.password');
+            Route::post('/logout', [AccountController::class, 'logout'])->name('account.logout');
         });
     });
 });

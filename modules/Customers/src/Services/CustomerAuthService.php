@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Commerce\Customers\Services;
 
+use Commerce\Contracts\Event\EventBusInterface;
 use Commerce\Core\Base\BaseService;
 use Commerce\Core\Exceptions\DomainException;
 use Commerce\Customers\Contracts\CustomerAuthServiceInterface;
 use Commerce\Customers\DTO\RegisterCustomerData;
 use Commerce\Customers\Events\CustomerCreated;
 use Commerce\Customers\Models\Customer;
-use Commerce\Contracts\Event\EventBusInterface;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -62,5 +62,10 @@ final class CustomerAuthService extends BaseService implements CustomerAuthServi
         $user = Auth::guard('customer')->user();
 
         return $user instanceof Customer ? $user : null;
+    }
+
+    public function changePassword(Customer $customer, string $password): void
+    {
+        $customer->update(['password' => $password]);
     }
 }
