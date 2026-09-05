@@ -13,8 +13,8 @@ use Illuminate\Notifications\Notifiable;
 
 class Customer extends Authenticatable
 {
-    use HasUuid;
     use BelongsToTenant;
+    use HasUuid;
     use Notifiable;
     use SoftDeletes;
 
@@ -56,8 +56,17 @@ class Customer extends Authenticatable
     {
         return $this->addresses()
             ->whereIn('type', ['shipping', 'both'])
-            ->where('is_default', true)
-            ->first()
-            ?? $this->addresses()->whereIn('type', ['shipping', 'both'])->first();
+            ->orderByDesc('is_default_shipping')
+            ->orderByDesc('is_default')
+            ->first();
+    }
+
+    public function defaultBillingAddress(): ?CustomerAddress
+    {
+        return $this->addresses()
+            ->whereIn('type', ['billing', 'both'])
+            ->orderByDesc('is_default_billing')
+            ->orderByDesc('is_default')
+            ->first();
     }
 }

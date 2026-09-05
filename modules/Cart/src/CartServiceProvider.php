@@ -24,6 +24,7 @@ use Commerce\Cart\Services\StorefrontNavigationConfig;
 use Commerce\Cart\Services\StorefrontNotificationFeedService;
 use Commerce\Cart\Services\StorefrontPrimaryNavigation;
 use Commerce\Cart\Services\StorefrontQuickViewService;
+use Commerce\Cart\Services\StorefrontReorderService;
 use Commerce\Cart\Support\SessionCartStorage;
 use Commerce\Contracts\Storefront\HeaderViewData;
 use Commerce\Core\Base\BaseModuleServiceProvider;
@@ -43,6 +44,7 @@ final class CartServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(SessionCartStorage::class);
         $this->app->singleton(CartService::class);
         $this->app->singleton(CheckoutService::class);
+        $this->app->singleton(StorefrontReorderService::class);
 
         $this->app->bind(CartStorageInterface::class, SessionCartStorage::class);
         $this->app->bind(CartServiceInterface::class, CartService::class);

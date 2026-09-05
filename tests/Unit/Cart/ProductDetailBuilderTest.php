@@ -97,6 +97,11 @@ final class ProductDetailBuilderTest extends TestCase
                 return $uuid === $this->uuid ? 'https://cdn.example.test/pdp.jpg' : null;
             }
 
+            public function getSrcset(string $uuid): ?string
+            {
+                return $uuid === $this->uuid ? 'https://cdn.example.test/pdp.jpg 800w' : null;
+            }
+
             public function findByUuids(array $uuids): array
             {
                 return [];

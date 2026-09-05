@@ -33,6 +33,18 @@ Route::middleware('web')->group(function (): void {
                 ->post('/bulk-move', [MediaController::class, 'bulkMove'])
                 ->name('bulk-move');
 
+            Route::middleware('permission:media.media.update')
+                ->post('/bulk-tag', [MediaController::class, 'bulkTag'])
+                ->name('bulk-tag');
+
+            Route::middleware('permission:media.media.update')
+                ->post('/bulk-regenerate', [MediaController::class, 'bulkRegenerate'])
+                ->name('bulk-regenerate');
+
+            Route::middleware('permission:media.media.upload')
+                ->post('/{media}/replace', [MediaController::class, 'replace'])
+                ->name('replace');
+
             Route::middleware('permission:media.media.delete')
                 ->delete('/{media}', [MediaController::class, 'destroy'])
                 ->name('destroy');

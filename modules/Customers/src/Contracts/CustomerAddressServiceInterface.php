@@ -11,7 +11,13 @@ interface CustomerAddressServiceInterface
 {
     public function create(CreateAddressData $data): CustomerAddress;
 
+    public function update(string $uuid, CreateAddressData $data): CustomerAddress;
+
     public function delete(string $uuid): void;
 
     public function setDefault(string $uuid): CustomerAddress;
+
+    public function setDefaultShipping(string $uuid): CustomerAddress;
+
+    public function setDefaultBilling(string $uuid): CustomerAddress;
 }

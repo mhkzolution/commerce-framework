@@ -14,6 +14,8 @@
             ['label' => __('storefront::storefront.cart')],
         ]" :aria-label="__('storefront::storefront.breadcrumb')" />
 
+        <x-storefront.checkout.progress current="cart" />
+
         <div class="storefront-shopper__header">
             <h1 class="storefront-shopper__title">{{ __('storefront::storefront.cart') }}</h1>
             @if ($cart->lines !== [])
@@ -39,59 +41,57 @@
             </x-storefront.empty-state>
         @else
             <div class="storefront-cart__layout">
-                <div class="storefront-table-wrap">
-                    <table class="storefront-table">
-                        <thead>
-                            <tr>
-                                <th>{{ __('storefront::storefront.product') }}</th>
-                                <th>{{ __('storefront::storefront.price') }}</th>
-                                <th>{{ __('storefront::storefront.qty') }}</th>
-                                <th>{{ __('storefront::storefront.total') }}</th>
-                                <th class="storefront-table__num">{{ __('storefront::storefront.actions') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($cart->lines as $line)
-                                <tr>
-                                    <td>
-                                        <div class="storefront-cart-line">
-                                            @if ($line->imageUrl)
-                                                <img src="{{ $line->imageUrl }}" alt="" class="storefront-cart-line__image">
-                                            @endif
-                                            <div>
-                                                <div>{{ $line->name }}</div>
-                                                <div class="storefront-muted">{{ $line->sku ?? $line->purchasableUuid }}</div>
-                                                @if ($line->available < $line->quantity)
-                                                    <div class="storefront-danger">{{ __('storefront::storefront.only_n_available', ['count' => $line->available]) }}</div>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>{{ number_format($line->unitPrice / 100, 2) }}</td>
-                                    <td>
-                                        <form method="POST" action="{{ route('storefront.cart.items.update', $line->purchasableUuid) }}" class="storefront-qty-form">
-                                            @csrf
-                                            @method('PATCH')
-                                            <input type="number" name="quantity" value="{{ $line->quantity }}" min="0" class="storefront-input storefront-input--qty">
-                                            <button type="submit" class="storefront-btn storefront-btn--ghost">{{ __('storefront::storefront.update') }}</button>
-                                        </form>
-                                    </td>
-                                    <td>{{ number_format($line->lineTotal / 100, 2) }}</td>
-                                    <td class="storefront-table__num">
-                                        <form method="POST" action="{{ route('storefront.cart.items.destroy', $line->purchasableUuid) }}">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="storefront-btn storefront-btn--danger">{{ __('storefront::storefront.remove') }}</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+                <ul class="storefront-cart-lines">
+                    @foreach ($cart->lines as $line)
+                        <li class="storefront-cart-item">
+                            @if ($line->imageUrl)
+                                <x-storefront.media.img
+                                    :src="$line->imageUrl"
+                                    :srcset="$line->imageSrcset"
+                                    :sizes="config('media.sizes.cart')"
+                                    alt=""
+                                    class="storefront-cart-item__image"
+                                />
+                            @else
+                                <div class="storefront-cart-item__placeholder">{{ __('storefront::storefront.no_image') }}</div>
+                            @endif
+                            <div class="storefront-cart-item__details">
+                                @if ($line->url)
+                                    <a href="{{ $line->url }}" class="storefront-cart-item__name">{{ $line->productName ?? $line->name }}</a>
+                                @else
+                                    <div class="storefront-cart-item__name">{{ $line->productName ?? $line->name }}</div>
+                                @endif
+                                @if ($line->variantLabel)
+                                    <p class="storefront-muted">{{ $line->variantLabel }}</p>
+                                @endif
+                                <p class="storefront-muted">{{ $line->sku }}</p>
+                                @if ($line->available < $line->quantity)
+                                    <p class="storefront-danger">{{ __('storefront::storefront.only_n_available', ['count' => $line->available]) }}</p>
+                                @endif
+                                <p class="storefront-cart-item__price">{{ number_format($line->unitPrice / 100, 2) }} {{ $cart->currency }}</p>
+                            </div>
+                            <div class="storefront-cart-item__controls">
+                                <form method="POST" action="{{ route('storefront.cart.items.update', $line->purchasableUuid) }}" class="storefront-qty-stepper" data-qty-stepper data-cart-qty>
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="button" class="storefront-qty-stepper__btn" data-qty-dec aria-label="{{ __('storefront::storefront.decrease_quantity') }}">−</button>
+                                    <input type="number" name="quantity" value="{{ $line->quantity }}" min="0" max="{{ $line->available }}" class="storefront-qty-stepper__input">
+                                    <button type="button" class="storefront-qty-stepper__btn" data-qty-inc aria-label="{{ __('storefront::storefront.increase_quantity') }}">+</button>
+                                </form>
+                                <p class="storefront-cart-item__total">{{ number_format($line->lineTotal / 100, 2) }}</p>
+                                <form method="POST" action="{{ route('storefront.cart.items.destroy', $line->purchasableUuid) }}" data-cart-remove>
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="storefront-btn storefront-btn--danger">{{ __('storefront::storefront.remove') }}</button>
+                                </form>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
 
                 <aside class="storefront-cart__aside">
-                    <div class="storefront-panel storefront-cart__summary">
+                    <div class="storefront-panel storefront-cart__summary storefront-cart__summary--sticky">
+                        <h2 class="storefront-panel__title">{{ __('storefront::storefront.order_summary') }}</h2>
                         <div>
                             <div class="storefront-muted">{{ trans_choice('storefront::storefront.subtotal_items', $cart->itemCount, ['count' => $cart->itemCount]) }}</div>
                             <p class="storefront-cart__total">{{ number_format($cart->subtotal / 100, 2) }} {{ $cart->currency }}</p>
@@ -101,7 +101,7 @@
                                 </div>
                             @endif
                         </div>
-                        <a href="{{ route('storefront.checkout') }}" class="storefront-btn">{{ __('storefront::storefront.checkout') }}</a>
+                        <a href="{{ route('storefront.checkout') }}" class="storefront-btn storefront-btn--block">{{ __('storefront::storefront.checkout') }}</a>
                     </div>
 
                     <section class="storefront-panel">

@@ -35,6 +35,9 @@
                         class="storefront-gallery__image"
                         data-gallery-main
                         data-gallery-type="image"
+                        @if (! empty($initial['srcset'])) srcset="{{ $initial['srcset'] }}" @endif
+                        @if (! empty($initial['sizes'])) sizes="{{ $initial['sizes'] }}" @endif
+                        decoding="async"
                     >
                 </button>
             @endif
@@ -53,6 +56,8 @@
                     data-gallery-index="{{ $index }}"
                     data-gallery-type="{{ $item['type'] ?? 'image' }}"
                     data-gallery-url="{{ $item['url'] }}"
+                    data-gallery-srcset="{{ $item['srcset'] ?? '' }}"
+                    data-gallery-sizes="{{ $item['sizes'] ?? '' }}"
                     data-gallery-alt="{{ $item['alt'] ?? '' }}"
                     data-gallery-poster="{{ $item['thumbnail'] ?? '' }}"
                     aria-label="{{ $item['alt'] ?? '' }}"
@@ -60,7 +65,7 @@
                     @if (($item['type'] ?? 'image') === 'video')
                         <span class="storefront-gallery__thumb-video-badge" aria-hidden="true">▶</span>
                     @endif
-                    <img src="{{ $item['thumbnail'] ?? $item['url'] }}" alt="" class="storefront-gallery__thumb-image" loading="lazy">
+                    <img src="{{ $item['thumbnail'] ?? $item['url'] }}" alt="" class="storefront-gallery__thumb-image" loading="lazy" decoding="async" @if (! empty($item['srcset'])) srcset="{{ $item['srcset'] }}" sizes="80px" @endif>
                 </button>
             @endforeach
         </div>

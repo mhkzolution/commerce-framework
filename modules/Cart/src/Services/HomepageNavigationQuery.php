@@ -75,6 +75,7 @@ final class HomepageNavigationQuery
                     url: $this->categoryUrl($slug),
                     imageUrl: $this->categoryImageUrl($category),
                     productCount: $counts[$category->id] ?? 0,
+                    imageSrcset: $this->categoryImageSrcset($category),
                 );
             })
             ->all();
@@ -159,19 +160,41 @@ final class HomepageNavigationQuery
         }
     }
 
+    private function categoryImageUuid(Category $category): ?string
+    {
+        $uuid = $category->image_media_uuid ?? data_get($category->meta, 'image_media_uuid');
+
+        return is_string($uuid) && $uuid !== '' ? $uuid : null;
+    }
+
     private function categoryImageUrl(Category $category): ?string
     {
-        $uuid = data_get($category->meta, 'image_media_uuid');
-        if (! is_string($uuid) || $uuid === '' || ! app()->bound(MediaQueryServiceInterface::class)) {
+        $uuid = $this->categoryImageUuid($category);
+        if ($uuid === null || ! app()->bound(MediaQueryServiceInterface::class)) {
             return null;
         }
 
         try {
             $media = app(MediaQueryServiceInterface::class);
 
-            return $media->getUrl($uuid, 'medium')
+            return $media->getUrl($uuid, 'card')
+                ?? $media->getUrl($uuid, 'medium')
                 ?? $media->getUrl($uuid, 'thumbnail')
                 ?? $media->getUrl($uuid);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function categoryImageSrcset(Category $category): ?string
+    {
+        $uuid = $this->categoryImageUuid($category);
+        if ($uuid === null || ! app()->bound(MediaQueryServiceInterface::class)) {
+            return null;
+        }
+
+        try {
+            return app(MediaQueryServiceInterface::class)->getSrcset($uuid);
         } catch (Throwable) {
             return null;
         }

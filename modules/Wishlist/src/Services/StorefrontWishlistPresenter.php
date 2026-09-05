@@ -125,6 +125,7 @@ final class StorefrontWishlistPresenter
             currency: $currency,
             variantLabel: $variantLabel,
             url: $this->productUrl($slug),
+            imageSrcset: $this->imageSrcset($product),
         );
     }
 
@@ -172,7 +173,34 @@ final class StorefrontWishlistPresenter
         }
 
         try {
-            return $this->media->getUrl($uuid, 'medium') ?? $this->media->getUrl($uuid);
+            return $this->media->getUrl($uuid, 'card')
+                ?? $this->media->getUrl($uuid, 'medium')
+                ?? $this->media->getUrl($uuid);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function imageSrcset(Product $product): ?string
+    {
+        if ($this->media === null) {
+            return null;
+        }
+
+        $mediaRows = $product->relationLoaded('media')
+            ? $product->media
+            : $product->media()->get();
+
+        /** @var ProductMedia|null $row */
+        $row = $mediaRows->firstWhere('is_primary', true) ?? $mediaRows->first();
+        $uuid = is_string($row?->media_uuid) ? $row->media_uuid : null;
+
+        if ($uuid === null || $uuid === '') {
+            return null;
+        }
+
+        try {
+            return $this->media->getSrcset($uuid);
         } catch (Throwable) {
             return null;
         }

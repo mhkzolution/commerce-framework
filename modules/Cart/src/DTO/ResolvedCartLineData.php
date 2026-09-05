@@ -18,5 +18,9 @@ final readonly class ResolvedCartLineData extends DataTransferObject
         public int $available,
         public bool $isPurchasable,
         public ?string $imageUrl = null,
+        public ?string $imageSrcset = null,
+        public ?string $url = null,
+        public ?string $productName = null,
+        public ?string $variantLabel = null,
     ) {}
 }

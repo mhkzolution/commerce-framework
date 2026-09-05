@@ -7,5 +7,6 @@ import './admin/footer-settings.js';
 import './admin/customer-experience.js';
 import './admin/product-workspace.js';
 import './admin/media-library.js';
+import './admin/media-picker.js';
 import './admin/collection-rule-builder.js';
 import './admin/order-create.js';

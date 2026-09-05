@@ -19,6 +19,8 @@ export default defineConfig({
                 'resources/js/storefront/product.js',
                 'resources/css/storefront/shopper.css',
                 'resources/js/storefront/shopper.js',
+                'resources/js/storefront/checkout.js',
+                'resources/js/storefront/address.js',
                 'resources/css/storefront/auth.css',
                 'resources/js/storefront/auth.js',
                 'resources/css/storefront/footer.css',

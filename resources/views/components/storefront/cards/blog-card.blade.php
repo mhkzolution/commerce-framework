@@ -6,7 +6,8 @@
 
 @php
     $url = route('storefront.cms.posts.show', $post->slug);
-    $imageUrl = $blogService->featuredImageUrl($post, 'medium');
+    $imageUrl = $blogService->featuredImageUrl($post, 'card');
+    $imageSrcset = $blogService->featuredImageSrcset($post);
     $category = $blogService->categoryLabel($post);
     $author = $blogService->authorName($post);
 @endphp
@@ -15,7 +16,13 @@
     <a href="{{ $url }}" class="storefront-article-card__link">
         <span class="storefront-article-card__media">
             @if ($imageUrl)
-                <img src="{{ $imageUrl }}" alt="" class="storefront-article-card__image" loading="lazy" decoding="async">
+                <x-storefront.media.img
+                    :src="$imageUrl"
+                    :srcset="$imageSrcset"
+                    :sizes="config('media.sizes.blog')"
+                    alt=""
+                    class="storefront-article-card__image"
+                />
             @else
                 <span class="storefront-article-card__placeholder"></span>
             @endif

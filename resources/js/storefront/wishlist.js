@@ -229,7 +229,7 @@ function renderWishlistDrawer(items) {
 
     list.innerHTML = items.map((item) => {
         const image = item.image_url
-            ? `<img src="${escapeHtml(item.image_url)}" alt="" class="storefront-drawer-line__image" loading="lazy" decoding="async">`
+            ? `<img src="${escapeHtml(item.image_url)}" alt="" class="storefront-drawer-line__image" loading="lazy" decoding="async"${item.image_srcset ? ` srcset="${escapeHtml(item.image_srcset)}" sizes="88px"` : ''}>`
             : `<div class="storefront-drawer-line__placeholder">${escapeHtml(list.dataset.noImageLabel || '')}</div>`;
 
         const variant = item.variant_label
@@ -293,7 +293,7 @@ function renderWishlistPageItem(item, list) {
     const cartStoreUrl = list?.dataset.cartStoreUrl || '/cart/items';
 
     const image = item.image_url
-        ? `<img src="${escapeHtml(item.image_url)}" alt="" class="storefront-cart-line__image" loading="lazy" decoding="async">`
+        ? `<img src="${escapeHtml(item.image_url)}" alt="" class="storefront-cart-line__image" loading="lazy" decoding="async"${item.image_srcset ? ` srcset="${escapeHtml(item.image_srcset)}" sizes="88px"` : ''}>`
         : `<div class="storefront-cart-line__placeholder">${escapeHtml(noImageLabel)}</div>`;
 
     const variant = item.variant_label

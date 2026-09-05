@@ -43,22 +43,25 @@
             @endif
 
             @if ($product->imageUrl)
-                <img
-                    src="{{ $product->imageUrl }}"
-                    alt="{{ $product->name }}"
+                <x-storefront.media.img
+                    :src="$product->imageUrl"
+                    :srcset="$product->imageSrcset"
+                    :sizes="config('media.sizes.card')"
+                    :alt="$product->name"
                     class="storefront-product-card__image storefront-product-card__image--primary"
-                    @if ($priority) fetchpriority="high" @else loading="lazy" @endif
-                    decoding="async"
-                >
+                    :loading="$priority ? false : 'lazy'"
+                    :fetchpriority="$priority ? 'high' : null"
+                />
                 @if ($product->secondaryImageUrl)
-                    <img
-                        src="{{ $product->secondaryImageUrl }}"
+                    <x-storefront.media.img
+                        :src="$product->secondaryImageUrl"
+                        :srcset="$product->secondaryImageSrcset"
+                        :sizes="config('media.sizes.card')"
                         alt=""
                         class="storefront-product-card__image storefront-product-card__image--secondary"
                         loading="lazy"
-                        decoding="async"
                         aria-hidden="true"
-                    >
+                    />
                 @endif
             @else
                 <div class="storefront-product-card__placeholder">{{ __('storefront::storefront.no_image') }}</div>

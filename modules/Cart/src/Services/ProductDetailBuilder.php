@@ -85,7 +85,7 @@ final class ProductDetailBuilder
     }
 
     /**
-     * @return list<array{type: string, url: string, thumbnail: string, alt: string}>
+     * @return list<array{type: string, url: string, thumbnail: string, srcset: ?string, sizes: string, alt: string}>
      */
     private function gallery(Product $product): array
     {
@@ -131,7 +131,7 @@ final class ProductDetailBuilder
     }
 
     /**
-     * @return array{type: string, url: string, thumbnail: string, alt: string}|null
+     * @return array{type: string, url: string, thumbnail: string, srcset: ?string, sizes: string, alt: string}|null
      */
     private function galleryItem(?string $uuid, string $alt): ?array
     {
@@ -139,14 +139,17 @@ final class ProductDetailBuilder
             return null;
         }
 
-        $url = $this->media->getUrl($uuid, 'large')
+        $url = $this->media->getUrl($uuid, 'detail')
+            ?? $this->media->getUrl($uuid, 'large')
+            ?? $this->media->getUrl($uuid, 'card')
             ?? $this->media->getUrl($uuid, 'medium')
             ?? $this->media->getUrl($uuid);
         if (! is_string($url) || $url === '') {
             return null;
         }
 
-        $thumbnail = $this->media->getUrl($uuid, 'medium')
+        $thumbnail = $this->media->getUrl($uuid, 'card')
+            ?? $this->media->getUrl($uuid, 'medium')
             ?? $this->media->getUrl($uuid)
             ?? $url;
 
@@ -156,6 +159,8 @@ final class ProductDetailBuilder
             'type' => $type,
             'url' => $url,
             'thumbnail' => $thumbnail,
+            'srcset' => $this->media->getSrcset($uuid),
+            'sizes' => (string) config('media.sizes.detail', '(min-width: 64rem) min(50vw, 720px), 100vw'),
             'alt' => $alt,
         ];
     }
@@ -173,7 +178,9 @@ final class ProductDetailBuilder
             return null;
         }
 
-        return $this->media->getUrl($uuid, 'medium') ?? $this->media->getUrl($uuid);
+        return $this->media->getUrl($uuid, 'card')
+            ?? $this->media->getUrl($uuid, 'medium')
+            ?? $this->media->getUrl($uuid);
     }
 
     /**
@@ -230,6 +237,7 @@ final class ProductDetailBuilder
                 'available' => $available ?? ($inStock ? 9999 : 0),
                 'options' => $normalized,
                 'image_thumbnail' => $image['url'] ?? null,
+                'image_srcset' => $image['srcset'] ?? null,
                 'sku' => is_string($variant->sku) && $variant->sku !== '' ? $variant->sku : null,
             ];
         }
@@ -390,6 +398,8 @@ final class ProductDetailBuilder
                 available: $card->available,
                 inStock: $card->inStock,
                 secondaryImageUrl: $card->secondaryImageUrl,
+                imageSrcset: $card->imageSrcset,
+                secondaryImageSrcset: $card->secondaryImageSrcset,
             );
         }
 

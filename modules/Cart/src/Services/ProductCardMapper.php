@@ -46,10 +46,12 @@ final class ProductCardMapper
             variantUuid: (string) $variant->uuid,
             price: (int) $variant->price,
             compareAtPrice: $variant->compare_at_price !== null ? (int) $variant->compare_at_price : null,
-            imageUrl: $imageUrls[0] ?? null,
+            imageUrl: $imageUrls[0]['url'] ?? null,
             available: $available,
             inStock: $this->inStock($available),
-            secondaryImageUrl: $imageUrls[1] ?? null,
+            secondaryImageUrl: $imageUrls[1]['url'] ?? null,
+            imageSrcset: $imageUrls[0]['srcset'] ?? null,
+            secondaryImageSrcset: $imageUrls[1]['srcset'] ?? null,
         );
     }
 
@@ -63,7 +65,7 @@ final class ProductCardMapper
     }
 
     /**
-     * @return list<string>
+     * @return list<array{url: string, srcset: ?string}>
      */
     private function imageUrls(Product $product, int $limit = 2): array
     {
@@ -91,12 +93,17 @@ final class ProductCardMapper
                 continue;
             }
 
-            $url = $this->media->getUrl($uuid, 'medium') ?? $this->media->getUrl($uuid);
-            if (! is_string($url) || $url === '' || in_array($url, $urls, true)) {
+            $url = $this->media->getUrl($uuid, 'card')
+                ?? $this->media->getUrl($uuid, 'medium')
+                ?? $this->media->getUrl($uuid);
+            if (! is_string($url) || $url === '' || in_array($url, array_column($urls, 'url'), true)) {
                 continue;
             }
 
-            $urls[] = $url;
+            $urls[] = [
+                'url' => $url,
+                'srcset' => $this->media->getSrcset($uuid),
+            ];
         }
 
         return $urls;

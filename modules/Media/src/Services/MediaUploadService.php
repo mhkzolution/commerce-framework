@@ -11,6 +11,7 @@ use Commerce\Core\Exceptions\DomainException;
 use Commerce\Media\Events\MediaUploaded;
 use Commerce\Media\Models\Media;
 use Commerce\Media\Models\MediaFolder;
+use Commerce\Media\Support\ImageVariantGenerator;
 use Commerce\Media\Support\MediaTypeResolver;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -45,6 +46,54 @@ final class MediaUploadService extends BaseService implements MediaUploadService
             folderUuid: $folderUuid,
             uploadedFile: $file,
         );
+    }
+
+    public function replace(string $uuid, mixed $file): object
+    {
+        if (! $file instanceof UploadedFile) {
+            throw new DomainException('Replacement requires an uploaded file.');
+        }
+
+        $media = Media::query()->where('uuid', $uuid)->first();
+
+        if ($media === null) {
+            throw new DomainException("Media [{$uuid}] not found.");
+        }
+
+        $mimeType = (string) $file->getMimeType();
+        $this->assertAllowedMime($mimeType);
+
+        $contents = (string) file_get_contents($file->getRealPath() ?: '');
+        $disk = Storage::disk($media->disk);
+        $extension = $file->getClientOriginalExtension()
+            ?: $this->extensionFromMime($mimeType)
+            ?: pathinfo($file->getClientOriginalName(), PATHINFO_EXTENSION)
+            ?: 'bin';
+        $filename = $media->uuid.($extension ? '.'.$extension : '');
+        $path = trim((string) config('media.path', 'media'), '/').'/'.$filename;
+
+        if ($media->path !== $path && $disk->exists($media->path)) {
+            $disk->delete($media->path);
+        }
+
+        $disk->put($path, $contents);
+        [$width, $height] = $this->resolveImageDimensions($contents, $mimeType, $file);
+
+        $media->update([
+            'filename' => $filename,
+            'original_filename' => $file->getClientOriginalName(),
+            'mime_type' => $mimeType,
+            'media_type' => MediaTypeResolver::fromMime($mimeType),
+            'size' => strlen($contents),
+            'path' => $path,
+            'width' => $width,
+            'height' => $height,
+        ]);
+
+        $media = $media->fresh(['variants', 'folder', 'tags']);
+        app(ImageVariantGenerator::class)->generate($media, true);
+
+        return $media->fresh(['folder', 'variants', 'tags']);
     }
 
     public function importFromUrl(string $url, ?string $folderUuid = null): Media

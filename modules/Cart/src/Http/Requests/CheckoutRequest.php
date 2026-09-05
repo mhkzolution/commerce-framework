@@ -22,6 +22,7 @@ final class CheckoutRequest extends FormRequest
         return [
             'customer_email' => ['nullable', 'email', 'max:255'],
             'customer_name' => ['nullable', 'string', 'max:255'],
+            'customer_phone' => ['nullable', 'string', 'max:50'],
             'customer_uuid' => ['nullable', 'uuid'],
             'shipping_address_uuid' => ['nullable', 'uuid'],
             'billing_address_uuid' => ['nullable', 'uuid'],
@@ -30,22 +31,45 @@ final class CheckoutRequest extends FormRequest
             'shipping_address.line1' => ['required_without:shipping_address_uuid', 'string', 'max:255'],
             'shipping_address.line2' => ['nullable', 'string', 'max:255'],
             'shipping_address.city' => ['required_without:shipping_address_uuid', 'string', 'max:100'],
+            'shipping_address.district' => ['nullable', 'string', 'max:100'],
+            'shipping_address.subdistrict' => ['nullable', 'string', 'max:100'],
             'shipping_address.state' => ['nullable', 'string', 'max:100'],
             'shipping_address.postal_code' => ['required_without:shipping_address_uuid', 'string', 'max:20'],
             'shipping_address.country_code' => ['required_without:shipping_address_uuid', 'string', 'size:2'],
+            'shipping_address.recipient_name' => ['nullable', 'string', 'max:255'],
+            'shipping_address.phone' => ['nullable', 'string', 'max:50'],
             'billing_address' => ['nullable', 'array'],
             'billing_address.line1' => ['required_without_all:billing_address_uuid,billing_same_as_shipping', 'string', 'max:255'],
             'billing_address.line2' => ['nullable', 'string', 'max:255'],
             'billing_address.city' => ['required_without_all:billing_address_uuid,billing_same_as_shipping', 'string', 'max:100'],
+            'billing_address.district' => ['nullable', 'string', 'max:100'],
+            'billing_address.subdistrict' => ['nullable', 'string', 'max:100'],
             'billing_address.state' => ['nullable', 'string', 'max:100'],
             'billing_address.postal_code' => ['required_without_all:billing_address_uuid,billing_same_as_shipping', 'string', 'max:20'],
             'billing_address.country_code' => ['required_without_all:billing_address_uuid,billing_same_as_shipping', 'string', 'size:2'],
+            'billing_address.recipient_name' => ['nullable', 'string', 'max:255'],
+            'billing_address.phone' => ['nullable', 'string', 'max:50'],
             'shipping_method_uuid' => [
                 Rule::requiredIf(fn (): bool => app()->bound(ShippingQuoteServiceInterface::class)),
                 'nullable',
                 'uuid',
             ],
+            'save_shipping_address' => ['nullable', 'boolean'],
+            'save_billing_address' => ['nullable', 'boolean'],
+            'shipping_address_label' => ['nullable', 'string', 'max:100'],
+            'billing_address_label' => ['nullable', 'string', 'max:100'],
+            'update_shipping_address_uuid' => ['nullable', 'uuid'],
+            'update_billing_address_uuid' => ['nullable', 'uuid'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        foreach (['shipping_address_uuid', 'billing_address_uuid'] as $key) {
+            if ($this->input($key) === '') {
+                $this->merge([$key => null]);
+            }
+        }
     }
 
     public function withValidator(Validator $validator): void
@@ -65,6 +89,17 @@ final class CheckoutRequest extends FormRequest
         ?string $customerName = null,
     ): CheckoutData {
         $shippingAddress = $this->validated('shipping_address');
+
+        if (is_array($shippingAddress)) {
+            if (empty($shippingAddress['phone'])) {
+                $shippingAddress['phone'] = $this->validated('customer_phone');
+            }
+
+            if (empty($shippingAddress['recipient_name'])) {
+                $shippingAddress['recipient_name'] = $customerName ?? $this->validated('customer_name');
+            }
+        }
+
         $billingAddress = $this->boolean('billing_same_as_shipping')
             ? $shippingAddress
             : $this->validated('billing_address');

@@ -28,6 +28,11 @@ final class BarcodeImageResolverTest extends TestCase
             {
                 return $uuid === 'media-1' ? 'https://cdn.example/x.jpg' : null;
             }
+
+            public function getSrcset(string $uuid): ?string
+            {
+                return null;
+            }
         };
 
         $resolver = new BarcodeImageResolver($media);

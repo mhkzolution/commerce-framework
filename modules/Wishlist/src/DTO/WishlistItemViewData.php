@@ -16,6 +16,7 @@ final readonly class WishlistItemViewData
         public string $currency,
         public ?string $variantLabel,
         public string $url,
+        public ?string $imageSrcset = null,
     ) {}
 
     /**
@@ -29,6 +30,7 @@ final readonly class WishlistItemViewData
             'name' => $this->name,
             'slug' => $this->slug,
             'image_url' => $this->imageUrl,
+            'image_srcset' => $this->imageSrcset,
             'price' => $this->price,
             'currency' => $this->currency,
             'variant_label' => $this->variantLabel,

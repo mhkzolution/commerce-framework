@@ -149,6 +149,11 @@ final class StorefrontHomePageTest extends TestCase
             {
                 return 'https://cdn.test/'.$uuid.'.jpg';
             }
+
+            public function getSrcset(string $uuid): ?string
+            {
+                return 'https://cdn.test/'.$uuid.'.jpg 800w';
+            }
         });
     }
 

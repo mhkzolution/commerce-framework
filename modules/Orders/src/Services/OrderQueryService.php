@@ -14,7 +14,7 @@ final class OrderQueryService extends BaseQueryService implements OrderQueryServ
     public function findByUuid(string $uuid): ?object
     {
         return Order::query()
-            ->with('lineItems')
+            ->with(['lineItems', 'shipments'])
             ->where('uuid', $uuid)
             ->first();
     }

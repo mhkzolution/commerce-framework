@@ -109,8 +109,12 @@ final class HomeContentQueryService
                 'uuid' => $banner->uuid,
                 'type' => $type,
                 'imageUrl' => $imageUrl,
+                'imageSrcset' => $this->mediaSrcset($banner->image_media_uuid),
                 'mobileImageUrl' => $banner->mobile_image_media_uuid
-                    ? $this->mediaUrl($banner->mobile_image_media_uuid, 'medium')
+                    ? $this->mediaUrl($banner->mobile_image_media_uuid, 'card')
+                    : null,
+                'mobileImageSrcset' => $banner->mobile_image_media_uuid
+                    ? $this->mediaSrcset($banner->mobile_image_media_uuid)
                     : null,
                 'videoUrl' => $videoUrl,
                 'mobileVideoUrl' => $mobileVideoUrl,
@@ -141,6 +145,7 @@ final class HomeContentQueryService
                 'uuid' => $banner->uuid,
                 'title' => $banner->title,
                 'imageUrl' => $imageUrl,
+                'imageSrcset' => $this->mediaSrcset($banner->image_media_uuid),
                 'url' => $url,
                 'openInNewTab' => $banner->open_in_new_tab,
             ];
@@ -183,11 +188,21 @@ final class HomeContentQueryService
 
         if ($variant !== null) {
             return $media->getUrl($uuid, $variant)
+                ?? $media->getUrl($uuid, 'card')
                 ?? $media->getUrl($uuid, 'medium')
                 ?? $media->getUrl($uuid);
         }
 
         return $media->getUrl($uuid);
+    }
+
+    private function mediaSrcset(?string $uuid): ?string
+    {
+        if (! is_string($uuid) || $uuid === '') {
+            return null;
+        }
+
+        return $this->mediaQuery()?->getSrcset($uuid);
     }
 
     private function mediaQuery(): ?MediaQueryServiceInterface

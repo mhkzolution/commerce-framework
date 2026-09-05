@@ -289,7 +289,7 @@ function syncMainGalleryImage(gallery, index) {
             data-gallery-lightbox-trigger
             aria-label="Enlarge image"
         >
-            <img src="${escapeHtmlAttribute(item.url)}" alt="${escapeHtmlAttribute(item.alt || '')}" class="storefront-gallery__image" data-gallery-main data-gallery-type="image">
+            <img src="${escapeHtmlAttribute(item.url)}" alt="${escapeHtmlAttribute(item.alt || '')}" class="storefront-gallery__image" data-gallery-main data-gallery-type="image"${item.srcset ? ` srcset="${escapeHtmlAttribute(item.srcset)}"` : ''}${item.sizes ? ` sizes="${escapeHtmlAttribute(item.sizes)}"` : ''}>
         </button>`;
 }
 
@@ -481,7 +481,7 @@ function initGallery(root) {
     const page = root.closest?.('[data-product-page]') ?? root;
     const isMarket = page?.classList?.contains('storefront-pdp--market') ?? root.classList?.contains('storefront-pdp--market');
 
-    const renderMain = (type, url, alt, poster, index = 0) => {
+    const renderMain = (type, url, alt, poster, index = 0, srcset = '', sizes = '') => {
         if (!stage) {
             return;
         }
@@ -496,6 +496,9 @@ function initGallery(root) {
             return;
         }
 
+        const srcsetAttr = srcset ? ` srcset="${escapeHtmlAttribute(srcset)}"` : '';
+        const sizesAttr = sizes ? ` sizes="${escapeHtmlAttribute(sizes)}"` : '';
+
         stage.innerHTML = `
             <button
                 type="button"
@@ -504,7 +507,7 @@ function initGallery(root) {
                 data-gallery-lightbox-trigger
                 aria-label="Enlarge image"
             >
-                <img src="${url}" alt="${alt}" class="storefront-gallery__image" data-gallery-main data-gallery-type="image">
+                <img src="${url}" alt="${alt}" class="storefront-gallery__image" data-gallery-main data-gallery-type="image"${srcsetAttr}${sizesAttr}>
             </button>`;
 
         if (!isMarket) {
@@ -522,6 +525,8 @@ function initGallery(root) {
                 thumb.dataset.galleryAlt,
                 thumb.dataset.galleryPoster,
                 Number(thumb.dataset.galleryIndex || 0),
+                thumb.dataset.gallerySrcset || '',
+                thumb.dataset.gallerySizes || '',
             );
         });
     });
@@ -533,7 +538,7 @@ function initGallery(root) {
     bindGalleryLightbox(gallery);
 }
 
-function updateGalleryImage(page, imageUrl) {
+function updateGalleryImage(page, imageUrl, srcset) {
     if (!imageUrl) {
         return;
     }
@@ -544,7 +549,11 @@ function updateGalleryImage(page, imageUrl) {
 
     if (mainImage) {
         mainImage.src = imageUrl;
-        mainImage.removeAttribute('srcset');
+        if (srcset) {
+            mainImage.setAttribute('srcset', srcset);
+        } else {
+            mainImage.removeAttribute('srcset');
+        }
     }
 
     if (lightboxImage && gallery?.querySelector('[data-gallery-lightbox]') && !gallery.querySelector('[data-gallery-lightbox]').hidden) {
@@ -706,7 +715,7 @@ function initVariants(page) {
                 : stockNoteEl.dataset.outOfStockLabel || 'Out of stock';
         }
 
-        updateGalleryImage(page, variant.image_thumbnail);
+        updateGalleryImage(page, variant.image_thumbnail, variant.image_srcset);
 
         page.querySelectorAll('[data-wishlist-toggle]').forEach((button) => {
             button.dataset.variantUuid = uuid;

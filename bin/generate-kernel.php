@@ -6,13 +6,12 @@ declare(strict_types=1);
  * One-time kernel scaffold generator. Run: php bin/generate-kernel.php
  * Generates package and module structure files (no business logic).
  */
-
 $root = dirname(__DIR__);
 
 $files = [];
 
 $write = static function (string $path, string $content) use (&$files, $root): void {
-    $files[$root . '/' . $path] = $content;
+    $files[$root.'/'.$path] = $content;
 };
 
 // ---------------------------------------------------------------------------
@@ -433,6 +432,8 @@ $write('packages/commerce/contracts/src/Media/MediaQueryServiceInterface.php', $
 
     public function getUrl(string $uuid, ?string $variant = null): ?string;
 
+    public function getSrcset(string $uuid): ?string;
+
     /**
      * @param  list<string>  $uuids
      * @return array<string, object>
@@ -449,6 +450,11 @@ $write('packages/commerce/contracts/src/Media/MediaUploadServiceInterface.php', 
      * @param  resource|\Illuminate\Http\UploadedFile|string  $file
      */
     public function upload(mixed $file, ?string $folderUuid = null): object;
+
+    /**
+     * @param  resource|\Illuminate\Http\UploadedFile  $file
+     */
+    public function replace(string $uuid, mixed $file): object;
 METHODS
 ));
 
@@ -523,10 +529,10 @@ METHODS
 ));
 
 // Add use statement fix for PriceResolver
-$files[$root . '/packages/commerce/contracts/src/Pricing/PriceResolverInterface.php'] = str_replace(
+$files[$root.'/packages/commerce/contracts/src/Pricing/PriceResolverInterface.php'] = str_replace(
     'PurchasableInterface $purchasable, PricingContextInterface $context',
     '\\Commerce\\Contracts\\Purchasable\\PurchasableInterface $purchasable, PricingContextInterface $context',
-    $files[$root . '/packages/commerce/contracts/src/Pricing/PriceResolverInterface.php']
+    $files[$root.'/packages/commerce/contracts/src/Pricing/PriceResolverInterface.php']
 );
 
 $write('packages/commerce/contracts/src/Search/SearchIndexInterface.php', $iface(
@@ -572,10 +578,10 @@ $write('packages/commerce/contracts/src/Search/SearchResultInterface.php', $ifac
 METHODS
 ));
 
-$files[$root . '/packages/commerce/contracts/src/Search/SearchQueryInterface.php'] = str_replace(
+$files[$root.'/packages/commerce/contracts/src/Search/SearchQueryInterface.php'] = str_replace(
     'SearchResultInterface',
     '\\Commerce\\Contracts\\Search\\SearchResultInterface',
-    $files[$root . '/packages/commerce/contracts/src/Search/SearchQueryInterface.php']
+    $files[$root.'/packages/commerce/contracts/src/Search/SearchQueryInterface.php']
 );
 
 $write('packages/commerce/contracts/src/Tax/TaxCalculatorInterface.php', $iface(
@@ -626,16 +632,16 @@ $write('packages/commerce/contracts/src/Tax/TaxLineInterface.php', $iface(
 METHODS
 ));
 
-$files[$root . '/packages/commerce/contracts/src/Tax/TaxCalculatorInterface.php'] = str_replace(
+$files[$root.'/packages/commerce/contracts/src/Tax/TaxCalculatorInterface.php'] = str_replace(
     'TaxContextInterface $context): array',
     '\\Commerce\\Contracts\\Tax\\TaxContextInterface $context): array',
-    $files[$root . '/packages/commerce/contracts/src/Tax/TaxCalculatorInterface.php']
+    $files[$root.'/packages/commerce/contracts/src/Tax/TaxCalculatorInterface.php']
 );
 
-$files[$root . '/packages/commerce/contracts/src/Tax/TaxCalculatorInterface.php'] = str_replace(
+$files[$root.'/packages/commerce/contracts/src/Tax/TaxCalculatorInterface.php'] = str_replace(
     '@return list<TaxLineInterface>',
     '@return list<\\Commerce\\Contracts\\Tax\\TaxLineInterface>',
-    $files[$root . '/packages/commerce/contracts/src/Tax/TaxCalculatorInterface.php']
+    $files[$root.'/packages/commerce/contracts/src/Tax/TaxCalculatorInterface.php']
 );
 
 $write('packages/commerce/contracts/src/Module/ModuleInterface.php', $iface(
@@ -725,10 +731,10 @@ $write('packages/commerce/contracts/src/Hook/HookableInterface.php', $iface(
 METHODS
 ));
 
-$files[$root . '/packages/commerce/contracts/src/Hook/HookableInterface.php'] = str_replace(
+$files[$root.'/packages/commerce/contracts/src/Hook/HookableInterface.php'] = str_replace(
     'HookRegistryInterface $hooks',
     '\\Commerce\\Contracts\\Hook\\HookRegistryInterface $hooks',
-    $files[$root . '/packages/commerce/contracts/src/Hook/HookableInterface.php']
+    $files[$root.'/packages/commerce/contracts/src/Hook/HookableInterface.php']
 );
 
 $write('packages/commerce/contracts/src/ValueObject/MoneyInterface.php', $iface(
@@ -1670,7 +1676,7 @@ $write('modules/Iam/module.json', json_encode([
         'order' => 5,
         'permission' => 'iam.user.view',
     ],
-], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
 
 $write('modules/Iam/src/IamServiceProvider.php', <<<'PHP'
 <?php
@@ -1827,7 +1833,7 @@ foreach ([
     'Preferences/UserPreferenceServiceInterface',
 ] as $contract) {
     [$dir, $name] = explode('/', $contract);
-    $ns = 'Commerce\\Iam\\Contracts\\' . $dir;
+    $ns = 'Commerce\\Iam\\Contracts\\'.$dir;
     $write("modules/Iam/src/Contracts/{$dir}/{$name}.php", $iface($ns, $name, '    // Contract placeholder — implementation phase.'));
 }
 
@@ -1852,7 +1858,7 @@ $write('modules/Settings/module.json', json_encode([
         'order' => 90,
         'permission' => 'settings.setting.view',
     ],
-], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
 
 $write('modules/Settings/src/SettingsServiceProvider.php', <<<'PHP'
 <?php
@@ -2144,4 +2150,4 @@ foreach ($files as $path => $content) {
     file_put_contents($path, $content);
 }
 
-echo 'Generated ' . count($files) . " files.\n";
+echo 'Generated '.count($files)." files.\n";

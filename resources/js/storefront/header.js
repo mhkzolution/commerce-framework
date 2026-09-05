@@ -368,7 +368,7 @@ function bindSearchAutocomplete() {
         const productSection = renderSection(labels.products, payload.products, (item) => `
             <li>
                 <a href="${item.url}" class="storefront-search-results__product">
-                    ${item.image_url ? `<img src="${item.image_url}" alt="" class="storefront-search-results__thumb" loading="lazy">` : '<span class="storefront-search-results__thumb storefront-search-results__thumb--placeholder"></span>'}
+                    ${item.image_url ? `<img src="${item.image_url}" alt="" class="storefront-search-results__thumb" loading="lazy"${item.image_srcset ? ` srcset="${item.image_srcset}" sizes="48px"` : ''}>` : '<span class="storefront-search-results__thumb storefront-search-results__thumb--placeholder"></span>'}
                     <span class="storefront-search-results__copy">
                         <span class="storefront-search-results__name">${item.name}</span>
                         <span class="storefront-search-results__price">${item.price_label}</span>

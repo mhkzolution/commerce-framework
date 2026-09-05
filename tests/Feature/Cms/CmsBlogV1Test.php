@@ -337,6 +337,11 @@ final class CmsBlogV1Test extends TestCase
                     return $uuid === $this->uuid ? 'https://cdn.example.test/og-featured.jpg' : null;
                 }
 
+                public function getSrcset(string $uuid): ?string
+                {
+                    return null;
+                }
+
                 public function findByUuids(array $uuids): array
                 {
                     return [];

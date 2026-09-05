@@ -22,10 +22,14 @@ class CustomerAddress extends Model implements AddressInterface
         'line1',
         'line2',
         'city',
+        'district',
+        'subdistrict',
         'state',
         'postal_code',
         'country_code',
         'is_default',
+        'is_default_shipping',
+        'is_default_billing',
         'meta',
     ];
 
@@ -33,6 +37,8 @@ class CustomerAddress extends Model implements AddressInterface
     {
         return [
             'is_default' => 'boolean',
+            'is_default_shipping' => 'boolean',
+            'is_default_billing' => 'boolean',
             'meta' => 'array',
         ];
     }
@@ -81,7 +87,32 @@ class CustomerAddress extends Model implements AddressInterface
             'line1' => $this->line1,
             'line2' => $this->line2,
             'city' => $this->city,
+            'district' => $this->district,
+            'subdistrict' => $this->subdistrict,
             'state' => $this->state,
+            'province' => $this->state,
+            'postal_code' => $this->postal_code,
+            'country_code' => $this->country_code,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toCheckoutCardArray(?Customer $customer = null): array
+    {
+        return [
+            'uuid' => $this->uuid,
+            'label' => $this->label,
+            'recipient_name' => $customer?->name,
+            'phone' => $customer?->phone,
+            'line1' => $this->line1,
+            'line2' => $this->line2,
+            'city' => $this->city,
+            'district' => $this->district,
+            'subdistrict' => $this->subdistrict,
+            'state' => $this->state,
+            'province' => $this->state,
             'postal_code' => $this->postal_code,
             'country_code' => $this->country_code,
         ];

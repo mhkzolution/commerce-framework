@@ -7,6 +7,7 @@ namespace Commerce\Media\Models;
 use Commerce\Core\Concerns\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -31,6 +32,8 @@ class Media extends Model
         'width',
         'height',
         'alt_text',
+        'caption',
+        'description',
         'meta',
     ];
 
@@ -49,6 +52,11 @@ class Media extends Model
     public function variants(): HasMany
     {
         return $this->hasMany(MediaVariant::class, 'media_id');
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(MediaTag::class, 'media_tag_media')->withTimestamps();
     }
 
     public function isImage(): bool

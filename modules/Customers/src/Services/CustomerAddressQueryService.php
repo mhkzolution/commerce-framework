@@ -7,6 +7,7 @@ namespace Commerce\Customers\Services;
 use Commerce\Contracts\Customer\CustomerQueryServiceInterface;
 use Commerce\Core\Base\BaseQueryService;
 use Commerce\Customers\Models\CustomerAddress;
+use Illuminate\Database\Eloquent\Collection;
 
 final class CustomerAddressQueryService extends BaseQueryService
 {
@@ -16,7 +17,7 @@ final class CustomerAddressQueryService extends BaseQueryService
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Collection<int, CustomerAddress>
+     * @return Collection<int, CustomerAddress>
      */
     public function forCustomer(string $customerUuid)
     {
@@ -28,8 +29,23 @@ final class CustomerAddressQueryService extends BaseQueryService
 
         return CustomerAddress::query()
             ->where('customer_id', $customer->id)
+            ->orderByDesc('is_default_shipping')
+            ->orderByDesc('is_default_billing')
             ->orderByDesc('is_default')
             ->orderBy('label')
             ->get();
+    }
+
+    public function countForCustomer(string $customerUuid): int
+    {
+        $customer = app(CustomerQueryServiceInterface::class)->findByUuid($customerUuid);
+
+        if ($customer === null) {
+            return 0;
+        }
+
+        return CustomerAddress::query()
+            ->where('customer_id', $customer->id)
+            ->count();
     }
 }

@@ -9,6 +9,7 @@
 
 @section('content')
     <x-storefront.layout.page-container variant="narrow" class="storefront-shopper storefront-pay">
+        <x-storefront.checkout.progress current="payment" />
         <h1 class="storefront-shopper__title">{{ __('storefront::storefront.complete_payment') }}</h1>
 
         @if ($errors->any())

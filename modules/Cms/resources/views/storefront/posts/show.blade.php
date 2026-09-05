@@ -57,10 +57,17 @@
                 </div>
             </x-storefront.layout.page-container>
 
-            @if ($image = $blogService->featuredImageUrl($post, 'large'))
+            @if ($image = $blogService->featuredImageUrl($post, 'detail') ?? $blogService->featuredImageUrl($post, 'large'))
                 <x-storefront.layout.page-container>
                     <figure class="storefront-article__hero">
-                        <img src="{{ $image }}" alt="{{ $post->title }}" class="storefront-article__hero-image">
+                        <x-storefront.media.img
+                            :src="$image"
+                            :srcset="$blogService->featuredImageSrcset($post)"
+                            :sizes="config('media.sizes.blog')"
+                            :alt="$post->title"
+                            class="storefront-article__hero-image"
+                            :loading="null"
+                        />
                     </figure>
                 </x-storefront.layout.page-container>
             @endif

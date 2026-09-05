@@ -7,6 +7,7 @@ namespace Commerce\Media;
 use Commerce\Contracts\Media\MediaQueryServiceInterface;
 use Commerce\Contracts\Media\MediaUploadServiceInterface;
 use Commerce\Core\Base\BaseModuleServiceProvider;
+use Commerce\Media\Console\GenerateMediaVariantsCommand;
 use Commerce\Media\Contracts\MediaFolderServiceInterface;
 use Commerce\Media\Contracts\MediaServiceInterface;
 use Commerce\Media\Events\MediaUploaded;
@@ -16,6 +17,7 @@ use Commerce\Media\Services\MediaFolderService;
 use Commerce\Media\Services\MediaQueryService;
 use Commerce\Media\Services\MediaService;
 use Commerce\Media\Services\MediaUploadService;
+use Commerce\Media\Services\MediaUsageService;
 use Commerce\Media\Support\ImageVariantGenerator;
 use Illuminate\Support\Facades\Event;
 
@@ -35,6 +37,7 @@ final class MediaServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(MediaUploadService::class);
         $this->app->singleton(MediaService::class);
         $this->app->singleton(MediaFolderService::class);
+        $this->app->singleton(MediaUsageService::class);
         $this->app->singleton(ImageVariantGenerator::class);
 
         $this->app->bind(MediaQueryServiceInterface::class, MediaQueryService::class);
@@ -52,5 +55,11 @@ final class MediaServiceProvider extends BaseModuleServiceProvider
         $this->loadTranslationsFrom($this->modulePath('resources/lang'), 'media');
 
         Event::listen(MediaUploaded::class, GenerateMediaVariants::class);
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                GenerateMediaVariantsCommand::class,
+            ]);
+        }
     }
 }

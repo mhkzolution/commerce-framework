@@ -18,6 +18,7 @@ final class BulkDeleteMediaRequest extends FormRequest
         return [
             'uuids' => ['required', 'array', 'min:1', 'max:500'],
             'uuids.*' => ['required', 'uuid'],
+            'force' => ['sometimes', 'boolean'],
         ];
     }
 }

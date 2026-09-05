@@ -10,13 +10,18 @@ use Commerce\Media\Contracts\MediaServiceInterface;
 use Commerce\Media\DTO\UpdateMediaData;
 use Commerce\Media\Http\Requests\BulkDeleteMediaRequest;
 use Commerce\Media\Http\Requests\BulkMoveMediaRequest;
+use Commerce\Media\Http\Requests\BulkRegenerateMediaRequest;
+use Commerce\Media\Http\Requests\BulkTagMediaRequest;
 use Commerce\Media\Http\Requests\ImportMediaRequest;
+use Commerce\Media\Http\Requests\ReplaceMediaRequest;
 use Commerce\Media\Http\Requests\UpdateMediaRequest;
 use Commerce\Media\Http\Requests\UploadMediaRequest;
 use Commerce\Media\Http\Resources\MediaResource;
 use Commerce\Media\Models\MediaFolder;
+use Commerce\Media\Models\MediaTag;
 use Commerce\Media\Services\MediaFolderQueryService;
 use Commerce\Media\Services\MediaQueryService;
+use Commerce\Media\Services\MediaUsageService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -32,6 +37,7 @@ final class MediaController extends Controller
         private readonly MediaFolderQueryService $folderQueryService,
         private readonly MediaUploadServiceInterface $uploadService,
         private readonly MediaServiceInterface $mediaService,
+        private readonly MediaUsageService $usageService,
     ) {}
 
     public function index(Request $request): View|JsonResponse
@@ -47,16 +53,20 @@ final class MediaController extends Controller
             ? $this->folderQueryService->findByUuid($folderUuid)
             : null;
 
+        $insights = $this->queryService->insights();
+
         return view('media::admin.index', [
             'media' => $paginator,
             'folderTree' => $this->folderQueryService->tree(),
             'folders' => $this->folderQueryService->flat(),
             'currentFolder' => $currentFolder,
             'currentFolderKey' => $folderUuid ?? 'all',
+            'insights' => $insights,
+            'tags' => MediaTag::query()->orderBy('name')->get(),
         ]);
     }
 
-    public function show(string $media): JsonResponse
+    public function show(Request $request, string $media): JsonResponse
     {
         $item = $this->queryService->findByUuid($media);
 
@@ -64,8 +74,11 @@ final class MediaController extends Controller
             abort(404);
         }
 
+        $payload = (new MediaResource($item))->toArray($request);
+        $payload['usage'] = $this->usageService->forUuid($item->uuid);
+
         return response()->json([
-            'data' => new MediaResource($item),
+            'data' => $payload,
         ]);
     }
 
@@ -139,8 +152,12 @@ final class MediaController extends Controller
 
         $item = $this->mediaService->update($media, new UpdateMediaData(
             altText: $request->validated('alt_text'),
+            caption: $request->validated('caption'),
+            description: $request->validated('description'),
             folderId: $folderId,
             syncFolder: $syncFolder,
+            tags: $request->has('tags') ? array_values($request->validated('tags') ?? []) : null,
+            crop: $request->validated('crop'),
         ));
 
         if ($request->expectsJson()) {
@@ -159,7 +176,20 @@ final class MediaController extends Controller
 
     public function destroy(Request $request, string $media): RedirectResponse|JsonResponse
     {
-        $this->mediaService->delete($media);
+        try {
+            $this->mediaService->delete($media, $request->boolean('force'));
+        } catch (DomainException $exception) {
+            $usages = $this->usageService->forUuid($media);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $exception->getMessage(),
+                    'usage' => $usages,
+                ], 409);
+            }
+
+            return redirect()->back()->withErrors(['media' => $exception->getMessage()]);
+        }
 
         if ($request->expectsJson()) {
             return response()->json(['deleted' => true]);
@@ -175,7 +205,31 @@ final class MediaController extends Controller
 
     public function bulkDelete(BulkDeleteMediaRequest $request): RedirectResponse|JsonResponse
     {
-        $deleted = $this->mediaService->deleteMany($request->validated('uuids'));
+        $uuids = $request->validated('uuids');
+        $force = $request->boolean('force');
+        $blocked = [];
+
+        if (! $force) {
+            foreach ($uuids as $uuid) {
+                $usage = $this->usageService->forUuid($uuid);
+                if ($usage !== []) {
+                    $blocked[$uuid] = $usage;
+                }
+            }
+        }
+
+        if ($blocked !== []) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Some files are in use and were not deleted.',
+                    'usage' => $blocked,
+                ], 409);
+            }
+
+            return redirect()->back()->withErrors(['media' => 'Some files are in use and were not deleted.']);
+        }
+
+        $deleted = $this->mediaService->deleteMany($uuids, $force);
 
         if ($request->expectsJson()) {
             return response()->json(['deleted' => $deleted]);
@@ -213,6 +267,32 @@ final class MediaController extends Controller
             ->with('status', $moved.' files moved.');
     }
 
+    public function bulkTag(BulkTagMediaRequest $request): JsonResponse
+    {
+        $tagged = $this->mediaService->tagMany(
+            $request->validated('uuids'),
+            $request->validated('tags'),
+        );
+
+        return response()->json(['tagged' => $tagged]);
+    }
+
+    public function bulkRegenerate(BulkRegenerateMediaRequest $request): JsonResponse
+    {
+        $regenerated = $this->mediaService->regenerateMany($request->validated('uuids'));
+
+        return response()->json(['regenerated' => $regenerated]);
+    }
+
+    public function replace(ReplaceMediaRequest $request, string $media): JsonResponse
+    {
+        $item = $this->uploadService->replace($media, $request->file('file'));
+
+        return response()->json([
+            'data' => new MediaResource($item),
+        ]);
+    }
+
     public function download(string $media): mixed
     {
         $item = $this->queryService->findByUuid($media);
@@ -233,6 +313,10 @@ final class MediaController extends Controller
             type: $request->string('type')->toString() ?: null,
             period: $request->string('period')->toString() ?: null,
             page: max(1, (int) $request->input('page', 1)),
+            size: $request->string('size')->toString() ?: null,
+            sort: $request->string('sort')->toString() ?: null,
+            direction: $request->string('direction')->toString() ?: 'desc',
+            tag: $request->string('tag')->toString() ?: null,
         );
     }
 
@@ -245,6 +329,9 @@ final class MediaController extends Controller
 
     private function libraryJson(LengthAwarePaginator $paginator): JsonResponse
     {
+        $insights = $this->queryService->insights();
+        $request = request();
+
         return response()->json([
             'data' => MediaResource::collection($paginator->items()),
             'meta' => [
@@ -252,6 +339,17 @@ final class MediaController extends Controller
                 'last_page' => $paginator->lastPage(),
                 'per_page' => $paginator->perPage(),
                 'total' => $paginator->total(),
+                'insights' => [
+                    'total' => $insights['total'],
+                    'storage_bytes' => $insights['storage_bytes'],
+                    'images' => $insights['images'],
+                    'videos' => $insights['videos'],
+                    'documents' => $insights['documents'],
+                    'recent' => array_map(
+                        static fn ($item): array => (new MediaResource($item))->toArray($request),
+                        $insights['recent'],
+                    ),
+                ],
             ],
         ]);
     }

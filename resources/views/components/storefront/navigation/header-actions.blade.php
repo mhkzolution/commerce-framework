@@ -30,7 +30,9 @@
             <path d="M6 6 5 3H2" />
         </svg>
         @if ($cartItemCount > 0)
-            <span class="storefront-header-actions__count">{{ $cartItemCount }}</span>
+            <span class="storefront-header-actions__count" data-cart-count>{{ $cartItemCount }}</span>
+        @else
+            <span class="storefront-header-actions__count" data-cart-count hidden>0</span>
         @endif
     </button>
 

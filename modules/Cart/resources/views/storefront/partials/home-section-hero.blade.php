@@ -36,10 +36,15 @@
                     @else
                         <picture>
                             @if (! empty($banner['mobileImageUrl']))
-                                <source media="(max-width: 767px)" srcset="{{ $banner['mobileImageUrl'] }}">
+                                <source
+                                    media="(max-width: 767px)"
+                                    srcset="{{ $banner['mobileImageSrcset'] ?? $banner['mobileImageUrl'] }}"
+                                >
                             @endif
                             <img
                                 src="{{ $banner['imageUrl'] }}"
+                                @if (! empty($banner['imageSrcset'])) srcset="{{ $banner['imageSrcset'] }}" @endif
+                                sizes="{{ config('media.sizes.hero') }}"
                                 alt=""
                                 class="storefront-home-hero__image"
                                 width="1920"

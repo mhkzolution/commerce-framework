@@ -86,6 +86,11 @@ final class Ws002ShopperChromeContractTest extends TestCase
                 return $uuid === $this->uuid ? 'https://cdn.example.test/cart-line.jpg' : null;
             }
 
+            public function getSrcset(string $uuid): ?string
+            {
+                return $uuid === $this->uuid ? 'https://cdn.example.test/cart-line.jpg 800w' : null;
+            }
+
             public function findByUuids(array $uuids): array
             {
                 return [];
@@ -102,7 +107,7 @@ final class Ws002ShopperChromeContractTest extends TestCase
         $this->get(route('storefront.cart.index'))
             ->assertOk()
             ->assertSee('https://cdn.example.test/cart-line.jpg', false)
-            ->assertSee('storefront-cart-line__image', false);
+            ->assertSee('storefront-cart-item__image', false);
     }
 
     public function test_login_and_register_use_auth_card_without_admin_chrome(): void
@@ -133,15 +138,22 @@ final class Ws002ShopperChromeContractTest extends TestCase
             'password_confirmation' => 'password123',
         ])->assertRedirect(route('storefront.account'));
 
-        $html = $this->get(route('storefront.account'))
+        $dashboard = $this->get(route('storefront.account'))
             ->assertOk()
             ->assertSee('Chrome User')
             ->getContent();
 
-        $this->assertStringContainsString('storefront-shopper-main', $html);
+        $this->assertStringContainsString('storefront-shopper-main', $dashboard);
+        $this->assertStringContainsString('storefront-account__layout', $dashboard);
+        $this->assertStringNotContainsString('cf-btn', $dashboard);
+        $this->assertStringNotContainsString('cf-badge', $dashboard);
+
+        $html = $this->get(route('storefront.account.addresses'))
+            ->assertOk()
+            ->getContent();
+
         $this->assertStringContainsString('name="line1"', $html);
         $this->assertStringNotContainsString('cf-btn', $html);
-        $this->assertStringNotContainsString('cf-badge', $html);
         $this->assertStringNotContainsString('admin._address_form', $html);
     }
 

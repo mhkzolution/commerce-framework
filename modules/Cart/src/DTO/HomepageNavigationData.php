@@ -15,5 +15,6 @@ final readonly class HomepageNavigationData extends DataTransferObject
         public ?string $url = null,
         public ?string $imageUrl = null,
         public ?int $productCount = null,
+        public ?string $imageSrcset = null,
     ) {}
 }

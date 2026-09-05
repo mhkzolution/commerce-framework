@@ -169,6 +169,11 @@ HTML;
                     return $uuid === $this->uuid ? 'https://cdn.example.test/qa-og.jpg' : null;
                 }
 
+                public function getSrcset(string $uuid): ?string
+                {
+                    return null;
+                }
+
                 public function findByUuids(array $uuids): array
                 {
                     return [];

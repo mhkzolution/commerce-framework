@@ -18,6 +18,10 @@ final readonly class CreateAddressData extends DataTransferObject
         public ?string $label = null,
         public ?string $line2 = null,
         public ?string $state = null,
+        public ?string $district = null,
+        public ?string $subdistrict = null,
         public bool $isDefault = false,
+        public bool $isDefaultShipping = false,
+        public bool $isDefaultBilling = false,
     ) {}
 }

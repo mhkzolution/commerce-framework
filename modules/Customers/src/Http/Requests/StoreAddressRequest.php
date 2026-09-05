@@ -21,10 +21,14 @@ final class StoreAddressRequest extends FormRequest
             'line1' => ['required', 'string', 'max:255'],
             'line2' => ['nullable', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:100'],
+            'district' => ['nullable', 'string', 'max:100'],
+            'subdistrict' => ['nullable', 'string', 'max:100'],
             'state' => ['nullable', 'string', 'max:100'],
             'postal_code' => ['required', 'string', 'max:20'],
             'country_code' => ['required', 'string', 'size:2'],
             'is_default' => ['nullable', 'boolean'],
+            'is_default_shipping' => ['nullable', 'boolean'],
+            'is_default_billing' => ['nullable', 'boolean'],
         ];
     }
 }

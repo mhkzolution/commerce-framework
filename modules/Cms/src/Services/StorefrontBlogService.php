@@ -224,8 +224,21 @@ final class StorefrontBlogService
         }
 
         return $mediaQuery->getUrl($uuid, $variant)
+            ?? $mediaQuery->getUrl($uuid, 'card')
             ?? $mediaQuery->getUrl($uuid, 'medium')
             ?? $mediaQuery->getUrl($uuid);
+    }
+
+    public function featuredImageSrcset(Post $post): ?string
+    {
+        $uuid = $post->featured_image_media_uuid
+            ?: data_get($post->meta, 'featured_image_media_uuid');
+
+        if (! is_string($uuid) || $uuid === '') {
+            return null;
+        }
+
+        return $this->mediaQuery()?->getSrcset($uuid);
     }
 
     public function readingTime(Post $post): int

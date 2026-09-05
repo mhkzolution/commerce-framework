@@ -4,24 +4,24 @@
         class="storefront-home-promos__link"
         @if ($banner['openInNewTab']) target="_blank" rel="noopener noreferrer" @endif
     >
-        <img
-            src="{{ $banner['imageUrl'] }}"
-            alt="{{ $banner['title'] }}"
+        <x-storefront.media.img
+            :src="$banner['imageUrl']"
+            :srcset="$banner['imageSrcset'] ?? null"
+            :sizes="config('media.sizes.banner')"
+            :alt="$banner['title']"
             class="storefront-home-promos__image"
             width="1240"
             height="420"
-            loading="lazy"
-            decoding="async"
-        >
+        />
     </a>
 @else
-    <img
-        src="{{ $banner['imageUrl'] }}"
-        alt="{{ $banner['title'] }}"
+    <x-storefront.media.img
+        :src="$banner['imageUrl']"
+        :srcset="$banner['imageSrcset'] ?? null"
+        :sizes="config('media.sizes.banner')"
+        :alt="$banner['title']"
         class="storefront-home-promos__image"
         width="1240"
         height="420"
-        loading="lazy"
-        decoding="async"
-    >
+    />
 @endif

@@ -5,13 +5,13 @@ declare(strict_types=1);
 use Commerce\Api\Responses\ApiResponse;
 use Commerce\Contracts\Order\OrderQueryServiceInterface;
 use Commerce\Core\Exceptions\DomainException;
-use Commerce\Core\Exceptions\EntityNotFoundException;
 use Commerce\Customers\Contracts\CustomerAddressServiceInterface;
 use Commerce\Customers\Contracts\CustomerServiceInterface;
-use Commerce\Customers\DTO\CreateCustomerData;
-use Commerce\Customers\Http\Requests\StoreCustomerRequest;
 use Commerce\Customers\DTO\CreateAddressData;
+use Commerce\Customers\DTO\CreateCustomerData;
+use Commerce\Customers\Http\Controllers\Storefront\ThailandLocationController;
 use Commerce\Customers\Http\Requests\StoreAddressRequest;
+use Commerce\Customers\Http\Requests\StoreCustomerRequest;
 use Commerce\Customers\Http\Resources\CustomerAddressResource;
 use Commerce\Customers\Http\Resources\CustomerResource;
 use Commerce\Customers\Services\CustomerAddressQueryService;
@@ -111,4 +111,10 @@ Route::prefix('api/v1')->middleware(['api'])->group(function (): void {
             return ApiResponse::error('address.invalid', $exception->getMessage(), status: 422);
         }
     })->name('api.v1.customers.addresses.store');
+});
+
+Route::prefix('api/v1/storefront/locations/thailand')->middleware(['api', 'web'])->name('api.v1.storefront.locations.thailand.')->group(function (): void {
+    Route::get('/provinces', [ThailandLocationController::class, 'provinces'])->name('provinces');
+    Route::get('/districts/{province}', [ThailandLocationController::class, 'districts'])->name('districts');
+    Route::get('/subdistricts/{district}', [ThailandLocationController::class, 'subdistricts'])->name('subdistricts');
 });

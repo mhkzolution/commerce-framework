@@ -201,16 +201,26 @@ final class CartService extends BaseService implements CartServiceInterface
             $available = $stockLevels[$line['purchasable_uuid']]->getAvailable();
             $isPurchasable = $variant instanceof PurchasableInterface && $variant->isPurchasable();
 
+            $product = $variant->product ?? null;
+            $productName = is_string($product->name ?? null) && $product->name !== ''
+                ? $product->name
+                : (string) ($variant->name ?? 'Product');
+            $slug = is_string($product->slug ?? null) ? $product->slug : null;
+
             $resolved[] = new ResolvedCartLineData(
                 purchasableUuid: $line['purchasable_uuid'],
                 quantity: $quantity,
-                name: $variant->name ?? ($variant->product->name ?? 'Product'),
+                name: $productName,
                 sku: $variant->sku,
                 unitPrice: $unitPrice,
                 lineTotal: $lineTotal,
                 available: $available,
                 isPurchasable: $isPurchasable,
                 imageUrl: $this->lineImageUrl($variant),
+                imageSrcset: $this->lineImageSrcset($variant),
+                url: $slug ? route('storefront.products.show', $slug) : null,
+                productName: $productName,
+                variantLabel: $this->variantLabel($variant, $productName),
             );
 
             $subtotal += $lineTotal;
@@ -295,6 +305,63 @@ final class CartService extends BaseService implements CartServiceInterface
             return null;
         }
 
-        return $this->media->getUrl($uuid, 'medium') ?? $this->media->getUrl($uuid);
+        return $this->media->getUrl($uuid, 'card')
+            ?? $this->media->getUrl($uuid, 'medium')
+            ?? $this->media->getUrl($uuid);
+    }
+
+    private function lineImageSrcset(object $variant): ?string
+    {
+        if ($this->media === null) {
+            return null;
+        }
+
+        $product = $variant->product ?? null;
+        if ($product === null) {
+            return null;
+        }
+
+        if (method_exists($product, 'loadMissing')) {
+            $product->loadMissing('media');
+        }
+
+        $mediaRows = $product->media ?? collect();
+        $row = $mediaRows->firstWhere('is_primary', true) ?? $mediaRows->first();
+        $uuid = is_string($row?->media_uuid) ? $row->media_uuid : null;
+        if ($uuid === null || $uuid === '') {
+            return null;
+        }
+
+        return $this->media->getSrcset($uuid);
+    }
+
+    private function variantLabel(object $variant, string $productName): ?string
+    {
+        $meta = is_array($variant->meta ?? null) ? $variant->meta : [];
+        $options = $meta['options'] ?? [];
+
+        if (is_array($options) && $options !== []) {
+            $parts = [];
+
+            foreach ($options as $key => $value) {
+                if (! is_string($value) || $value === '') {
+                    continue;
+                }
+
+                $parts[] = is_string($key) && ! is_numeric($key) ? "{$key}: {$value}" : $value;
+            }
+
+            if ($parts !== []) {
+                return implode(' / ', $parts);
+            }
+        }
+
+        $name = is_string($variant->name ?? null) ? $variant->name : null;
+
+        if ($name !== null && $name !== '' && $name !== $productName) {
+            return $name;
+        }
+
+        return null;
     }
 }

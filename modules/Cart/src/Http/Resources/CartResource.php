@@ -33,6 +33,11 @@ final class CartResource extends JsonResource
                 'line_total' => $line->lineTotal,
                 'available' => $line->available,
                 'is_purchasable' => $line->isPurchasable,
+                'image_url' => $line->imageUrl,
+                'image_srcset' => $line->imageSrcset,
+                'url' => $line->url,
+                'product_name' => $line->productName ?? $line->name,
+                'variant_label' => $line->variantLabel,
             ], $cart->lines),
         ];
     }

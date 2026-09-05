@@ -45,6 +45,6 @@ final class MediaFolderQueryService extends BaseQueryService
      */
     public function flat(): array
     {
-        return MediaFolder::query()->orderBy('name')->get()->all();
+        return MediaFolder::query()->with('parent')->orderBy('name')->get()->all();
     }
 }

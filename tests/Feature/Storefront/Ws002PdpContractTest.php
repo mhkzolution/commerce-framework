@@ -73,6 +73,11 @@ final class Ws002PdpContractTest extends TestCase
                 return $uuid === $this->uuid ? 'https://cdn.example.test/pdp-contract.jpg' : null;
             }
 
+            public function getSrcset(string $uuid): ?string
+            {
+                return $uuid === $this->uuid ? 'https://cdn.example.test/pdp-contract.jpg 800w' : null;
+            }
+
             public function findByUuids(array $uuids): array
             {
                 return [];

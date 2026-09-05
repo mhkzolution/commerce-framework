@@ -13,15 +13,15 @@
                     <a href="{{ $category->url ?? route('storefront.shop.index') }}" class="storefront-home-categories__card">
                         <span class="storefront-home-categories__media">
                             @if ($category->imageUrl)
-                                <img
-                                    src="{{ $category->imageUrl }}"
+                                <x-storefront.media.img
+                                    :src="$category->imageUrl"
+                                    :srcset="$category->imageSrcset"
+                                    :sizes="config('media.sizes.category')"
                                     alt=""
                                     class="storefront-home-categories__image"
                                     width="320"
                                     height="320"
-                                    loading="lazy"
-                                    decoding="async"
-                                >
+                                />
                             @else
                                 <span class="storefront-home-categories__placeholder" aria-hidden="true">{{ mb_substr($category->name, 0, 1) }}</span>
                             @endif

@@ -10,6 +10,8 @@ interface MediaQueryServiceInterface
 
     public function getUrl(string $uuid, ?string $variant = null): ?string;
 
+    public function getSrcset(string $uuid): ?string;
+
     /**
      * @param  list<string>  $uuids
      * @return array<string, object>

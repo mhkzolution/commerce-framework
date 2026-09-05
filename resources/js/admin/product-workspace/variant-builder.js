@@ -1,3 +1,5 @@
+import { openMediaPicker } from '../media-picker';
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replaceAll('&', '&amp;')
@@ -162,10 +164,18 @@ export function bindVariantBuilder(root, state) {
             }
         }
 
-        imageButton?.addEventListener('click', () => {
-            activeImageVariantId = variant.id;
-            imageDialog?.showModal();
-            loadImagePicker();
+        imageButton?.addEventListener('click', async () => {
+            const item = await openMediaPicker({
+                url: pickerUrl,
+                multiple: false,
+                imagesOnly: true,
+                title: 'Select image',
+            });
+            if (!item) {
+                return;
+            }
+            state.updateVariant(variant.id, 'imageMediaUuid', item.uuid);
+            state.updateVariant(variant.id, 'imagePreviewUrl', item.preview_url || item.url);
         });
 
         const checkbox = row.querySelector('[data-variant-select]');
@@ -452,9 +462,16 @@ export function bindVariantBuilder(root, state) {
         }
 
         if (action === 'image') {
-            bulkImageMode = true;
-            imageDialog?.showModal();
-            loadImagePicker();
+            openMediaPicker({
+                url: pickerUrl,
+                multiple: false,
+                imagesOnly: true,
+                title: 'Select image',
+            }).then((item) => {
+                if (item) {
+                    state.applyBulkImage(item.uuid, item.preview_url || item.url);
+                }
+            });
             return;
         }
 

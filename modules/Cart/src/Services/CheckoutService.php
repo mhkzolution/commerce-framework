@@ -15,6 +15,7 @@ use Commerce\Contracts\Tax\TaxQuoteServiceInterface;
 use Commerce\Core\Base\BaseService;
 use Commerce\Core\Exceptions\DomainException;
 use Commerce\Core\Exceptions\EntityNotFoundException;
+use Commerce\Customers\Models\Customer;
 use Commerce\Customers\Models\CustomerAddress;
 use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Orders\Contracts\OrderServiceInterface;
@@ -71,8 +72,10 @@ final class CheckoutService extends BaseService implements CheckoutServiceInterf
                 }
             }
 
-            $shippingAddress = $data->shippingAddress ?? $this->resolveAddress($data->shippingAddressUuid);
-            $billingAddress = $data->billingAddress ?? $this->resolveAddress($data->billingAddressUuid);
+            $shippingAddress = $this->resolveAddress($data->shippingAddressUuid, $data->customerUuid)
+                ?? $data->shippingAddress;
+            $billingAddress = $this->resolveAddress($data->billingAddressUuid, $data->customerUuid)
+                ?? $data->billingAddress;
             $shipping = $this->resolveShipping($data, $cart, $shippingAddress);
             $promotion = $this->resolvePromotion($cart);
             $tax = $this->resolveTax($cart, $shippingAddress);
@@ -137,7 +140,7 @@ final class CheckoutService extends BaseService implements CheckoutServiceInterf
     /**
      * @return array<string, mixed>|null
      */
-    private function resolveAddress(?string $uuid): ?array
+    private function resolveAddress(?string $uuid, ?string $customerUuid): ?array
     {
         if ($uuid === null) {
             return null;
@@ -149,7 +152,20 @@ final class CheckoutService extends BaseService implements CheckoutServiceInterf
             throw new EntityNotFoundException("Address [{$uuid}] not found.");
         }
 
-        return $address->toOrderArray();
+        if ($customerUuid === null) {
+            throw new EntityNotFoundException("Address [{$uuid}] not found.");
+        }
+
+        $customer = Customer::query()->where('uuid', $customerUuid)->first();
+
+        if ($customer === null || $address->customer_id !== $customer->id) {
+            throw new EntityNotFoundException("Address [{$uuid}] not found.");
+        }
+
+        return $address->toOrderArray() + [
+            'recipient_name' => $customer->name,
+            'phone' => $customer->phone,
+        ];
     }
 
     /**

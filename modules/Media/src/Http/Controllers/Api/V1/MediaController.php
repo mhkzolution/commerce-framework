@@ -49,6 +49,8 @@ final class MediaController extends Controller
     {
         $media = $this->mediaService->update($uuid, new UpdateMediaData(
             altText: $request->validated('alt_text'),
+            caption: $request->validated('caption'),
+            description: $request->validated('description'),
         ));
 
         return ApiResponse::success(new MediaResource($media));

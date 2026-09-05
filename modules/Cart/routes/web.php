@@ -25,5 +25,6 @@ Route::middleware('web')->group(function (): void {
 
     Route::get('/checkout', [StorefrontCartController::class, 'checkoutForm'])->name('storefront.checkout');
     Route::post('/checkout', [StorefrontCartController::class, 'checkout'])->name('storefront.checkout.store');
+    Route::post('/checkout/draft', [StorefrontCartController::class, 'saveDraft'])->name('storefront.checkout.draft');
     Route::get('/checkout/confirmation/{order}', [StorefrontCartController::class, 'confirmation'])->name('storefront.checkout.confirmation');
 });
