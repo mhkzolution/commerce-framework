@@ -84,9 +84,8 @@ final class ProductWorkspaceStateBuilder
                 'type' => $product?->type ?? 'simple',
                 'backorderPolicy' => $product?->backorder_policy ?? 'deny',
                 'trackInventory' => $defaultVariant === null ? true : (bool) $defaultVariant->track_inventory,
-                'sku' => $product?->type === 'variable'
-                    ? (is_string($meta['sku_prefix'] ?? null) ? $meta['sku_prefix'] : '')
-                    : ($defaultVariant?->sku ?? ''),
+                'sku' => $defaultVariant?->sku ?? '',
+                'skuPrefix' => is_string($meta['sku_prefix'] ?? null) ? $meta['sku_prefix'] : '',
                 'price' => $this->majorFromMinor($defaultVariant?->price),
                 'onHand' => $defaultStock?->getOnHand() ?? 0,
                 'reserved' => $defaultStock?->getReserved() ?? 0,

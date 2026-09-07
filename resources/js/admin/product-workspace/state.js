@@ -79,6 +79,7 @@ export function createInitialState(overrides = {}) {
             trackInventory: overrides.product?.trackInventory ?? true,
             backorderPolicy: overrides.product?.backorderPolicy ?? 'deny',
             sku: overrides.product?.sku ?? '',
+            skuPrefix: overrides.product?.skuPrefix ?? '',
             price: overrides.product?.price ?? '',
             onHand: overrides.product?.onHand ?? 0,
             reserved: overrides.product?.reserved ?? 0,
@@ -168,6 +169,30 @@ export class ProductWorkspaceState {
         }
 
         this.markDirty();
+    }
+
+    setType(nextType) {
+        if (nextType === 'simple') {
+            const first = this.data.variants[0];
+            if (first) {
+                this.data.product.sku = first.sku ?? this.data.product.sku;
+                this.data.product.price = first.price ?? this.data.product.price;
+                this.data.product.onHand = first.stock?.onHand ?? this.data.product.onHand;
+            }
+        }
+
+        this.data.product.type = nextType;
+        this.markDirty();
+    }
+
+    skuInputValue() {
+        return this.data.product.type === 'simple'
+            ? (this.data.product.sku ?? '')
+            : (this.data.product.skuPrefix ?? '');
+    }
+
+    setSkuInput(value) {
+        this.setProductField(this.data.product.type === 'simple' ? 'sku' : 'skuPrefix', value);
     }
 
     setSkuPattern(pattern) {
@@ -272,7 +297,7 @@ export class ProductWorkspaceState {
                 id: randomId(),
                 uuid: null,
                 name: combo.join(' / '),
-                sku: generateSku(this.data.skuPattern, slug, optionMap, this.data.product.sku),
+                sku: generateSku(this.data.skuPattern, slug, optionMap, this.data.product.skuPrefix),
                 price: '',
                 cost: '',
                 comparePrice: '',
@@ -349,7 +374,7 @@ export class ProductWorkspaceState {
                     this.data.skuPattern,
                     this.data.product.slug,
                     variant.options,
-                    this.data.product.sku,
+                    this.data.product.skuPrefix,
                 );
             } else {
                 variant[field] = value;
@@ -412,8 +437,15 @@ export class ProductWorkspaceState {
             }];
         }
 
+        const product = {
+            ...this.data.product,
+            sku: this.data.product.type === 'variable'
+                ? (this.data.product.skuPrefix ?? '')
+                : this.data.product.sku,
+        };
+
         return JSON.stringify({
-            product: this.data.product,
+            product,
             media: this.data.media,
             options: this.data.options,
             variants,

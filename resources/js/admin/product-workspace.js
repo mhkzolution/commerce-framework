@@ -74,6 +74,7 @@ function initStockControls(workspace, state) {
 
         if (simpleSku) {
             simpleSku.placeholder = simple ? 'Auto' : 'TSHIRT';
+            simpleSku.value = state.skuInputValue();
         }
 
         if (simple && variantsPanel && !variantsPanel.hidden) {
@@ -89,27 +90,19 @@ function initStockControls(workspace, state) {
             }
 
             const nextType = input.value;
-            const current = state.getState();
+            state.setType(nextType);
 
-            if (nextType === 'simple') {
-                const first = current.variants[0];
-                if (first) {
-                    state.data.product.sku = first.sku ?? current.product.sku;
-                    state.data.product.price = first.price ?? current.product.price;
-                    state.data.product.onHand = first.stock?.onHand ?? current.product.onHand;
-                    if (simpleSku) {
-                        simpleSku.value = state.data.product.sku ?? '';
-                    }
-                    if (simplePrice) {
-                        simplePrice.value = state.data.product.price ?? '';
-                    }
-                    if (simpleOnHand) {
-                        simpleOnHand.value = state.data.product.onHand ?? 0;
-                    }
-                }
+            const product = state.getState().product;
+            if (simpleSku) {
+                simpleSku.value = state.skuInputValue();
+            }
+            if (simplePrice) {
+                simplePrice.value = product.price ?? '';
+            }
+            if (simpleOnHand) {
+                simpleOnHand.value = product.onHand ?? 0;
             }
 
-            state.setProductField('type', nextType);
             render();
         });
     });
@@ -131,13 +124,9 @@ function initStockControls(workspace, state) {
         });
     });
 
-    [
-        [simpleSku, 'sku'],
-        [simplePrice, 'price'],
-        [simpleOnHand, 'onHand'],
-    ].forEach(([input, key]) => {
-        input?.addEventListener('input', () => state.setProductField(key, input.value));
-    });
+    simpleSku?.addEventListener('input', () => state.setSkuInput(simpleSku.value));
+    simplePrice?.addEventListener('input', () => state.setProductField('price', simplePrice.value));
+    simpleOnHand?.addEventListener('input', () => state.setProductField('onHand', simpleOnHand.value));
 
     render();
 }

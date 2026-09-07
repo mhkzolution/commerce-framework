@@ -1,4 +1,5 @@
 import { openMediaPicker } from '../media-picker';
+import { applyVariantBuilderNotification } from './variant-builder-render.js';
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -532,11 +533,11 @@ export function bindVariantBuilder(root, state) {
 
     state.subscribe(() => {
         const { uiEpoch } = state.getState();
-        if (uiEpoch !== lastEpoch) {
-            lastEpoch = uiEpoch;
-            renderOptions();
-            renderGrid();
-        }
+        const result = applyVariantBuilderNotification(uiEpoch, lastEpoch, {
+            renderGrid,
+            renderOptions,
+        });
+        lastEpoch = result.lastEpoch;
         syncTrackVisibility();
         renderBulkToolbar();
     });

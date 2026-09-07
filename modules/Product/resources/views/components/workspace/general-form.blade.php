@@ -12,6 +12,9 @@
     $workspaceType = $workspaceProduct['type'] ?? $product?->type ?? 'simple';
     $trackInventory = (bool) ($workspaceProduct['trackInventory'] ?? true);
     $backorderPolicy = $workspaceProduct['backorderPolicy'] ?? $product?->backorder_policy ?? 'deny';
+    $skuFieldValue = $workspaceType === 'variable'
+        ? ($workspaceProduct['skuPrefix'] ?? '')
+        : ($workspaceProduct['sku'] ?? '');
 @endphp
 
 <section class="cf-product-workspace__section">
@@ -86,7 +89,7 @@
                 id="workspace_sku"
                 type="text"
                 class="cf-input"
-                value="{{ $workspaceProduct['sku'] ?? '' }}"
+                value="{{ $skuFieldValue }}"
                 placeholder="{{ $workspaceType === 'simple' ? 'Auto' : 'TSHIRT' }}"
                 data-workspace-sku
                 data-workspace-simple-sku

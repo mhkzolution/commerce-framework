@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { generateSku, ProductWorkspaceState } from './state.js';
+import { applyVariantBuilderNotification } from './variant-builder-render.js';
 
 test('variable SKU prefix beats the pattern tokens', () => {
     assert.equal(
@@ -11,7 +12,7 @@ test('variable SKU prefix beats the pattern tokens', () => {
 
 test('serialize copies product trackInventory onto every variant', () => {
     const state = new ProductWorkspaceState({
-        product: { type: 'variable', trackInventory: false, sku: 'TSHIRT' },
+        product: { type: 'variable', trackInventory: false, skuPrefix: 'TSHIRT' },
         variants: [
             { id: 'a', sku: 'TSHIRT-RED', stock: { onHand: 2 }, options: { color: 'Red' } },
             { id: 'b', sku: 'TSHIRT-BLUE', stock: { onHand: 0 }, options: { color: 'Blue' } },
@@ -26,23 +27,63 @@ test('serialize copies product trackInventory onto every variant', () => {
     assert.equal(payload.variants[0].onHand, 2);
 });
 
-test('on-hand edits do not bump uiEpoch so the grid can keep focus', () => {
+test('type switch keeps the variable prefix separate from the simple SKU', () => {
+    const state = new ProductWorkspaceState({
+        product: { type: 'variable', skuPrefix: 'TSHIRT', sku: '' },
+        variants: [
+            { id: 'a', sku: 'TSHIRT-RED', price: '10', stock: { onHand: 3 } },
+        ],
+    });
+
+    state.setType('simple');
+    assert.equal(state.getState().product.sku, 'TSHIRT-RED');
+    assert.equal(state.getState().product.skuPrefix, 'TSHIRT');
+    assert.equal(state.skuInputValue(), 'TSHIRT-RED');
+
+    state.setType('variable');
+    assert.equal(state.getState().product.skuPrefix, 'TSHIRT');
+    assert.equal(state.skuInputValue(), 'TSHIRT');
+    assert.equal(JSON.parse(state.serialize()).product.sku, 'TSHIRT');
+});
+
+test('on-hand edits do not rebuild the variant grid', () => {
     const state = new ProductWorkspaceState();
     const variantId = state.getState().variants[0].id;
-    const epoch = state.getState().uiEpoch;
+    const lastEpoch = state.getState().uiEpoch;
+    let gridRenders = 0;
 
     state.updateVariantStock(variantId, 'onHand', '12');
+    const result = applyVariantBuilderNotification(state.getState().uiEpoch, lastEpoch, {
+        renderGrid: () => {
+            gridRenders += 1;
+        },
+        renderOptions: () => {},
+    });
 
-    assert.equal(state.getState().uiEpoch, epoch);
+    assert.equal(result.rebuilt, false);
+    assert.equal(gridRenders, 0);
     assert.equal(state.getState().variants[0].stock.onHand, '12');
-    assert.equal(state.getState().dirty, true);
+});
+
+test('structural edits rebuild the variant grid', () => {
+    let gridRenders = 0;
+    const result = applyVariantBuilderNotification(2, 1, {
+        renderGrid: () => {
+            gridRenders += 1;
+        },
+        renderOptions: () => {},
+    });
+
+    assert.equal(result.rebuilt, true);
+    assert.equal(result.lastEpoch, 2);
+    assert.equal(gridRenders, 1);
 });
 
 test('generateMatrix uses the product SKU prefix', () => {
     const state = new ProductWorkspaceState({
-        product: { type: 'variable', sku: 'TSHIRT', slug: 'tee' },
+        product: { type: 'variable', skuPrefix: 'TSHIRT', slug: 'tee' },
         options: [{ id: 'opt', name: 'Color', values: ['Red'] }],
-        variants: [],
+        variants: [{ id: 'seed', sku: '', stock: { onHand: 0 } }],
     });
 
     state.generateMatrix();
