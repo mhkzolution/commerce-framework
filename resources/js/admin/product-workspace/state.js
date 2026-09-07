@@ -431,6 +431,38 @@ export class ProductWorkspaceState {
         this.notify();
     }
 
+    attributeValueMetaById() {
+        const map = new Map();
+        for (const set of this.data.attributeSets ?? []) {
+            for (const attribute of set.attributes ?? []) {
+                for (const value of attribute.values ?? []) {
+                    map.set(Number(value.id), {
+                        label: String(value.label ?? ''),
+                        code: String(value.code ?? ''),
+                    });
+                }
+            }
+        }
+
+        return map;
+    }
+
+    persistedVariantUuid(variant) {
+        return String(variant?.uuid ?? '').trim();
+    }
+
+    shouldPostVariant(variant, generating) {
+        if (this.persistedVariantUuid(variant) !== '') {
+            return true;
+        }
+
+        if (generating) {
+            return false;
+        }
+
+        return (variant.valueIds ?? []).length === 0;
+    }
+
     generateFromAttributes() {
         if (!this.canGenerateVariants()) {
             return;
@@ -448,12 +480,15 @@ export class ProductWorkspaceState {
             });
 
             const slug = this.data.product.slug || 'product';
+            const valueMeta = this.attributeValueMetaById();
             this.data.variants = combinations.map((combo, index) => {
                 const existing = existingMap.get(variantIdentityKey(combo));
+                const labels = combo.map((id) => valueMeta.get(Number(id))?.label || String(id));
+                const codes = combo.map((id) => valueMeta.get(Number(id))?.code || String(id));
                 const optionMap = {};
                 axes.forEach((axis, axisIndex) => {
                     const name = String(axis.name ?? axis.attributeId).toLowerCase();
-                    optionMap[name] = String(combo[axisIndex]);
+                    optionMap[name] = codes[axisIndex];
                 });
 
                 if (existing) {
@@ -461,14 +496,14 @@ export class ProductWorkspaceState {
                         ...existing,
                         valueIds: combo,
                         options: optionMap,
-                        name: existing.name || combo.join(' / '),
+                        name: existing.name || labels.join(' / '),
                     };
                 }
 
                 return {
                     id: randomId(),
                     uuid: null,
-                    name: combo.join(' / '),
+                    name: labels.join(' / '),
                     sku: generateSku(this.data.skuPattern, slug, optionMap, this.data.product.skuPrefix),
                     price: '',
                     cost: '',
@@ -605,15 +640,18 @@ export class ProductWorkspaceState {
 
     serialize() {
         const trackInventory = Boolean(this.data.product.trackInventory);
-        let variants = this.data.variants.map((variant) => {
-            const { valueIds, ...rest } = variant;
+        const generating = Boolean(this.data.generateVariants);
+        let variants = this.data.variants
+            .filter((variant) => this.shouldPostVariant(variant, generating))
+            .map((variant) => {
+                const { valueIds, ...rest } = variant;
 
-            return {
-                ...rest,
-                onHand: variant.stock?.onHand,
-                trackInventory,
-            };
-        });
+                return {
+                    ...rest,
+                    onHand: variant.stock?.onHand,
+                    trackInventory,
+                };
+            });
 
         if (this.data.product.type === 'simple') {
             const defaultVariant = variants[0] ?? createDefaultVariant(this.data.product.name);

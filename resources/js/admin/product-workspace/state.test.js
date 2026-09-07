@@ -118,11 +118,37 @@ test('serialize always includes productAttributes and generateVariants false by 
     assert.equal(payload.variants[0].valueIds, undefined);
 });
 
+function apparelAttributeSets() {
+    return [{
+        id: 10,
+        attributes: [
+            {
+                id: 1,
+                name: 'Color',
+                type: 'select',
+                values: [
+                    { id: 5, label: 'Red', code: 'red' },
+                    { id: 1, label: 'Blue', code: 'blue' },
+                ],
+            },
+            {
+                id: 2,
+                name: 'Size',
+                type: 'select',
+                values: [
+                    { id: 9, label: 'S', code: 's' },
+                ],
+            },
+        ],
+    }];
+}
+
 test('generate from attributes sets generateVariants once and rematches identity', () => {
     const state = new ProductWorkspaceState({
         product: { type: 'variable', skuPrefix: 'TSHIRT', slug: 'tee' },
+        attributeSets: apparelAttributeSets(),
         productAttributes: [
-            { attributeId: 1, usedForVariations: true, valueIds: [5, 1], position: 0 },
+            { attributeId: 1, name: 'Color', usedForVariations: true, valueIds: [5, 1], position: 0 },
         ],
         variants: [{
             id: 'kept',
@@ -141,14 +167,78 @@ test('generate from attributes sets generateVariants once and rematches identity
 
     const first = JSON.parse(state.serialize());
     assert.equal(first.generateVariants, true);
-    assert.equal(first.variants.length, 2);
+    assert.equal(first.variants.length, 1);
+    assert.equal(first.variants[0].uuid, 'uuid-red');
     assert.ok(first.variants.every((row) => row.valueIds === undefined));
+    assert.ok(first.variants.every((row) => String(row.uuid ?? '').trim() !== ''));
 
     state.consumeGenerateFlag();
     const second = JSON.parse(state.serialize());
     assert.equal(second.generateVariants, false);
     assert.ok(Array.isArray(second.productAttributes));
     assert.equal(second.productAttributes[0].attributeId, 1);
+    assert.ok(second.variants.every((row) => String(row.uuid ?? '').trim() !== ''));
+});
+
+test('generate serialize omits identity-less preview rows', () => {
+    const state = new ProductWorkspaceState({
+        product: { type: 'variable', skuPrefix: 'TSHIRT', slug: 'tee' },
+        attributeSets: apparelAttributeSets(),
+        productAttributes: [
+            { attributeId: 1, name: 'Color', usedForVariations: true, valueIds: [5, 1], position: 0 },
+        ],
+        variants: [{
+            id: 'kept',
+            uuid: 'uuid-red',
+            sku: 'TSHIRT-RED',
+            stock: { onHand: 4 },
+            valueIds: [5],
+        }],
+    });
+
+    state.generateFromAttributes();
+    const payload = JSON.parse(state.serialize());
+
+    assert.equal(payload.generateVariants, true);
+    assert.ok(payload.variants.every((row) => row.uuid != null && String(row.uuid).trim() !== ''));
+    assert.equal(payload.variants.some((row) => row.uuid == null || row.uuid === ''), false);
+    assert.equal(payload.variants.length, 1);
+});
+
+test('generate preview uses labels and codes while identity key matches PHP', () => {
+    const state = new ProductWorkspaceState({
+        product: { type: 'variable', skuPrefix: 'TSHIRT', slug: 'tee' },
+        attributeSets: apparelAttributeSets(),
+        productAttributes: [
+            { attributeId: 1, name: 'Color', usedForVariations: true, valueIds: [5, 1], position: 0 },
+            { attributeId: 2, name: 'Size', usedForVariations: true, valueIds: [9], position: 1 },
+        ],
+        variants: [{
+            id: 'kept',
+            uuid: 'uuid-red-s',
+            sku: 'TSHIRT-RED-S',
+            name: 'Red / S',
+            stock: { onHand: 2 },
+            valueIds: [5, 9],
+        }],
+    });
+
+    state.generateFromAttributes();
+
+    assert.equal(variantIdentityKey([5, 1, 9]), '1-5-9');
+    const redS = state.getState().variants.find((row) => variantIdentityKey(row.valueIds ?? []) === '5-9');
+    const blueS = state.getState().variants.find((row) => variantIdentityKey(row.valueIds ?? []) === '1-9');
+    assert.equal(redS?.uuid, 'uuid-red-s');
+    assert.equal(redS?.name, 'Red / S');
+    assert.equal(blueS?.name, 'Blue / S');
+    assert.equal(blueS?.sku, 'TSHIRT-BLUE-S');
+    assert.equal(blueS?.name.includes('1'), false);
+    assert.equal(String(blueS?.sku).includes('-1-'), false);
+    assert.equal(variantIdentityKey(blueS?.valueIds ?? []), '1-9');
+
+    const payload = JSON.parse(state.serialize());
+    assert.equal(payload.generateVariants, true);
+    assert.deepEqual(payload.variants.map((row) => row.uuid), ['uuid-red-s']);
 });
 
 test('generate is blocked until each variation axis has a value', () => {
