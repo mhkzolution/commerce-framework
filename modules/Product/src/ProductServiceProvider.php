@@ -19,6 +19,8 @@ use Commerce\Product\Services\ProductSearchIndexer;
 use Commerce\Product\Services\ProductService;
 use Commerce\Product\Services\ProductWorkspaceSaveService;
 use Commerce\Product\Services\ProductWorkspaceStateBuilder;
+use Commerce\Product\Services\VariantIdentity;
+use Commerce\Product\Services\VariantMatrixGenerator;
 use Commerce\Product\Services\VariantOptionPresetService;
 use Illuminate\Support\Facades\Event;
 
@@ -40,6 +42,8 @@ final class ProductServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(ProductWorkspaceStateBuilder::class);
         $this->app->singleton(VariantOptionPresetService::class);
         $this->app->singleton(CatalogVariantRelationMigrator::class);
+        $this->app->singleton(VariantIdentity::class);
+        $this->app->singleton(VariantMatrixGenerator::class);
 
         $this->app->bind(ProductQueryServiceInterface::class, ProductQueryService::class);
         $this->app->bind(ProductServiceInterface::class, ProductService::class);
