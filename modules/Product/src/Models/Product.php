@@ -32,6 +32,7 @@ class Product extends Model
         'slug',
         'description',
         'type',
+        'backorder_policy',
         'status',
         'visibility',
         'brand_uuid',
