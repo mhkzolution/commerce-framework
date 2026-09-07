@@ -38,5 +38,11 @@ final readonly class SaveProductWorkspaceData extends DataTransferObject
         public array $variants = [],
         public ?string $skuPattern = null,
         public array $meta = [],
+        public string $type = 'simple',
+        public string $backorderPolicy = 'deny',
+        public bool $trackInventory = true,
+        public ?int $onHand = null,
+        public ?string $sku = null,
+        public ?string $price = null,
     ) {}
 }

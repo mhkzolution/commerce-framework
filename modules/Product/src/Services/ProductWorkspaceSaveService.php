@@ -10,6 +10,7 @@ use Commerce\Contracts\Seo\SlugServiceInterface;
 use Commerce\Contracts\Seo\UrlRedirectServiceInterface;
 use Commerce\Core\Exceptions\DomainException;
 use Commerce\Core\Exceptions\EntityNotFoundException;
+use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Product\DTO\SaveProductWorkspaceData;
 use Commerce\Product\DTO\SeoData;
 use Commerce\Product\Events\ProductCreated;
@@ -23,6 +24,7 @@ use Commerce\Product\Models\ProductVariant;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 final class ProductWorkspaceSaveService
 {
@@ -33,6 +35,8 @@ final class ProductWorkspaceSaveService
         private readonly UrlRedirectServiceInterface $urlRedirectService,
         private readonly ProductSearchIndexer $searchIndexer,
         private readonly VariantOptionAttributeProvisioner $variantOptionAttributeProvisioner,
+        private readonly ProductTypeChangeGuard $productTypeChangeGuard,
+        private readonly InventoryServiceInterface $inventoryService,
     ) {}
 
     public function create(SaveProductWorkspaceData $data): Product
@@ -84,13 +88,27 @@ final class ProductWorkspaceSaveService
 
     private function persistProduct(?Product $existing, SaveProductWorkspaceData $data): Product
     {
-        if ($data->variants === []) {
+        $existingType = $existing?->type;
+        $variants = $data->variants;
+
+        if ($data->type === 'simple' && $variants === []) {
+            $variants = [[
+                'uuid' => $existing?->defaultVariant()?->uuid,
+                'name' => $data->name,
+                'sku' => $data->sku,
+                'price' => $data->price,
+                'onHand' => $data->onHand,
+                'options' => [],
+                'isDefault' => true,
+            ]];
+        }
+
+        if ($variants === []) {
             throw new DomainException('A product must have at least one variant.');
         }
 
         $slug = $this->resolveSlug($data->slug, $data->name, $existing?->slug);
         $schedule = $this->resolveSchedule($data->status, $data->publishAt, $existing);
-        $type = count($data->variants) > 1 ? 'variable' : 'simple';
 
         $meta = array_merge($existing?->meta ?? [], $data->meta, [
             'variant_options' => $data->variantOptions,
@@ -101,7 +119,8 @@ final class ProductWorkspaceSaveService
             'name' => $data->name,
             'slug' => $slug,
             'description' => $data->description,
-            'type' => $type,
+            'type' => $data->type,
+            'backorder_policy' => $data->backorderPolicy,
             'status' => $schedule['status'],
             'visibility' => $data->visibility,
             'brand_uuid' => $data->brandUuid,
@@ -119,7 +138,17 @@ final class ProductWorkspaceSaveService
             $product->update($attributes);
         }
 
-        $this->syncVariants($product, $data->variants);
+        if ($existing !== null && $existingType === 'variable' && $data->type === 'simple') {
+            $this->productTypeChangeGuard->assertCanBecomeSimple(
+                $existing,
+                array_values(array_filter(array_map(
+                    static fn (array $row): ?string => self::nullableString($row['uuid'] ?? null),
+                    $variants,
+                ))),
+            );
+        }
+
+        $this->syncVariants($product, $variants, $data, $existing === null);
         $this->syncRelations($product, $data->categoryIds, $data->collectionIds, $data->tagIds, $data->mediaUuids);
         $this->syncProductAttributeValues($product, $data->attributeValues);
         $this->syncSeo($product, $data->seo);
@@ -133,18 +162,44 @@ final class ProductWorkspaceSaveService
     /**
      * @param  list<array<string, mixed>>  $variants
      */
-    private function syncVariants(Product $product, array $variants): void
-    {
+    private function syncVariants(
+        Product $product,
+        array $variants,
+        SaveProductWorkspaceData $data,
+        bool $isProductCreate,
+    ): void {
         $existing = $product->variants()->get()->keyBy('uuid');
         $keptUuids = [];
+        $allocatedSkus = [];
         $defaultAssigned = false;
+        $skuGenerator = new VariantSkuGenerator(function () use ($product, &$allocatedSkus): array {
+            return [
+                ...ProductVariant::query()
+                    ->where('tenant_id', $product->tenant_id)
+                    ->whereNotNull('sku')
+                    ->pluck('sku')
+                    ->all(),
+                ...array_keys($allocatedSkus),
+            ];
+        });
+        $skuPrefix = $this->skuPrefix($data, $product);
         $product->variants()->update(['is_default' => false]);
 
         foreach (array_values($variants) as $position => $row) {
             $uuid = self::nullableString($row['uuid'] ?? null);
             $variant = $uuid !== null ? $existing->get($uuid) : null;
+            $wasTracked = $variant !== null && (bool) $variant->track_inventory;
+            $isNewVariant = $variant === null;
 
             $options = is_array($row['options'] ?? null) ? $row['options'] : [];
+            $typedSku = self::nullableString($row['sku'] ?? null);
+            $generatedSku = $skuGenerator->allocate(
+                $skuPrefix,
+                array_values(array_map('strval', array_values($options))),
+                $typedSku,
+            );
+            $this->assertSkuAvailable($product, $variant, $generatedSku->sku, $allocatedSkus, $position);
+            $allocatedSkus[$generatedSku->sku] = true;
             $isDefault = ! $defaultAssigned && ((bool) ($row['isDefault'] ?? false) || $position === 0);
             if ($isDefault) {
                 $defaultAssigned = true;
@@ -152,7 +207,9 @@ final class ProductWorkspaceSaveService
             $status = self::normalizeVariantStatus($row['status'] ?? 'active');
 
             $attributes = [
-                'sku' => self::nullableString($row['sku'] ?? null),
+                'sku' => $generatedSku->sku,
+                'sku_is_auto' => $generatedSku->isAuto,
+                'track_inventory' => $data->trackInventory,
                 'name' => self::nullableString($row['name'] ?? null) ?: $product->name,
                 'price' => self::toMinorUnits($row['price'] ?? 0),
                 'compare_at_price' => self::nullableMinorUnits($row['comparePrice'] ?? null),
@@ -178,6 +235,24 @@ final class ProductWorkspaceSaveService
 
             $keptUuids[] = $variant->uuid;
             $this->syncVariantAttributeValues($product, $variant, $options);
+
+            if (! $data->trackInventory) {
+                continue;
+            }
+
+            $quantity = $this->submittedOnHand($row, $data, $product->type === 'simple');
+
+            if (($isProductCreate || (! $isNewVariant && ! $wasTracked)) && $quantity === null) {
+                throw ValidationException::withMessages([
+                    "workspace_payload.variants.{$position}.onHand" => 'On-hand quantity is required when enabling inventory tracking.',
+                ]);
+            }
+
+            if ($quantity !== null) {
+                $this->inventoryService->setOnHand($variant->uuid, $quantity, 'Product workspace');
+            } elseif ($isNewVariant) {
+                $this->inventoryService->setOnHand($variant->uuid, 0, 'Product workspace');
+            }
         }
 
         if ($keptUuids !== []) {
@@ -185,6 +260,59 @@ final class ProductWorkspaceSaveService
                 ->whereNotIn('uuid', $keptUuids)
                 ->each(static fn (ProductVariant $variant) => $variant->delete());
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private function submittedOnHand(array $row, SaveProductWorkspaceData $data, bool $isSimple): ?int
+    {
+        $value = $row['onHand'] ?? $row['on_hand'] ?? ($isSimple ? $data->onHand : null);
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (int) $value;
+    }
+
+    /**
+     * @param  array<string, bool>  $allocatedSkus
+     */
+    private function assertSkuAvailable(
+        Product $product,
+        ?ProductVariant $variant,
+        string $sku,
+        array $allocatedSkus,
+        int $position,
+    ): void {
+        $duplicateInSave = isset($allocatedSkus[$sku]);
+        $duplicateInDatabase = ProductVariant::query()
+            ->where('tenant_id', $product->tenant_id)
+            ->where('sku', $sku)
+            ->when($variant !== null, static fn ($query) => $query->whereKeyNot($variant->getKey()))
+            ->exists();
+
+        if ($duplicateInSave || $duplicateInDatabase) {
+            throw ValidationException::withMessages([
+                "workspace_payload.variants.{$position}.sku" => "The SKU [{$sku}] has already been taken.",
+            ]);
+        }
+    }
+
+    private function skuPrefix(SaveProductWorkspaceData $data, Product $product): string
+    {
+        if ($data->sku !== null && trim($data->sku) !== '') {
+            return $data->sku;
+        }
+
+        if ($data->skuPattern !== null
+            && ! str_contains($data->skuPattern, '{')
+            && strtolower(trim($data->skuPattern)) !== 'random') {
+            return $data->skuPattern;
+        }
+
+        return $product->name;
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Commerce\Product\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 final class UpdateProductRequest extends FormRequest
@@ -26,6 +27,9 @@ final class UpdateProductRequest extends FormRequest
             'seller_uuid' => ['nullable', 'uuid', 'exists:marketplace_sellers,uuid'],
             'attribute_set_id' => ['nullable', 'integer', 'exists:attribute_sets,id'],
             'workspace_payload' => ['required', 'string'],
+            'type' => ['nullable', 'string', Rule::in(['simple', 'variable'])],
+            'backorder_policy' => ['nullable', 'string', Rule::in(['deny', 'notify', 'allow'])],
+            'backorderPolicy' => ['nullable', 'string', Rule::in(['deny', 'notify', 'allow'])],
             'publish_at' => ['nullable', 'date'],
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer', 'exists:categories,id'],
@@ -53,6 +57,20 @@ final class UpdateProductRequest extends FormRequest
         $validator->after(function ($validator): void {
             if ($this->input('status') === 'scheduled' && ! $this->filled('publish_at')) {
                 $validator->errors()->add('publish_at', 'Publish date is required for scheduled products.');
+            }
+
+            $payload = json_decode((string) $this->input('workspace_payload'), true);
+            $product = is_array($payload['product'] ?? null) ? $payload['product'] : [];
+            $nested = Validator::make($product, [
+                'type' => ['sometimes', 'string', Rule::in(['simple', 'variable'])],
+                'backorderPolicy' => ['sometimes', 'string', Rule::in(['deny', 'notify', 'allow'])],
+                'backorder_policy' => ['sometimes', 'string', Rule::in(['deny', 'notify', 'allow'])],
+            ]);
+
+            foreach ($nested->errors()->messages() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $validator->errors()->add('workspace_payload.product.'.$field, $message);
+                }
             }
         });
     }

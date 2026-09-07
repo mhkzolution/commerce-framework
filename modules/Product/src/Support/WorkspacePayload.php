@@ -73,9 +73,25 @@ final class WorkspacePayload
                 ogImageMediaUuid: $seoInput['og_image_media_uuid'] ?? null,
             ),
             variantOptions: is_array($payload['options'] ?? null) ? $payload['options'] : [],
-            variants: is_array($payload['variants'] ?? null) ? $payload['variants'] : [],
+            variants: self::normalizeVariants(is_array($payload['variants'] ?? null) ? $payload['variants'] : []),
             skuPattern: self::nullableString($payload['skuPattern'] ?? null),
             meta: $meta,
+            type: (string) self::firstPresent($input, $product, ['type'], 'simple'),
+            backorderPolicy: (string) self::firstPresent(
+                $input,
+                $product,
+                ['backorderPolicy', 'backorder_policy'],
+                'deny',
+            ),
+            trackInventory: (bool) self::firstPresent(
+                $input,
+                $product,
+                ['trackInventory', 'track_inventory'],
+                true,
+            ),
+            onHand: self::nullableInt(self::firstPresent($input, $product, ['onHand', 'on_hand'])),
+            sku: self::nullableString(self::firstPresent($input, $product, ['sku'])),
+            price: self::nullableString(self::firstPresent($input, $product, ['price'])),
         );
     }
 
@@ -135,6 +151,47 @@ final class WorkspacePayload
         }
 
         return (int) $value;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $variants
+     * @return list<array<string, mixed>>
+     */
+    private static function normalizeVariants(array $variants): array
+    {
+        return array_values(array_map(static function (array $variant): array {
+            if (! array_key_exists('onHand', $variant) && array_key_exists('on_hand', $variant)) {
+                $variant['onHand'] = $variant['on_hand'];
+            }
+
+            return $variant;
+        }, $variants));
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     * @param  array<string, mixed>  $product
+     * @param  list<string>  $keys
+     */
+    private static function firstPresent(
+        array $input,
+        array $product,
+        array $keys,
+        mixed $default = null,
+    ): mixed {
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $input)) {
+                return $input[$key];
+            }
+        }
+
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $product)) {
+                return $product[$key];
+            }
+        }
+
+        return $default;
     }
 
     /**

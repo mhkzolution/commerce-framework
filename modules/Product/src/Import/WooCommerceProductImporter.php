@@ -493,12 +493,14 @@ final class WooCommerceProductImporter
                 'status' => 'active',
                 'options' => [],
                 'isDefault' => true,
+                'onHand' => max(0, (int) ($row['Stock'] ?? 0)),
             ]],
             meta: [
                 'wordpress_id' => (int) ($row['ID'] ?? 0),
                 'wordpress_images' => $imagePaths,
                 'wordpress_weight_kg' => $weightKg,
             ],
+            type: 'simple',
         );
 
         $product = $existing === null
@@ -1181,6 +1183,7 @@ final class WooCommerceProductImporter
                 'status' => 'active',
                 'options' => $this->buildVariantOptionsMap($row, $variantOptions),
                 'isDefault' => $index === 0,
+                'onHand' => max(0, (int) ($row['Stock'] ?? 0)),
             ];
         }
 
@@ -1205,6 +1208,7 @@ final class WooCommerceProductImporter
                 'wordpress_images' => $imagePaths,
                 'wordpress_weight_kg' => ($parentRow['Weight (kg)'] ?? '') !== '' ? (float) $parentRow['Weight (kg)'] : null,
             ],
+            type: 'variable',
         );
 
         $product = $existing === null

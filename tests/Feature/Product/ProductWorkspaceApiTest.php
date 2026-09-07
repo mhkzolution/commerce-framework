@@ -56,6 +56,7 @@ final class ProductWorkspaceApiTest extends TestCase
                         'name' => 'API Workspace Product',
                         'status' => 'published',
                         'visibility' => 'public',
+                        'trackInventory' => false,
                     ],
                     'options' => [],
                     'variants' => [[
