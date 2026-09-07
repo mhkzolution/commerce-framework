@@ -59,10 +59,33 @@ final class ProductTypeChangeGuardTest extends TestCase
         }
     }
 
+    public function test_blocks_when_extra_variant_is_on_confirmed_order(): void
+    {
+        [$product, $keptVariant, $extraVariant] = $this->createVariableProduct();
+        $this->createOrderLine($extraVariant, OrderStatus::Confirmed);
+
+        try {
+            app(ProductTypeChangeGuard::class)->assertCanBecomeSimple($product, [$keptVariant->uuid]);
+            $this->fail('Expected a confirmed order to block the product type change.');
+        } catch (DomainException $exception) {
+            $this->assertStringContainsString((string) $extraVariant->sku, $exception->getMessage());
+        }
+    }
+
     public function test_allows_when_only_completed_order_references_extra_variant(): void
     {
         [$product, $keptVariant, $extraVariant] = $this->createVariableProduct();
         $this->createOrderLine($extraVariant, OrderStatus::Completed);
+
+        app(ProductTypeChangeGuard::class)->assertCanBecomeSimple($product, [$keptVariant->uuid]);
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function test_allows_when_only_cancelled_order_references_extra_variant(): void
+    {
+        [$product, $keptVariant, $extraVariant] = $this->createVariableProduct();
+        $this->createOrderLine($extraVariant, OrderStatus::Cancelled);
 
         app(ProductTypeChangeGuard::class)->assertCanBecomeSimple($product, [$keptVariant->uuid]);
 
