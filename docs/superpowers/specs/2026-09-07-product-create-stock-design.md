@@ -1,7 +1,7 @@
 # Product create: type, SKU, and stock policy
 
 **Date:** 2026-09-07  
-**Status:** Draft for review  
+**Status:** Locked  
 **Owner:** Product workspace (`modules/Product`) + Inventory ledger (`modules/Inventory`) + purchasability in Cart / POS / checkout  
 **Related:** `docs/superpowers/specs/2026-09-04-order-inventory-reservation.md`
 
@@ -56,7 +56,7 @@ At the top of create and edit:
 | Transition | Rule |
 |---|---|
 | Simple → Variable | Always allowed. Existing default variant becomes the first row. Staff add options and more variants. |
-| Variable → Simple | Allowed only when every extra variant can be discarded: no `inventory_items.reserved > 0`, and no order line items referencing those variant UUIDs. The remaining variant becomes the simple default. Otherwise reject with a concrete error (which variants block the change). |
+| Variable → Simple | Allowed only when every extra variant can be discarded. Block if any extra variant has `inventory_items.reserved > 0`, or is referenced by an **open** order line. Open = `orders.status` in `pending`, `confirmed` (and equivalent in-progress states such as admin `processing` on a non-terminal order). `completed` and `cancelled` lines do **not** block. The remaining variant becomes the simple default. Otherwise reject with a concrete error naming the blocking variants. |
 
 Deleting extra variants still uses the existing workspace sync (soft-delete variants not in the payload) **after** the guard passes.
 
@@ -111,8 +111,18 @@ The form never `UPDATE inventory_items.on_hand` directly.
 
 **`product_variants`**
 
-- `track_inventory` boolean, not null, default `true` for **new** rows
+- `track_inventory` boolean, not null, default `true` for **new** rows. This is the only storage location.
 - `sku_is_auto` boolean, not null, default `false`
+
+v1 UI does **not** expose a per-variant track checkbox:
+
+```text
+Storage:  product_variants.track_inventory
+UI v1:    one product-level toggle
+Save:     workspace copies that value onto every variant row
+```
+
+Do not persist a mix of true/false variants from the v1 form. Per-variant track toggles are out of scope.
 
 **`inventory_items`**
 
@@ -186,6 +196,8 @@ Confirm / `sale()` (timing still follows `2026-09-04-order-inventory-reservation
 
 Receive / `setOnHand` after a backorder restock the ledger as usual; they do not auto-allocate to older orders in this version.
 
+Backorder demand is represented operationally by **orders**, not by negative inventory balances in this version. Do not look for a backlog quantity on `inventory_items`. After confirm, `reserved` returning to 0 with `on_hand` still 0 is expected: the sale is on the order, not as a negative ledger.
+
 Shop in-stock filter (`ShopProductQuery::constrainInStock`) must include:
 
 - variants with `track_inventory = false`, and
@@ -211,7 +223,7 @@ SEO / organization / advanced stay reachable on edit (existing tabs or a collaps
 
 ### 6.2 Variable
 
-Same header fields except **no product-level quantity**. Backorder radios stay on the product (shared). Track stock can be a product-level control that sets `track_inventory` on all variants in this version (no per-row track toggle unless already cheap to add; default: one product-level track flag copied onto every variant).
+Same header fields except **no product-level quantity**. Backorder radios stay on the product (shared). Track stock is one product-level toggle; save copies that boolean onto every variant (`product_variants.track_inventory`). No per-row track checkbox in v1.
 
 Variant rows (existing builder, extended):
 
@@ -248,6 +260,9 @@ Product module depends on `InventoryServiceInterface` the same way CSV import al
 - `products.backorder_policy`: backfill `'deny'` (matches current reserve behavior).
 - `product_variants.sku_is_auto`: backfill `false`.
 - `product_variants.track_inventory`: `true` if an `inventory_items` row exists for that UUID; otherwise `false`.
+
+Presence of an inventory item is treated as **historical evidence** that the variant was inventory-tracked — including leftover rows with `on_hand = 0` and `reserved = 0`. Staff can uncheck track after migrate if that item is stale. Do not infer “unused” from zero balances.
+
 - Existing `products.type` values stay as stored. Stop future inference; do not rewrite types in the migration.
 - Existing SKUs stay as-is. Unique constraint already applies to non-null SKUs.
 
@@ -277,9 +292,10 @@ Product module depends on `InventoryServiceInterface` the same way CSV import al
 5. Enable track on a previously untracked variant without qty → 422; with qty 7 → item created, on_hand 7 via `setOnHand`.
 6. Add a third variant to a tracked variable product → inventory item 0/0 exists after save even if qty omitted.
 7. `setOnHand` is used (movement exists); raw on_hand assignment is not the save path.
-8. Simple → variable allowed; variable → simple blocked while a second variant has reserved qty or order lines.
+8. Simple → variable allowed; variable → simple blocked while a second variant has reserved qty or an **open** order line (`pending`/`confirmed`); completed/cancelled lines do not block.
 9. Checkout: tracked + deny + available 0 → cannot buy; tracked + allow + available 0 → can buy; untracked → can buy.
 10. In-stock shop filter includes untracked and backorder-allow zero-qty products.
+11. Uncheck track inventory → inventory item remains, movements remain, PDP is purchasable, Inventory index no longer treats the row as tracked.
 
 ---
 
@@ -288,6 +304,7 @@ Product module depends on `InventoryServiceInterface` the same way CSV import al
 - Multi-location / warehouse bins
 - Negative `on_hand`
 - Per-variant `backorder_policy`
+- Per-variant track toggle in the UI (column stays on the variant; v1 copies one product-level value)
 - Deleting inventory rows when unchecking track
 - Changing Inventory admin adjust/receive UX beyond using the same ledger
 - Replacing the whole workspace with a WooCommerce clone of every advanced tab
