@@ -177,4 +177,28 @@ final class ProductDetailBuilderTest extends TestCase
         $this->assertSame(0, $data->variants[0]['available']);
         $this->assertTrue($data->variants[0]['in_stock']);
     }
+
+    public function test_default_can_be_out_of_stock_while_sibling_variant_is_in_stock(): void
+    {
+        $default = $this->createPurchasableProduct(price: 1100, stock: 1, sku: 'PDP-MULTI-OOS');
+        app(InventoryServiceInterface::class)->setOnHand($default->uuid, 0);
+        $sibling = $default->product->variants()->create([
+            'tenant_id' => $default->tenant_id,
+            'sku' => 'PDP-MULTI-IN',
+            'track_inventory' => true,
+            'name' => 'In-stock sibling',
+            'price' => 1100,
+            'is_default' => false,
+            'position' => 1,
+            'meta' => ['options' => ['Size' => 'Large']],
+        ]);
+        app(InventoryServiceInterface::class)->receive($sibling->uuid, 3);
+
+        $data = app(ProductDetailBuilder::class)->fromSlug($default->product->slug);
+
+        $this->assertNotNull($data);
+        $this->assertFalse($data->inStock);
+        $this->assertFalse($data->variants[0]['in_stock']);
+        $this->assertTrue($data->variants[1]['in_stock']);
+    }
 }

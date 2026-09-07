@@ -654,7 +654,9 @@ function initVariants(page) {
     const stockNoteEl = buyBox.querySelector('[data-buy-stock-note]');
     const variantInput = buyBox.querySelector('[data-buy-variant-input]');
     const quantityInput = buyBox.querySelector('[data-buy-quantity]');
+    const unavailable = buyBox.querySelector('[data-buy-unavailable]');
     const mobilePrice = page.querySelector('[data-mobile-buy-price]');
+    const mobileBuyBar = page.querySelector('[data-mobile-buy-bar]');
     const variantAxesRoot = page.querySelector('[data-variant-axes]');
 
     let selections = buildInitialSelections(
@@ -683,7 +685,15 @@ function initVariants(page) {
             return;
         }
 
+        const inStock = variantIsInStock(variant);
         selections = buildInitialSelections(variant, axes);
+        buyBox.querySelector('[data-buy-form]').hidden = !inStock;
+        if (unavailable) {
+            unavailable.hidden = inStock;
+        }
+        if (mobileBuyBar) {
+            mobileBuyBar.hidden = !inStock;
+        }
 
         if (amountEl) {
             amountEl.textContent = formatPrice(variant.price, currency);
@@ -718,7 +728,7 @@ function initVariants(page) {
             quantityInput.value = '1';
         }
         if (stockNoteEl) {
-            stockNoteEl.textContent = variantIsInStock(variant)
+            stockNoteEl.textContent = inStock
                 ? stockNoteEl.dataset.inStockLabel || stockNoteEl.textContent
                 : stockNoteEl.dataset.outOfStockLabel || 'Out of stock';
         }

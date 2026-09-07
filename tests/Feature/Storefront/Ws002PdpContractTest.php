@@ -93,7 +93,7 @@ final class Ws002PdpContractTest extends TestCase
         $this->assertStringContainsString('alt="'.$variant->product->name.'"', $html);
     }
 
-    public function test_out_of_stock_hides_add_to_cart_form(): void
+    public function test_out_of_stock_keeps_buy_form_hidden_for_variant_switching(): void
     {
         $variant = $this->createPurchasableProduct(price: 1800, stock: 1, sku: 'PDP-OOS-2');
         app(InventoryServiceInterface::class)->setOnHand($variant->uuid, 0);
@@ -103,8 +103,36 @@ final class Ws002PdpContractTest extends TestCase
             ->assertSee(__('storefront::storefront.out_of_stock'))
             ->getContent();
 
-        $this->assertStringNotContainsString('storefront-pdp__add', $html);
-        $this->assertStringNotContainsString('name="purchasable_uuid"', $html);
+        $this->assertStringContainsString('data-buy-form', $html);
+        $this->assertStringContainsString('data-buy-unavailable', $html);
+        $this->assertStringContainsString('data-mobile-buy-bar', $html);
+        $this->assertMatchesRegularExpression('/<form[^>]*data-buy-form[^>]*hidden/', $html);
+    }
+
+    public function test_pdp_renders_buy_form_when_sibling_variant_is_in_stock(): void
+    {
+        $default = $this->createPurchasableProduct(price: 1800, stock: 1, sku: 'PDP-MULTI-OOS-2');
+        app(InventoryServiceInterface::class)->setOnHand($default->uuid, 0);
+        $sibling = $default->product->variants()->create([
+            'tenant_id' => $default->tenant_id,
+            'sku' => 'PDP-MULTI-IN-2',
+            'track_inventory' => true,
+            'name' => 'In-stock sibling',
+            'price' => 1800,
+            'is_default' => false,
+            'position' => 1,
+            'meta' => ['options' => ['Size' => 'Large']],
+        ]);
+        app(InventoryServiceInterface::class)->receive($sibling->uuid, 3);
+
+        $html = $this->get(route('storefront.products.show', $default->product->slug))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('data-buy-form', $html);
+        $this->assertStringContainsString('data-buy-unavailable', $html);
+        $this->assertStringContainsString('data-mobile-buy-bar', $html);
+        $this->assertStringContainsString('"in_stock":true', $html);
     }
 
     public function test_buy_now_redirects_to_checkout(): void
