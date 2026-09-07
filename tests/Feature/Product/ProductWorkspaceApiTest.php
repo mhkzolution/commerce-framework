@@ -39,11 +39,68 @@ final class ProductWorkspaceApiTest extends TestCase
             ->assertSee('data-workspace-type', false)
             ->assertSee('data-workspace-track-inventory', false)
             ->assertSee('data-simple-stock', false)
-            ->assertSee('data-workspace-variants-tab', false);
+            ->assertSee('data-workspace-variants-tab', false)
+            ->assertSee('data-workspace-sku', false)
+            ->assertSee('data-workspace-sku-prefix-hint', false);
+
+        $html = $response->getContent();
 
         $this->assertMatchesRegularExpression(
             '/<button[^>]*data-workspace-tab="variants"[^>]*hidden[^>]*>/s',
-            $response->getContent(),
+            $html,
+        );
+        $this->assertDoesNotMatchRegularExpression(
+            '/data-simple-product-fields[\s\S]*data-workspace-sku/s',
+            $html,
+        );
+    }
+
+    public function test_variable_edit_page_shows_sku_prefix_not_variant_sku(): void
+    {
+        $this->actingAs(User::query()->first())
+            ->postJson(route('api.v1.admin.products.workspace.store'), [
+                'name' => 'Prefix Shirt',
+                'status' => 'published',
+                'visibility' => 'public',
+                'workspace_payload' => [
+                    'product' => [
+                        'name' => 'Prefix Shirt',
+                        'status' => 'published',
+                        'visibility' => 'public',
+                        'type' => 'variable',
+                        'trackInventory' => false,
+                        'sku' => 'TSHIRT',
+                    ],
+                    'options' => [],
+                    'variants' => [[
+                        'name' => 'Red',
+                        'sku' => '',
+                        'price' => '10',
+                        'status' => 'active',
+                        'options' => ['Color' => 'Red'],
+                        'isDefault' => true,
+                    ]],
+                    'media' => ['productUuids' => []],
+                ],
+            ])
+            ->assertCreated();
+
+        $product = Product::query()->where('name', 'Prefix Shirt')->firstOrFail();
+        $this->assertSame('TSHIRT-RED', $product->defaultVariant()?->sku);
+
+        $html = $this->actingAs(User::query()->first())
+            ->get(route('admin.products.edit', $product))
+            ->assertOk()
+            ->assertSee('data-workspace-sku', false)
+            ->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/data-workspace-sku[^>]*value="TSHIRT"|value="TSHIRT"[^>]*data-workspace-sku/s',
+            $html,
+        );
+        $this->assertDoesNotMatchRegularExpression(
+            '/data-workspace-sku[^>]*value="TSHIRT-RED"|value="TSHIRT-RED"[^>]*data-workspace-sku/s',
+            $html,
         );
     }
 

@@ -166,7 +166,7 @@ export function bindVariantBuilder(root, state) {
                 return;
             }
             state.updateVariant(variant.id, 'imageMediaUuid', item.uuid);
-            state.updateVariant(variant.id, 'imagePreviewUrl', item.preview_url || item.url);
+            state.updateVariant(variant.id, 'imagePreviewUrl', item.preview_url || item.url, { rebuild: true });
         });
 
         const checkbox = row.querySelector('[data-variant-select]');
@@ -246,7 +246,7 @@ export function bindVariantBuilder(root, state) {
                 }
 
                 state.updateVariant(activeImageVariantId, 'imageMediaUuid', item.uuid);
-                state.updateVariant(activeImageVariantId, 'imagePreviewUrl', item.url || item.preview_url);
+                state.updateVariant(activeImageVariantId, 'imagePreviewUrl', item.url || item.preview_url, { rebuild: true });
                 imageDialog?.close();
                 activeImageVariantId = null;
             });
@@ -521,9 +521,24 @@ export function bindVariantBuilder(root, state) {
         });
     };
 
+    let lastEpoch = state.getState().uiEpoch ?? 0;
+
+    const syncTrackVisibility = () => {
+        const tracked = Boolean(state.getState().product.trackInventory);
+        root.querySelectorAll('[data-variant-on-hand-wrap]').forEach((wrap) => {
+            wrap.toggleAttribute('hidden', !tracked);
+        });
+    };
+
     state.subscribe(() => {
-        renderOptions();
-        renderGrid();
+        const { uiEpoch } = state.getState();
+        if (uiEpoch !== lastEpoch) {
+            lastEpoch = uiEpoch;
+            renderOptions();
+            renderGrid();
+        }
+        syncTrackVisibility();
+        renderBulkToolbar();
     });
 
     renderOptions();

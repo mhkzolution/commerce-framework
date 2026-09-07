@@ -76,16 +76,30 @@
         </div>
     </div>
 
-    <div
-        class="cf-product-workspace__field-grid cf-product-workspace__field-grid--2"
-        data-simple-product-fields
-        @if ($workspaceType !== 'simple') hidden @endif
-    >
+    <div class="cf-product-workspace__field-grid cf-product-workspace__field-grid--2">
         <div class="cf-product-workspace__field">
-            <label class="cf-product-workspace__label" for="workspace_sku">{{ __('product::workspace.sku') }}</label>
-            <input id="workspace_sku" type="text" class="cf-input" value="{{ $workspaceProduct['sku'] ?? '' }}" placeholder="Auto" data-workspace-simple-sku>
+            <label class="cf-product-workspace__label" for="workspace_sku">
+                <span data-workspace-sku-label-simple @if ($workspaceType !== 'simple') hidden @endif>{{ __('product::workspace.sku') }}</span>
+                <span data-workspace-sku-label-prefix @if ($workspaceType === 'simple') hidden @endif>{{ __('product::workspace.sku_prefix') }}</span>
+            </label>
+            <input
+                id="workspace_sku"
+                type="text"
+                class="cf-input"
+                value="{{ $workspaceProduct['sku'] ?? '' }}"
+                placeholder="{{ $workspaceType === 'simple' ? 'Auto' : 'TSHIRT' }}"
+                data-workspace-sku
+                data-workspace-simple-sku
+            >
+            <p class="cf-product-workspace__hint" data-workspace-sku-prefix-hint @if ($workspaceType === 'simple') hidden @endif>
+                {{ __('product::workspace.sku_prefix_hint') }}
+            </p>
         </div>
-        <div class="cf-product-workspace__field">
+        <div
+            class="cf-product-workspace__field"
+            data-simple-product-fields
+            @if ($workspaceType !== 'simple') hidden @endif
+        >
             <label class="cf-product-workspace__label" for="workspace_price">{{ __('product::workspace.price') }}</label>
             <input id="workspace_price" type="number" class="cf-input" min="0" step="0.01" value="{{ $workspaceProduct['price'] ?? '' }}" data-workspace-simple-price>
         </div>

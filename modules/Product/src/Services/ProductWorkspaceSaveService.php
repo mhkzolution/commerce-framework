@@ -115,6 +115,12 @@ final class ProductWorkspaceSaveService
             'sku_pattern' => $data->skuPattern,
         ]);
 
+        if ($data->type === 'variable' && $data->sku !== null && trim($data->sku) !== '') {
+            $meta['sku_prefix'] = trim($data->sku);
+        } else {
+            unset($meta['sku_prefix']);
+        }
+
         $attributes = [
             'name' => $data->name,
             'slug' => $slug,

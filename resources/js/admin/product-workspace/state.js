@@ -61,6 +61,7 @@ export function createInitialState(overrides = {}) {
         dirty: false,
         activeTab: overrides.activeTab ?? 'general',
         skuPattern: overrides.skuPattern ?? '{PRODUCT}-{COLOR}-{SIZE}',
+        uiEpoch: overrides.uiEpoch ?? 0,
         inventoryBaseUrl: overrides.inventoryBaseUrl ?? '/admin/inventory/purchasable',
         product: {
             name: productName,
@@ -97,7 +98,20 @@ export function createInitialState(overrides = {}) {
     };
 }
 
-export function generateSku(pattern, productSlug, optionValues) {
+function skuPart(value) {
+    return String(value ?? '')
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+export function generateSku(pattern, productSlug, optionValues, prefix = '') {
+    const prefixPart = skuPart(prefix);
+    if (prefixPart) {
+        const optionParts = Object.values(optionValues ?? {}).map(skuPart).filter(Boolean);
+        return [prefixPart, ...optionParts].join('-');
+    }
+
     if (pattern === 'random') {
         return randomSku();
     }
@@ -129,11 +143,12 @@ export class ProductWorkspaceState {
         this.listeners.forEach((listener) => listener(this.data));
     }
 
-    markDirty() {
-        if (!this.data.dirty) {
-            this.data.dirty = true;
-            this.notify();
+    markDirty({ rebuild = false } = {}) {
+        this.data.dirty = true;
+        if (rebuild) {
+            this.data.uiEpoch = (this.data.uiEpoch ?? 0) + 1;
         }
+        this.notify();
     }
 
     setDirty(value) {
@@ -176,12 +191,12 @@ export class ProductWorkspaceState {
             values: [...presetValues],
         });
 
-        this.markDirty();
+        this.markDirty({ rebuild: true });
     }
 
     removeOption(optionId) {
         this.data.options = this.data.options.filter((opt) => opt.id !== optionId);
-        this.markDirty();
+        this.markDirty({ rebuild: true });
     }
 
     addOptionValue(optionId, value) {
@@ -193,7 +208,7 @@ export class ProductWorkspaceState {
         }
 
         option.values.push(normalized);
-        this.markDirty();
+        this.markDirty({ rebuild: true });
     }
 
     removeOptionValue(optionId, value) {
@@ -203,7 +218,7 @@ export class ProductWorkspaceState {
         }
 
         option.values = option.values.filter((item) => item !== value);
-        this.markDirty();
+        this.markDirty({ rebuild: true });
     }
 
     matrixCount() {
@@ -226,7 +241,7 @@ export class ProductWorkspaceState {
             if (!this.data.variants.length) {
                 this.data.variants = [createDefaultVariant(this.data.product.name)];
             }
-            this.markDirty();
+            this.markDirty({ rebuild: true });
             return;
         }
 
@@ -257,7 +272,7 @@ export class ProductWorkspaceState {
                 id: randomId(),
                 uuid: null,
                 name: combo.join(' / '),
-                sku: generateSku(this.data.skuPattern, slug, optionMap),
+                sku: generateSku(this.data.skuPattern, slug, optionMap, this.data.product.sku),
                 price: '',
                 cost: '',
                 comparePrice: '',
@@ -272,17 +287,17 @@ export class ProductWorkspaceState {
             };
         });
 
-        this.markDirty();
+        this.markDirty({ rebuild: true });
     }
 
-    updateVariant(variantId, field, value) {
+    updateVariant(variantId, field, value, { rebuild = false } = {}) {
         const variant = this.data.variants.find((item) => item.id === variantId);
         if (!variant) {
             return;
         }
 
         variant[field] = value;
-        this.markDirty();
+        this.markDirty({ rebuild });
     }
 
     updateVariantStock(variantId, field, value) {
@@ -302,7 +317,7 @@ export class ProductWorkspaceState {
 
         this.data.variants = this.data.variants.filter((item) => item.id !== variantId);
         this.data.selection = this.data.selection.filter((id) => id !== variantId);
-        this.markDirty();
+        this.markDirty({ rebuild: true });
     }
 
     toggleSelection(variantId, selected) {
@@ -330,13 +345,18 @@ export class ProductWorkspaceState {
             }
 
             if (field === 'sku') {
-                variant.sku = generateSku(this.data.skuPattern, this.data.product.slug, variant.options);
+                variant.sku = generateSku(
+                    this.data.skuPattern,
+                    this.data.product.slug,
+                    variant.options,
+                    this.data.product.sku,
+                );
             } else {
                 variant[field] = value;
             }
         });
 
-        this.markDirty();
+        this.markDirty({ rebuild: true });
     }
 
     applyBulkImage(mediaUuid, previewUrl) {
@@ -350,7 +370,7 @@ export class ProductWorkspaceState {
             variant.imagePreviewUrl = previewUrl;
         });
 
-        this.markDirty();
+        this.markDirty({ rebuild: true });
     }
 
     setMediaUuids(uuids) {
@@ -364,7 +384,7 @@ export class ProductWorkspaceState {
 
         this.data.variants = this.data.variants.filter((item) => !this.data.selection.includes(item.id));
         this.data.selection = [];
-        this.markDirty();
+        this.markDirty({ rebuild: true });
     }
 
     serialize() {

@@ -51,9 +51,12 @@ function initStockControls(workspace, state) {
     const variantsTab = workspace.querySelector('[data-workspace-variants-tab]');
     const variantsPanel = workspace.querySelector('[data-workspace-variants-panel]');
     const variantBuilder = workspace.querySelector('[data-variant-builder]');
-    const simpleSku = workspace.querySelector('[data-workspace-simple-sku]');
+    const simpleSku = workspace.querySelector('[data-workspace-sku]');
     const simplePrice = workspace.querySelector('[data-workspace-simple-price]');
     const simpleOnHand = workspace.querySelector('[data-workspace-simple-on-hand]');
+    const skuLabelSimple = workspace.querySelector('[data-workspace-sku-label-simple]');
+    const skuLabelPrefix = workspace.querySelector('[data-workspace-sku-label-prefix]');
+    const skuPrefixHint = workspace.querySelector('[data-workspace-sku-prefix-hint]');
 
     const render = () => {
         const product = state.getState().product;
@@ -65,6 +68,13 @@ function initStockControls(workspace, state) {
         simpleQuantity?.toggleAttribute('hidden', !simple || !tracked);
         variantsTab?.toggleAttribute('hidden', simple);
         variantBuilder?.toggleAttribute('hidden', simple);
+        skuLabelSimple?.toggleAttribute('hidden', !simple);
+        skuLabelPrefix?.toggleAttribute('hidden', simple);
+        skuPrefixHint?.toggleAttribute('hidden', simple);
+
+        if (simpleSku) {
+            simpleSku.placeholder = simple ? 'Auto' : 'TSHIRT';
+        }
 
         if (simple && variantsPanel && !variantsPanel.hidden) {
             workspace.querySelector('[data-workspace-tab="general"]')?.click();
@@ -74,10 +84,33 @@ function initStockControls(workspace, state) {
     typeInputs.forEach((input) => {
         input.checked = input.value === state.getState().product.type;
         input.addEventListener('change', () => {
-            if (input.checked) {
-                state.setProductField('type', input.value);
-                render();
+            if (!input.checked) {
+                return;
             }
+
+            const nextType = input.value;
+            const current = state.getState();
+
+            if (nextType === 'simple') {
+                const first = current.variants[0];
+                if (first) {
+                    state.data.product.sku = first.sku ?? current.product.sku;
+                    state.data.product.price = first.price ?? current.product.price;
+                    state.data.product.onHand = first.stock?.onHand ?? current.product.onHand;
+                    if (simpleSku) {
+                        simpleSku.value = state.data.product.sku ?? '';
+                    }
+                    if (simplePrice) {
+                        simplePrice.value = state.data.product.price ?? '';
+                    }
+                    if (simpleOnHand) {
+                        simpleOnHand.value = state.data.product.onHand ?? 0;
+                    }
+                }
+            }
+
+            state.setProductField('type', nextType);
+            render();
         });
     });
 
