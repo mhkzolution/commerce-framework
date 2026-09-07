@@ -5,19 +5,24 @@ declare(strict_types=1);
 namespace Commerce\Product\Models;
 
 use Commerce\Catalog\Models\Attribute;
-use Commerce\Catalog\Models\AttributeValue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ProductAttributeValue extends Model
+class ProductAttribute extends Model
 {
     protected $fillable = [
         'product_id',
         'attribute_id',
-        'product_variant_id',
-        'attribute_value_id',
-        'value',
+        'used_for_variations',
+        'position',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'used_for_variations' => 'boolean',
+        ];
+    }
 
     public function product(): BelongsTo
     {
@@ -27,15 +32,5 @@ class ProductAttributeValue extends Model
     public function attribute(): BelongsTo
     {
         return $this->belongsTo(Attribute::class);
-    }
-
-    public function attributeValue(): BelongsTo
-    {
-        return $this->belongsTo(AttributeValue::class);
-    }
-
-    public function variant(): BelongsTo
-    {
-        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 }

@@ -88,6 +88,11 @@ class Product extends Model
         return $this->hasMany(ProductAttributeValue::class);
     }
 
+    public function productAttributes(): HasMany
+    {
+        return $this->hasMany(ProductAttribute::class)->orderBy('position');
+    }
+
     public function attributeSet(): BelongsTo
     {
         return $this->belongsTo(AttributeSet::class, 'attribute_set_id');
