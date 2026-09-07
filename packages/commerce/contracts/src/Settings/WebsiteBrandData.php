@@ -10,5 +10,6 @@ final readonly class WebsiteBrandData
         public string $name,
         public ?string $logoUrl,
         public ?string $description,
+        public ?string $faviconUrl = null,
     ) {}
 }

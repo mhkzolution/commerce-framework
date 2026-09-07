@@ -347,6 +347,12 @@ textarea.cf-input {
     color: #ffffff;
 }
 
+.admin-brand-mark--image {
+    background: transparent;
+    object-fit: contain;
+    padding: 0;
+}
+
 /* Media gallery */
 .cf-gallery-thumb {
     border: 1px solid var(--color-border);

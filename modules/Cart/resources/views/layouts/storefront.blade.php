@@ -4,7 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Shop') — {{ config('commerce.name', 'Commerce Framework') }}</title>
+    <title>@yield('title', 'Shop') — {{ $siteBrandName ?? config('commerce.name', 'Commerce Framework') }}</title>
+    <x-brand-favicon :url="$siteBrand->faviconUrl ?? null" />
     <x-app-fonts />
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/css/storefront/footer.css'])
     <x-admin.design-tokens />

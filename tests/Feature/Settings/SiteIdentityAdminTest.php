@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Settings;
 
 use Commerce\Contracts\Settings\SettingQueryServiceInterface;
+use Commerce\Contracts\Settings\WebsiteSettingsQueryServiceInterface;
 use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
 use Commerce\Media\Models\Media;
@@ -19,6 +20,7 @@ final class SiteIdentityAdminTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->withoutVite();
         $this->seed(IamSeeder::class);
         $this->seed(SettingsSeeder::class);
     }
@@ -72,6 +74,50 @@ final class SiteIdentityAdminTest extends TestCase
         $this->assertSame($logo->uuid, $settings->get('store.logo_media_uuid'));
         $this->assertSame('https://facebook.com/myshop', $settings->get('social.facebook'));
         $this->assertSame('https://line.me/R/ti/p/@myshop', $settings->get('social.line'));
+    }
+
+    public function test_saved_site_identity_renders_in_admin_chrome_and_favicon(): void
+    {
+        $logo = $this->createMedia('logo.png');
+        $favicon = $this->createMedia('favicon.png');
+
+        $this->actingAs(User::query()->first())
+            ->put('/admin/settings/site-identity', [
+                'name' => 'Punpun Store',
+                'logo_media_uuid' => $logo->uuid,
+                'favicon_media_uuid' => $favicon->uuid,
+                'contact_address' => null,
+                'contact_email' => null,
+                'contact_phone' => null,
+                'social_facebook' => null,
+                'social_instagram' => null,
+                'social_tiktok' => null,
+                'social_line' => null,
+            ])
+            ->assertRedirect('/admin/settings/site-identity');
+
+        $brand = app(WebsiteSettingsQueryServiceInterface::class)->brand();
+        $this->assertSame('Punpun Store', $brand->name);
+        $this->assertNotNull($brand->logoUrl);
+        $this->assertNotNull($brand->faviconUrl);
+        $this->assertStringContainsString('favicon.png', (string) $brand->faviconUrl);
+
+        $admin = $this->actingAs(User::query()->first())
+            ->get('/admin/settings/site-identity')
+            ->assertOk();
+
+        $admin->assertSee('Punpun Store', false);
+        $admin->assertSee('rel="icon"', false);
+        $admin->assertSee('/storage/media/favicon.png', false);
+        $admin->assertSee('/storage/media/logo.png', false);
+        $admin->assertSee('admin-brand-mark--image', false);
+        $admin->assertSee('<div class="truncate text-sm font-semibold text-text">Punpun Store</div>', false);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('rel="icon"', false)
+            ->assertSee('/storage/media/favicon.png', false)
+            ->assertSee('Punpun Store', false);
     }
 
     private function createMedia(string $filename): Media

@@ -36,9 +36,10 @@ final class WebsiteSettingsQueryService implements WebsiteSettingsQueryServiceIn
                 name: $this->stringValue('store.name') ?? '',
                 logoUrl: $this->mediaUrl($this->stringValue('store.logo_media_uuid')),
                 description: $this->stringValue('store.description'),
+                faviconUrl: $this->mediaUrl($this->stringValue('site.favicon_media_uuid'), original: true),
             );
         } catch (Throwable) {
-            return new WebsiteBrandData(name: '', logoUrl: null, description: null);
+            return new WebsiteBrandData(name: '', logoUrl: null, description: null, faviconUrl: null);
         }
     }
 
@@ -108,7 +109,7 @@ final class WebsiteSettingsQueryService implements WebsiteSettingsQueryServiceIn
         return $trimmed !== '' ? $trimmed : null;
     }
 
-    private function mediaUrl(?string $uuid): ?string
+    private function mediaUrl(?string $uuid, bool $original = false): ?string
     {
         if ($uuid === null || ! app()->bound(MediaQueryServiceInterface::class)) {
             return null;
@@ -116,6 +117,10 @@ final class WebsiteSettingsQueryService implements WebsiteSettingsQueryServiceIn
 
         try {
             $media = app(MediaQueryServiceInterface::class);
+
+            if ($original) {
+                return $media->getUrl($uuid);
+            }
 
             return $media->getUrl($uuid, 'large')
                 ?? $media->getUrl($uuid, 'medium')

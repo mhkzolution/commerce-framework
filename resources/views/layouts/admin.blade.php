@@ -4,7 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Admin') — {{ config('admin.name', config('commerce.name')) }}</title>
+    <title>@yield('title', 'Admin') — {{ $siteBrandName ?? config('admin.name', config('commerce.name')) }}</title>
+    <x-brand-favicon :url="$siteBrand->faviconUrl ?? null" />
     <x-app-fonts />
     @vite(['resources/css/app.css', 'resources/css/admin.css', 'resources/js/admin.js'])
     <x-admin.design-tokens />
@@ -17,9 +18,17 @@
         <aside id="admin-sidebar" class="admin-sidebar" aria-label="Sidebar navigation">
             <div class="admin-sidebar-inner">
                 <div class="flex h-[var(--topbar-height)] items-center gap-3 border-b border-border px-4">
-                    <div class="admin-brand-mark" aria-hidden="true">C</div>
+                    @if (! empty($siteBrand?->logoUrl))
+                        <img
+                            src="{{ $siteBrand->logoUrl }}"
+                            alt="{{ $siteBrandName }}"
+                            class="admin-brand-mark admin-brand-mark--image"
+                        >
+                    @else
+                        <div class="admin-brand-mark" aria-hidden="true">{{ strtoupper(substr((string) ($siteBrandName ?? 'C'), 0, 1)) }}</div>
+                    @endif
                     <div class="admin-brand-text min-w-0">
-                        <div class="truncate text-sm font-semibold text-text">{{ config('admin.name', config('commerce.name')) }}</div>
+                        <div class="truncate text-sm font-semibold text-text">{{ $siteBrandName ?? config('admin.name', config('commerce.name')) }}</div>
                         <div class="truncate text-xs text-muted">Admin</div>
                     </div>
                 </div>

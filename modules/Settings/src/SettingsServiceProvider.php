@@ -6,6 +6,7 @@ namespace Commerce\Settings;
 
 use Commerce\Contracts\Settings\SettingQueryServiceInterface;
 use Commerce\Contracts\Settings\SettingRegistryServiceInterface;
+use Commerce\Contracts\Settings\WebsiteBrandData;
 use Commerce\Contracts\Settings\WebsiteSettingsQueryServiceInterface;
 use Commerce\Core\Base\BaseModuleServiceProvider;
 use Commerce\Core\Modules\ModuleService;
@@ -27,6 +28,7 @@ use Commerce\Settings\Services\WebsiteSettingsQueryService;
 use Commerce\Settings\Support\AuthConfigurator;
 use Commerce\Settings\Support\MailConfigurator;
 use Illuminate\Support\Facades\View;
+use Throwable;
 
 final class SettingsServiceProvider extends BaseModuleServiceProvider
 {
@@ -68,6 +70,23 @@ final class SettingsServiceProvider extends BaseModuleServiceProvider
 
         MailConfigurator::apply();
         AuthConfigurator::apply();
+
+        View::composer(['layouts.admin', 'cart::layouts.storefront', 'cart::layouts.auth'], function ($view): void {
+            $brand = new WebsiteBrandData(name: '', logoUrl: null, description: null, faviconUrl: null);
+
+            try {
+                if ($this->app->bound(WebsiteSettingsQueryServiceInterface::class)) {
+                    $brand = $this->app->make(WebsiteSettingsQueryServiceInterface::class)->brand();
+                }
+            } catch (Throwable) {
+            }
+
+            $fallback = config('app.name') ?: config('commerce.name', 'Commerce Framework');
+            $name = $brand->name !== '' ? $brand->name : (is_string($fallback) ? $fallback : 'Commerce Framework');
+
+            $view->with('siteBrand', $brand);
+            $view->with('siteBrandName', $name);
+        });
 
         View::composer('components.storefront.layout.partials.site-footer', function ($view): void {
             $data = $view->getData();

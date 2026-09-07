@@ -414,7 +414,22 @@ export function initMediaLibrary(root) {
 
     async function copyText(text) {
         if (!text) return;
-        await navigator.clipboard.writeText(text);
+
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+
+            return;
+        }
+
+        const input = document.createElement('textarea');
+        input.value = text;
+        input.setAttribute('readonly', '');
+        input.style.position = 'fixed';
+        input.style.left = '-9999px';
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        input.remove();
     }
 
     function openPreview(url, alt) {
