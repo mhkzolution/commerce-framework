@@ -24,6 +24,7 @@
 - Migration must not auto-create catalog attributes. Unmatched options: skip and log `product_id`, `attribute_name`, `option_name`.
 - Preserve variant UUID, SKU, inventory rows, and `products.type` through migrate and idempotent generate.
 - Do not start this plan’s storefront cutover until Wave 1 schema+migration tests pass. Human gate after each wave.
+- **Migration Safety Gate (implementation lock, not a spec change):** Wave 1 migrations must be re-runnable. Fresh migrate passes; upgrade of existing `attributes.options` passes; `migrate:rollback` then migrate again passes; they must not create duplicate `attribute_values`, `product_attributes`, or `product_attribute_values` relations.
 
 ---
 
