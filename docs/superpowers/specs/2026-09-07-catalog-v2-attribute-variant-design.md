@@ -1,7 +1,7 @@
 # Catalog V2: Attribute and variant unification (Phase 1)
 
 **Date:** 2026-09-07  
-**Status:** Draft (awaiting review)  
+**Status:** Locked  
 **Owner:** Catalog (`modules/Catalog`) + Product workspace (`modules/Product`) + storefront PDP/shop (`modules/Cart`)  
 **Related:** `docs/superpowers/specs/2026-09-07-product-create-stock-design.md`
 
@@ -55,6 +55,7 @@ Non-goals for Phase 1: search index, CSV format changes, public API redesign, SE
 | Change of axes | Warn before existing variants are affected. |
 | PDP missing combo | Existing combinations only. Impossible pairs are **disabled**, not selectable-then-OOS, not auto-switched. |
 | Post-migration I/O | Read path = relation only. Write path = relation only. |
+| Variable publish | A variable product may be saved without generating a matrix, but cannot be **published** until at least one variant has a complete variation identity. |
 
 ---
 
@@ -106,6 +107,8 @@ This row may exist with **zero** `product_attribute_values`. That means “the p
 Simple products: every `used_for_variations` is false (UI does not offer the checkbox; save ignores true).
 
 Variable products: at least one attribute with `used_for_variations` true is required before generate.
+
+Variable products may exist without generated variants, but cannot be published (`products.status = published` or `scheduled`) until at least one variant exists **with a complete variation identity** (every Used-for-Variations axis has an `attribute_value_id`). The stock-spec default row with no axis values does not count. Draft save is allowed.
 
 `used_for_variations` is allowed only on discrete types (`select`). Not `text`, `textarea`, `number`, or `boolean`. Phase 1 does not use `multiselect` as a variation axis (each variant has one value per axis). `is_filterable` applies to discrete `attribute_values` only.
 
@@ -211,7 +214,7 @@ One-way cutover. Preserve variant UUID, SKU, inventory items, `products.type`.
 6. **Cut over:**
    - **Read path → relation only** (PDP, shop filters, workspace hydrate).
    - **Write path → relation only** (workspace save, generate). Stop writing `variant_options` / `options` JSON. Remove provisioner from save.
-7. Option names that do not match any catalog attribute **in the product’s set** are skipped and logged. Migration does **not** auto-create new catalog attributes (names stay catalog-only). Staff fix leftovers in admin.
+7. Option names that do not match any catalog attribute **in the product’s set** are skipped and logged. Each skipped row must include at least `product_id`, `attribute_name` (the unmatched option axis name), and `option_name` (the unmatched value) so staff can find the source product after migrate. Migration does **not** auto-create new catalog attributes (names stay catalog-only). Staff fix leftovers in admin.
 
 Do not rewrite SKUs. Auto SKU rules apply only to **new** variants after cutover.
 
@@ -227,6 +230,7 @@ Do not rewrite SKUs. Auto SKU rules apply only to **new** variants after cutover
 6. PDP: Blue-S missing → S disabled when Blue is selected; Blue-M qty 0 + deny remains selectable and not purchasable.
 7. Shop filter Color=Red includes a product whose default variant is Blue if a Red variant exists.
 8. After migration, workspace save and PDP/filter do not read or write variant JSON; provisioner is not invoked.
+9. Variable product with only a default variant (no complete identity) saved as draft succeeds; publishing it is rejected until generate has created at least one identified variant.
 
 ---
 
