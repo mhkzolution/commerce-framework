@@ -172,6 +172,18 @@ Use the project’s actual Log fake API if it differs; context array must contai
 
 **Stop for human Wave 1 review.** Do not start Wave 2 until approved.
 
+**Wave 1 human review (2026-09-07):** Approved. No blocking issues.
+
+### Known debt (not blocking Wave 2)
+
+Recorded at Wave 1 close. Do not treat these as Wave 2 start-gate failures.
+
+| ID | Debt | When to close |
+|---|---|---|
+| A | **NULL unique hole.** Unique indexes that include nullable `product_variant_id` / `tenant_id` do not reject duplicate identical rows at SQL level. Wave 2 write path must upsert by lookup (existing `attribute_value_id`, else insert), not rely on the unique index. Follow-up: partial/functional unique or application uniqueness helper before merge if writes still race. | Wave 2 save (mitigate); later schema if still open |
+| B | **Non-select axis.** Migrator does not reject `used_for_variations` on `text` / `textarea` / `number` / `boolean`. Wave 2 **save path** must validate `used_for_variations ⇒ attribute.type = select` (not UI-only). | Task 5 |
+| C | **Provisioner still on save path** until Task 9. Wave 1 correctly left `VariantOptionAttributeProvisioner` in place. Task 5 stops calling it and stops writing `variant_options` / `options` JSON. Task 9 deletes leftover callers and ignores JSON on read. | Task 5 write; Task 9 cutover |
+
 ---
 
 ## Wave 2 — Workspace + generate
@@ -211,7 +223,8 @@ Use the project’s actual Log fake API if it differs; context array must contai
 
 **Interfaces:**
 - Consumes: payload `productAttributes: list<{attributeId, usedForVariations, valueIds: list<int>}>`; Task 4 generator; existing `VariantSkuGenerator` using **codes** in axis position order; `ProductTypeChangeGuard` for drops
-- Produces: persisted `product_attributes` + PAV; simple forces `used_for_variations` false; `VariableProductPublishGuard::assertCanPublish(Product $product): void` throws `ValidationException` if type is variable and no variant has a complete identity
+- Produces: persisted `product_attributes` + PAV; simple forces `used_for_variations` false; `used_for_variations` allowed only when `attributes.type = select` (ValidationException otherwise — Known Debt B); `VariableProductPublishGuard::assertCanPublish(Product $product): void` throws `ValidationException` if type is variable and no variant has a complete identity
+- PAV writes upsert by lookup (Known Debt A). Do not rely on nullable unique indexes.
 
 - [ ] **Step 1: Failing tests** matching spec §11.1, §11.2, §11.9 (draft variable without generate OK; `status=published` rejected). Adding Burgundy via payload creates `attribute_values` with unique code.
 
