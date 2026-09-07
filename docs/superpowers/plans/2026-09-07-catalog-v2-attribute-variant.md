@@ -23,7 +23,8 @@
 - After cutover: read path = relation only; write path = relation only. Do not keep a JSON compatibility layer.
 - Migration must not auto-create catalog attributes. Unmatched options: skip and log `product_id`, `attribute_name`, `option_name`.
 - Preserve variant UUID, SKU, inventory rows, and `products.type` through migrate and idempotent generate.
-- Do not start this plan’s storefront cutover until Wave 1 schema+migration tests pass. Human gate after each wave.
+- Do not start this plan’s storefront cutover until Wave 1 schema+migration tests pass. Human gate after each Wave 3 **task** (PDP, then filter, then cutover).
+- **Cutover last:** do not delete `meta.variant_options`, `meta.options`, or `VariantOptionAttributeProvisioner` from runtime until PDP, shop filter, and workspace hydrate all read relations. Wave 2 already stopped writing JSON; that is not permission to remove the read-path/runtime class.
 - **Migration Safety Gate (implementation lock, not a spec change):** Wave 1 migrations must be re-runnable. Fresh migrate passes; upgrade of existing `attributes.options` passes; `migrate:rollback` then migrate again passes; they must not create duplicate `attribute_values`, `product_attributes`, or `product_attribute_values` relations.
 
 ---
@@ -271,11 +272,59 @@ export function variantIdentityKey(valueIds) {
 
 **Stop for human Wave 2 review.** Do not start Wave 3 until the workspace flow is approved (same bar as product-stock Task 7).
 
+**Wave 2 human review (2026-09-07):** Start gate for Wave 3 is open. Human gate after **each** Wave 3 task (PDP, then filter, then cutover). Do not batch the three.
+
 ---
 
-## Wave 3 — PDP + filter + cutover
+## Wave 3 — PDP, then filter, then cutover
 
-### Task 7: Shop filters from relations
+Locked order (implementation, not a spec change):
+
+```text
+Task 7  PDP + variant selector     → review → human gate
+Task 8  Shop filter                → review → human gate
+Task 9  Relation-only cutover      → review → human gate
+```
+
+Do not merge these. If PDP breaks, filter must still be the old path so the regression source is obvious.
+
+**Cutover is last.** Until PDP, shop filter, **and** workspace hydrate all read relations in production code, do **not** delete from runtime:
+
+- `products.meta.variant_options`
+- `product_variants.meta.options`
+- `VariantOptionAttributeProvisioner`
+
+even if the workspace save path no longer writes JSON (Wave 2). JSON may remain in the DB. Task 7–8 must not remove the provisioner class or strip JSON columns.
+
+### Task 7: PDP spec and combination disable
+
+**Files:**
+- Modify: `modules/Cart/src/Services/ProductDetailBuilder.php` (`variantAxes`, `visibleAttributes`, variant option mapping)
+- Modify: storefront selector if disable-vs-OOS is computed in the view/JS — `resources/views/components/storefront/forms/variant-axis-selector.blade.php`, `resources/js/storefront/product.js`
+- Test: `tests/Unit/Cart/ProductDetailBuilderTest.php` (and a focused storefront JS/PHP test if the disable rule lives in the selector)
+
+**Interfaces:**
+- Consumes: relations from Tasks 2–5 (`product_attributes.used_for_variations`, variant PAV `attribute_value_id`); `StockPolicyEvaluator` from stock spec
+- Produces: axes from variation attributes + values that appear on at least one variant; a value is **disabled** when, given the other selected axes, **no variant row exists** for that combination; spec list = visible non-axis product values + selected variant’s axis values
+- Do not use `meta.specifications` or `variant_options` as SoT for this builder. Do not delete those keys or the provisioner.
+
+**Acceptance (locked UX):** Color=Blue, Size=M exists; Blue-S does **not**. With Color=Blue selected: Size S is **disabled**, Size M is **enabled**. That is not “selectable then OOS”. Blue-M with qty 0 + deny remains selectable and not purchasable (`canFulfill`).
+
+- [ ] **Step 1: Failing tests** — Blue-S missing → S disabled when Blue selected; Blue-M qty 0 deny still listed as a selectable combination; Material on product appears in spec; Color does not appear as a static “product is Red” spec.
+
+- [ ] **Step 2: Run, fail**
+
+- [ ] **Step 3: Implement. Keep stock-spec purchasability for OOS vs missing combo. Do not auto-switch to a nearby variant.**
+
+- [ ] **Step 4: Pass unit + existing PDP stock tests (`ProductDetailBuilderTest`). Do not change `ShopProductQuery` / shop filters in this task.**
+
+- [ ] **Step 5: Commit** `feat: drive pdp axes and specs from attribute relations`
+
+**Stop for human Task 7 review.** Do not start Task 8 (shop filter) until approved.
+
+---
+
+### Task 8: Shop filters from relations
 
 **Files:**
 - Modify: `modules/Cart/src/Services/ShopProductQuery.php` (`applyAttributeGroupFilter`)
@@ -291,51 +340,32 @@ export function variantIdentityKey(valueIds) {
 
 - [ ] **Step 2: Run, fail** (current filter ignores variant-scoped rows)
 
-- [ ] **Step 3: Implement exists-on-variant for axes. Query URL uses code.**
+- [ ] **Step 3: Implement exists-on-variant for axes. Query URL uses code. Do not change PDP disable logic except if a shared helper is required.**
 
 - [ ] **Step 4: Pass tests. `constrainInStock` unchanged.**
 
 - [ ] **Step 5: Commit** `feat: filter shop products by attribute value relations`
 
----
-
-### Task 8: PDP spec and combination disable
-
-**Files:**
-- Modify: `modules/Cart/src/Services/ProductDetailBuilder.php` (`variantAxes`, `visibleAttributes`, in-stock sibling logic)
-- Test: `tests/Unit/Cart/ProductDetailBuilderTest.php`
-
-**Interfaces:**
-- Consumes: relations from Tasks 2–5; `StockPolicyEvaluator` from stock spec
-- Produces: axes from variation attributes + values present on variants; disabled when no variant exists for the combination; spec list = visible non-axis product values + selected variant’s axis values; **do not** read `meta.specifications` or `variant_options`
-
-- [ ] **Step 1: Failing tests** — Blue-S missing → S disabled when Blue selected; Blue-M qty 0 deny still listed as a selectable combination; Material on product appears in spec; Color does not appear as a static “product is Red” spec.
-
-- [ ] **Step 2: Run, fail**
-
-- [ ] **Step 3: Implement. Keep stock-spec purchasability (`canFulfill`) for OOS vs missing combo.**
-
-- [ ] **Step 4: Pass unit + existing PDP stock tests.**
-
-- [ ] **Step 5: Commit** `feat: drive pdp axes and specs from attribute relations`
+**Stop for human Task 8 review.** Do not start Task 9 (cutover) until approved.
 
 ---
 
 ### Task 9: Cutover — relation-only I/O
 
 **Files:**
-- Modify: `ProductWorkspaceSaveService` — ensure provisioner not constructed/called; grep must be zero on save path
+- Modify: `ProductWorkspaceSaveService` — grep must be zero on save path for the provisioner
 - Modify: `ProductWorkspaceStateBuilder` — hydrate from relations only
+- Modify: PDP + shop filter if any JSON fallback remains
 - Delete or leave unused: `VariantOptionAttributeProvisioner.php` (delete if no remaining callers)
 - Test: grep-backed test or `tests/Feature/Product/CatalogV2CutoverTest.php`
 
 **Interfaces:**
-- Consumes: Waves 1–3
-- Produces: save/hydrate/PDP/filter never read or write `variant_options` / `options` JSON
+- Consumes: Tasks 7–8 plus Wave 2 hydrate already on relations
+- Produces: save/hydrate/PDP/filter never read or write `variant_options` / `options` JSON. Provisioner has no runtime callers.
 
-- [ ] **Step 1: Failing test** — after save, `products.meta` has no `variant_options` key (or it is absent/empty and ignored); `product_variants.meta.options` not written; `VariantOptionAttributeProvisioner` has no references under `modules/Product/src/Services/ProductWorkspaceSaveService.php`.
+- [ ] **Step 1: Failing test** — after save, `products.meta` has no `variant_options` key (or it is absent/empty and ignored); `product_variants.meta.options` not written; `VariantOptionAttributeProvisioner` has no production callers.
 
-- [ ] **Step 2: Run, fail** if provisioner still hooked
+- [ ] **Step 2: Run, fail** if provisioner or JSON read still hooked
 
 - [ ] **Step 3: Remove write/read. Keep JSON in DB until ops delete it; code must ignore it.**
 
@@ -356,11 +386,11 @@ export function variantIdentityKey(valueIds) {
 | `product_attributes` even without values | 2, 5 |
 | Canonical identity | 4 |
 | Idempotent generate | 4, 6 |
-| No product-level spec on axes | 5, 8 |
+| No product-level spec on axes | 5, 7 |
 | Publish needs complete identity | 5 |
 | Explicit generate + axis-change warning | 6 |
-| Filter any-matching-variant | 7 |
-| PDP disable missing combo | 8 |
+| PDP disable missing combo | 7 |
+| Filter any-matching-variant | 8 |
 | Relation-only I/O | 9 |
 | Migration skip log keys | 3 |
 | No auto-create attributes | 3 |
