@@ -47,6 +47,8 @@ function createDefaultVariant(productName = 'Default') {
         imageMediaUuid: null,
         options: {},
         stock: { onHand: 0, reserved: 0, available: 0, incoming: 0 },
+        trackInventory: true,
+        skuIsAuto: false,
         isDefault: true,
     };
 }
@@ -72,6 +74,14 @@ export function createInitialState(overrides = {}) {
             publishAt: overrides.product?.publishAt ?? '',
             sellerUuid: overrides.product?.sellerUuid ?? '',
             attributeSetId: overrides.product?.attributeSetId ?? '',
+            type: overrides.product?.type ?? 'simple',
+            trackInventory: overrides.product?.trackInventory ?? true,
+            backorderPolicy: overrides.product?.backorderPolicy ?? 'deny',
+            sku: overrides.product?.sku ?? '',
+            price: overrides.product?.price ?? '',
+            onHand: overrides.product?.onHand ?? 0,
+            reserved: overrides.product?.reserved ?? 0,
+            available: overrides.product?.available ?? 0,
         },
         media: {
             productUuids: overrides.media?.productUuids ?? [],
@@ -256,6 +266,8 @@ export class ProductWorkspaceState {
                 imageMediaUuid: null,
                 options: optionMap,
                 stock: { onHand: 0, reserved: 0, available: 0, incoming: 0 },
+                trackInventory: this.data.product.trackInventory,
+                skuIsAuto: true,
                 isDefault: index === 0,
             };
         });
@@ -270,6 +282,16 @@ export class ProductWorkspaceState {
         }
 
         variant[field] = value;
+        this.markDirty();
+    }
+
+    updateVariantStock(variantId, field, value) {
+        const variant = this.data.variants.find((item) => item.id === variantId);
+        if (!variant) {
+            return;
+        }
+
+        variant.stock = { ...variant.stock, [field]: value };
         this.markDirty();
     }
 
@@ -346,11 +368,35 @@ export class ProductWorkspaceState {
     }
 
     serialize() {
+        const trackInventory = Boolean(this.data.product.trackInventory);
+        let variants = this.data.variants.map((variant) => ({
+            ...variant,
+            onHand: variant.stock?.onHand,
+            trackInventory,
+        }));
+
+        if (this.data.product.type === 'simple') {
+            const defaultVariant = variants[0] ?? createDefaultVariant(this.data.product.name);
+            variants = [{
+                ...defaultVariant,
+                name: defaultVariant.name || this.data.product.name || 'Default',
+                sku: this.data.product.sku,
+                price: this.data.product.price,
+                stock: {
+                    ...defaultVariant.stock,
+                    onHand: this.data.product.onHand,
+                },
+                onHand: this.data.product.onHand,
+                trackInventory,
+                isDefault: true,
+            }];
+        }
+
         return JSON.stringify({
             product: this.data.product,
             media: this.data.media,
             options: this.data.options,
-            variants: this.data.variants,
+            variants,
             skuPattern: this.data.skuPattern,
         });
     }

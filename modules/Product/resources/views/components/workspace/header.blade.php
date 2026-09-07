@@ -7,6 +7,7 @@
 @php
     $status = old('status', $product?->status ?? 'draft');
     $statusLabel = $statuses[$status] ?? ucfirst($status);
+    $type = old('workspace_type', $product?->type ?? 'simple');
 @endphp
 
 <header class="cf-product-workspace__header">
@@ -27,6 +28,18 @@
                 <span data-workspace-save-status>{{ $mode === 'create' ? __('product::workspace.not_saved_yet') : __('product::workspace.saved') }}</span>
             </div>
         </div>
+
+        <fieldset class="cf-product-workspace__type-switch" aria-label="{{ __('product::workspace.product_type') }}">
+            <legend class="sr-only">{{ __('product::workspace.product_type') }}</legend>
+            <label>
+                <input type="radio" name="workspace_type" value="simple" data-workspace-type @checked($type === 'simple')>
+                <span>{{ __('product::workspace.type_simple') }}</span>
+            </label>
+            <label>
+                <input type="radio" name="workspace_type" value="variable" data-workspace-type @checked($type === 'variable')>
+                <span>{{ __('product::workspace.type_variable') }}</span>
+            </label>
+        </fieldset>
 
         <div class="cf-product-workspace__header-actions">
             <x-admin.badge variant="{{ $status === 'published' ? 'published' : ($status === 'archived' ? 'archived' : 'draft') }}">

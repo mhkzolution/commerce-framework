@@ -42,11 +42,6 @@ export function bindVariantBuilder(root, state) {
     let activeImageVariantId = null;
     let bulkImageMode = false;
 
-    const inventoryUrl = (uuid) => {
-        const base = state.getState().inventoryBaseUrl;
-        return uuid ? `${base}/${uuid}` : base;
-    };
-
     const updateMatrixSummary = () => {
         if (!matrixCount || !matrixFormula) {
             return;
@@ -114,28 +109,24 @@ export function bindVariantBuilder(root, state) {
     };
 
     const bindStockSummary = (container, variant) => {
-        const link = container.querySelector('[data-variant-stock-link]');
         const available = container.querySelector('[data-variant-stock-available]');
-        const onHand = container.querySelector('[data-variant-stock-on-hand]');
         const reserved = container.querySelector('[data-variant-stock-reserved]');
-        const incoming = container.querySelector('[data-variant-stock-incoming]');
+        const onHandInput = container.querySelector('[data-variant-stock-on-hand-input]');
+        const onHandWrap = container.querySelector('[data-variant-on-hand-wrap]');
 
-        if (!available || !onHand || !reserved) {
+        if (!available || !reserved) {
             return;
         }
 
         available.textContent = variant.stock.available;
-        onHand.textContent = `${variant.stock.onHand} on hand`;
-        reserved.textContent = `${variant.stock.reserved} reserved`;
-        if (incoming) {
-            incoming.textContent = `${variant.stock.incoming ?? 0} incoming`;
+        reserved.textContent = variant.stock.reserved;
+        if (onHandInput) {
+            onHandInput.value = variant.stock.onHand;
+            onHandInput.addEventListener('input', () => {
+                state.updateVariantStock(variant.id, 'onHand', onHandInput.value);
+            });
         }
-
-        link?.addEventListener('click', () => {
-            if (variant.uuid) {
-                window.location.href = inventoryUrl(variant.uuid);
-            }
-        });
+        onHandWrap?.toggleAttribute('hidden', !state.getState().product.trackInventory);
     };
 
     const bindVariantFields = (row, variant) => {
@@ -305,12 +296,16 @@ export function bindVariantBuilder(root, state) {
 
             const summarySlot = card.querySelector('.cf-variant-card__summary');
             summarySlot.innerHTML = `
-                <button type="button" class="cf-variant-stock-summary" data-variant-stock-link>
-                    <span class="cf-variant-stock-summary__available">${variant.stock.available}</span>
+                <div class="cf-variant-stock-summary">
+                    <label data-variant-on-hand-wrap>
+                        <span>On hand</span>
+                        <input type="number" min="0" step="1" class="cf-input" data-variant-stock-on-hand-input>
+                    </label>
                     <span class="cf-variant-stock-summary__meta">
-                        <span>${variant.stock.onHand} on hand</span> · <span>${variant.stock.reserved} reserved</span> · <span>${variant.stock.incoming ?? 0} incoming</span>
+                        <span><strong data-variant-stock-reserved>${variant.stock.reserved}</strong> reserved</span> ·
+                        <span><strong data-variant-stock-available>${variant.stock.available}</strong> available</span>
                     </span>
-                </button>
+                </div>
             `;
 
             const fields = card.querySelector('.cf-variant-card__fields');

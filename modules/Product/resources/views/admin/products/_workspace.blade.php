@@ -49,7 +49,7 @@
     </x-slot:header>
 
     <x-slot:tabs>
-        <x-product::workspace.tabs>
+        <x-product::workspace.tabs :product-type="$initialState['product']['type'] ?? 'simple'">
             <x-slot:general>
                 <x-product::workspace.general-form
                     :product="$product"
@@ -58,6 +58,7 @@
                     :collections="$collections ?? collect()"
                     :statuses="$statuses ?? []"
                     :visibilities="$visibilities ?? []"
+                    :workspace-product="$initialState['product'] ?? []"
                 />
             </x-slot:general>
 

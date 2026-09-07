@@ -31,6 +31,22 @@ final class ProductWorkspaceApiTest extends TestCase
             ->assertSee('workspace_payload', false);
     }
 
+    public function test_create_page_shows_type_and_track_controls(): void
+    {
+        $response = $this->actingAs(User::query()->first())
+            ->get(route('admin.products.create'))
+            ->assertOk()
+            ->assertSee('data-workspace-type', false)
+            ->assertSee('data-workspace-track-inventory', false)
+            ->assertSee('data-simple-stock', false)
+            ->assertSee('data-workspace-variants-tab', false);
+
+        $this->assertMatchesRegularExpression(
+            '/<button[^>]*data-workspace-tab="variants"[^>]*hidden[^>]*>/s',
+            $response->getContent(),
+        );
+    }
+
     public function test_admin_can_fetch_product_workspace_via_api(): void
     {
         $variant = $this->createPurchasableProduct(price: 4500, sku: 'API-WS-001');
@@ -41,7 +57,15 @@ final class ProductWorkspaceApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.uuid', $product->uuid)
             ->assertJsonPath('data.workspace.product.name', $product->name)
-            ->assertJsonPath('data.workspace.variants.0.sku', 'API-WS-001');
+            ->assertJsonPath('data.workspace.product.type', $product->type)
+            ->assertJsonPath('data.workspace.product.backorderPolicy', 'deny')
+            ->assertJsonPath('data.workspace.product.trackInventory', (bool) $variant->track_inventory)
+            ->assertJsonPath('data.workspace.variants.0.sku', 'API-WS-001')
+            ->assertJsonPath('data.workspace.variants.0.trackInventory', (bool) $variant->track_inventory)
+            ->assertJsonPath('data.workspace.variants.0.skuIsAuto', false)
+            ->assertJsonPath('data.workspace.variants.0.stock.onHand', 100)
+            ->assertJsonPath('data.workspace.variants.0.stock.reserved', 0)
+            ->assertJsonPath('data.workspace.variants.0.stock.available', 100);
     }
 
     public function test_admin_can_create_product_via_workspace_api(): void

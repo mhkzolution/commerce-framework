@@ -1,5 +1,6 @@
 @props([
     'defaultTab' => 'general',
+    'productType' => 'simple',
 ])
 
 @php
@@ -23,6 +24,7 @@
                 data-workspace-tab="{{ $key }}"
                 aria-selected="{{ $key === $defaultTab ? 'true' : 'false' }}"
                 aria-controls="workspace-panel-{{ $key }}"
+                @if ($key === 'variants') data-workspace-variants-tab @if ($productType === 'simple') hidden @endif @endif
             >
                 {{ $label }}
                 <span class="cf-product-workspace__tab-dot hidden" data-workspace-tab-dirty="{{ $key }}" aria-hidden="true"></span>
@@ -37,7 +39,8 @@
                 role="tabpanel"
                 class="cf-product-workspace__panel {{ $key === $defaultTab ? '' : 'hidden' }}"
                 data-workspace-panel="{{ $key }}"
-                @unless($key === $defaultTab) hidden @endunless
+                @if ($key === 'variants') data-workspace-variants-panel @endif
+                @if($key !== $defaultTab || ($key === 'variants' && $productType === 'simple')) hidden @endif
             >
                 <div class="cf-product-workspace__panel-inner">
                     @switch($key)

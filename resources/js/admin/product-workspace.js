@@ -8,6 +8,11 @@ function initTabs(workspace) {
     const panels = workspace.querySelectorAll('[data-workspace-panel]');
 
     const activate = (key) => {
+        const requestedButton = workspace.querySelector(`[data-workspace-tab="${key}"]`);
+        if (!requestedButton || requestedButton.hidden) {
+            key = 'general';
+        }
+
         tabButtons.forEach((button) => {
             const active = button.dataset.workspaceTab === key;
             button.classList.toggle('is-active', active);
@@ -30,9 +35,78 @@ function initTabs(workspace) {
     });
 
     const hash = location.hash.replace('#', '');
-    if (hash && workspace.querySelector(`[data-workspace-panel="${hash}"]`)) {
+    const hashButton = workspace.querySelector(`[data-workspace-tab="${hash}"]`);
+    if (hash && hashButton && !hashButton.hidden) {
         activate(hash);
     }
+}
+
+function initStockControls(workspace, state) {
+    const typeInputs = workspace.querySelectorAll('[data-workspace-type]');
+    const trackInput = workspace.querySelector('[data-workspace-track-inventory]');
+    const backorderInputs = workspace.querySelectorAll('[data-workspace-backorder]');
+    const simpleFields = workspace.querySelector('[data-simple-product-fields]');
+    const simpleStock = workspace.querySelector('[data-simple-stock]');
+    const simpleQuantity = workspace.querySelector('[data-simple-quantity]');
+    const variantsTab = workspace.querySelector('[data-workspace-variants-tab]');
+    const variantsPanel = workspace.querySelector('[data-workspace-variants-panel]');
+    const variantBuilder = workspace.querySelector('[data-variant-builder]');
+    const simpleSku = workspace.querySelector('[data-workspace-simple-sku]');
+    const simplePrice = workspace.querySelector('[data-workspace-simple-price]');
+    const simpleOnHand = workspace.querySelector('[data-workspace-simple-on-hand]');
+
+    const render = () => {
+        const product = state.getState().product;
+        const simple = product.type === 'simple';
+        const tracked = Boolean(product.trackInventory);
+
+        simpleFields?.toggleAttribute('hidden', !simple);
+        simpleStock?.toggleAttribute('hidden', !simple);
+        simpleQuantity?.toggleAttribute('hidden', !simple || !tracked);
+        variantsTab?.toggleAttribute('hidden', simple);
+        variantBuilder?.toggleAttribute('hidden', simple);
+
+        if (simple && variantsPanel && !variantsPanel.hidden) {
+            workspace.querySelector('[data-workspace-tab="general"]')?.click();
+        }
+    };
+
+    typeInputs.forEach((input) => {
+        input.checked = input.value === state.getState().product.type;
+        input.addEventListener('change', () => {
+            if (input.checked) {
+                state.setProductField('type', input.value);
+                render();
+            }
+        });
+    });
+
+    if (trackInput) {
+        trackInput.checked = Boolean(state.getState().product.trackInventory);
+        trackInput.addEventListener('change', () => {
+            state.setProductField('trackInventory', trackInput.checked);
+            render();
+        });
+    }
+
+    backorderInputs.forEach((input) => {
+        input.checked = input.value === state.getState().product.backorderPolicy;
+        input.addEventListener('change', () => {
+            if (input.checked) {
+                state.setProductField('backorderPolicy', input.value);
+            }
+        });
+    });
+
+    [
+        [simpleSku, 'sku'],
+        [simplePrice, 'price'],
+        [simpleOnHand, 'onHand'],
+    ].forEach(([input, key]) => {
+        input?.addEventListener('input', () => state.setProductField(key, input.value));
+    });
+
+    render();
 }
 
 function bindProductField(form, state, fieldName, stateKey) {
@@ -180,6 +254,7 @@ export function initProductWorkspaces() {
             const state = new ProductWorkspaceState(initial);
 
             initTabs(workspace);
+            initStockControls(workspace, state);
             initDirtyState(workspace, state);
 
             const builder = workspace.querySelector('[data-variant-builder]');

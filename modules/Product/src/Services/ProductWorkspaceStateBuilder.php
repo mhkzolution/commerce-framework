@@ -23,6 +23,8 @@ final class ProductWorkspaceStateBuilder
     public function build(?Product $product = null, array $stockLevels = []): array
     {
         $variants = [];
+        $defaultVariant = $product?->variants->firstWhere('is_default', true) ?? $product?->variants->first();
+        $defaultStock = $defaultVariant === null ? null : ($stockLevels[$defaultVariant->uuid] ?? null);
 
         if ($product !== null) {
             foreach ($product->variants as $variant) {
@@ -40,6 +42,8 @@ final class ProductWorkspaceStateBuilder
                     'comparePrice' => $this->majorFromMinor($variant->compare_at_price),
                     'weight' => $meta['weight'] ?? '',
                     'status' => $meta['status'] ?? 'active',
+                    'trackInventory' => (bool) $variant->track_inventory,
+                    'skuIsAuto' => (bool) $variant->sku_is_auto,
                     'imageMediaUuid' => $imageUuid,
                     'imagePreviewUrl' => $this->variantImagePreview($imageUuid),
                     'options' => $meta['options'] ?? [],
@@ -77,6 +81,14 @@ final class ProductWorkspaceStateBuilder
                 'publishAt' => $product?->publish_at?->format('Y-m-d\TH:i') ?? '',
                 'sellerUuid' => $product?->seller_uuid ?? '',
                 'attributeSetId' => $product?->attribute_set_id ?? '',
+                'type' => $product?->type ?? 'simple',
+                'backorderPolicy' => $product?->backorder_policy ?? 'deny',
+                'trackInventory' => $defaultVariant === null ? true : (bool) $defaultVariant->track_inventory,
+                'sku' => $defaultVariant?->sku ?? '',
+                'price' => $this->majorFromMinor($defaultVariant?->price),
+                'onHand' => $defaultStock?->getOnHand() ?? 0,
+                'reserved' => $defaultStock?->getReserved() ?? 0,
+                'available' => $defaultStock?->getAvailable() ?? 0,
             ],
             'media' => [
                 'productUuids' => $product?->media->pluck('media_uuid')->all() ?? [],

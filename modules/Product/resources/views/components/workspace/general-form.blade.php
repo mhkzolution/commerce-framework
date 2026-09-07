@@ -5,7 +5,14 @@
     'collections' => collect(),
     'statuses' => [],
     'visibilities' => [],
+    'workspaceProduct' => [],
 ])
+
+@php
+    $workspaceType = $workspaceProduct['type'] ?? $product?->type ?? 'simple';
+    $trackInventory = (bool) ($workspaceProduct['trackInventory'] ?? true);
+    $backorderPolicy = $workspaceProduct['backorderPolicy'] ?? $product?->backorder_policy ?? 'deny';
+@endphp
 
 <section class="cf-product-workspace__section">
     <header class="cf-product-workspace__section-header">
@@ -68,6 +75,65 @@
             >
         </div>
     </div>
+
+    <div
+        class="cf-product-workspace__field-grid cf-product-workspace__field-grid--2"
+        data-simple-product-fields
+        @if ($workspaceType !== 'simple') hidden @endif
+    >
+        <div class="cf-product-workspace__field">
+            <label class="cf-product-workspace__label" for="workspace_sku">{{ __('product::workspace.sku') }}</label>
+            <input id="workspace_sku" type="text" class="cf-input" value="{{ $workspaceProduct['sku'] ?? '' }}" placeholder="Auto" data-workspace-simple-sku>
+        </div>
+        <div class="cf-product-workspace__field">
+            <label class="cf-product-workspace__label" for="workspace_price">{{ __('product::workspace.price') }}</label>
+            <input id="workspace_price" type="number" class="cf-input" min="0" step="0.01" value="{{ $workspaceProduct['price'] ?? '' }}" data-workspace-simple-price>
+        </div>
+    </div>
+
+    <section class="cf-product-workspace__section" data-product-stock-policy>
+        <header class="cf-product-workspace__section-header">
+            <h3 class="cf-product-workspace__section-title">{{ __('product::workspace.stock') }}</h3>
+        </header>
+
+        <label class="cf-product-workspace__label">
+            <input type="checkbox" data-workspace-track-inventory @checked($trackInventory)>
+            {{ __('product::workspace.track_inventory') }}
+        </label>
+
+        <div
+            class="cf-product-workspace__field-grid cf-product-workspace__field-grid--2"
+            data-simple-stock
+            @if ($workspaceType !== 'simple') hidden @endif
+        >
+            <div class="cf-product-workspace__field" data-simple-quantity @if (! $trackInventory) hidden @endif>
+                <label class="cf-product-workspace__label" for="workspace_on_hand">{{ __('product::workspace.quantity_on_hand') }}</label>
+                <input id="workspace_on_hand" type="number" class="cf-input" min="0" step="1" value="{{ $workspaceProduct['onHand'] ?? 0 }}" data-workspace-simple-on-hand>
+            </div>
+            @if ($product)
+                <div class="cf-product-workspace__field-grid cf-product-workspace__field-grid--2">
+                    <div class="cf-product-workspace__field">
+                        <label class="cf-product-workspace__label">{{ __('product::workspace.reserved') }}</label>
+                        <output data-workspace-simple-reserved>{{ $workspaceProduct['reserved'] ?? 0 }}</output>
+                    </div>
+                    <div class="cf-product-workspace__field">
+                        <label class="cf-product-workspace__label">{{ __('product::workspace.available') }}</label>
+                        <output data-workspace-simple-available>{{ $workspaceProduct['available'] ?? 0 }}</output>
+                    </div>
+                </div>
+            @endif
+        </div>
+
+        <fieldset class="cf-product-workspace__field">
+            <legend class="cf-product-workspace__label">{{ __('product::workspace.backorder_policy') }}</legend>
+            @foreach (['deny', 'notify', 'allow'] as $policy)
+                <label>
+                    <input type="radio" name="workspace_backorder_policy" value="{{ $policy }}" data-workspace-backorder @checked($backorderPolicy === $policy)>
+                    {{ __('product::workspace.backorder_'.$policy) }}
+                </label>
+            @endforeach
+        </fieldset>
+    </section>
 
     <div class="cf-product-workspace__field cf-product-workspace__field--full">
         <label class="cf-product-workspace__label" for="description">Description</label>

@@ -7,6 +7,7 @@
     $variant = is_array($variant) ? $variant : [];
     $stock = is_array($variant['stock'] ?? null) ? $variant['stock'] : [];
     $status = $variant['status'] ?? 'active';
+    $trackInventory = (bool) ($variant['trackInventory'] ?? true);
 @endphp
 
 <tr
@@ -47,24 +48,24 @@
         <x-product::workspace.variants.inline-cell type="number" name="weight" placeholder="0" step="0.01" min="0" :value="$variant['weight'] ?? ''" />
     </td>
     <td class="cf-variant-grid__td">
-        <button
-            type="button"
-            class="cf-variant-stock-summary"
-            data-variant-stock-link
-            title="Manage stock in Inventory"
-            @if (! empty($variant['uuid']) && $inventoryUrl)
-                onclick="window.location.href='{{ rtrim($inventoryUrl, '/') }}/{{ $variant['uuid'] }}'"
-            @endif
-        >
-            <span class="cf-variant-stock-summary__available" data-variant-stock-available>{{ $stock['available'] ?? 0 }}</span>
+        <div class="cf-variant-stock-summary">
+            <label data-variant-on-hand-wrap @if (! $trackInventory) hidden @endif>
+                <span class="sr-only">{{ __('product::workspace.quantity_on_hand') }}</span>
+                <input
+                    type="number"
+                    class="cf-input"
+                    min="0"
+                    step="1"
+                    value="{{ $stock['onHand'] ?? 0 }}"
+                    data-variant-stock-on-hand-input
+                >
+            </label>
             <span class="cf-variant-stock-summary__meta">
-                <span data-variant-stock-on-hand>{{ $stock['onHand'] ?? 0 }} on hand</span>
+                <span><strong data-variant-stock-reserved>{{ $stock['reserved'] ?? 0 }}</strong> {{ __('product::workspace.reserved') }}</span>
                 ·
-                <span data-variant-stock-reserved>{{ $stock['reserved'] ?? 0 }} reserved</span>
-                ·
-                <span data-variant-stock-incoming>{{ $stock['incoming'] ?? 0 }} incoming</span>
+                <span><strong data-variant-stock-available>{{ $stock['available'] ?? 0 }}</strong> {{ __('product::workspace.available') }}</span>
             </span>
-        </button>
+        </div>
     </td>
     <td class="cf-variant-grid__td">
         <select class="cf-variant-grid__status-select" data-variant-field="status">
