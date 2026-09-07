@@ -122,7 +122,7 @@ final class ProductDetailBuilderTest extends TestCase
         $variant = $this->createPurchasableProduct(price: 1100, stock: 4, sku: 'PDP-INV-1');
 
         $inventory = $this->createMock(InventoryQueryServiceInterface::class);
-        $inventory->method('getAvailable')->willThrowException(new RuntimeException('inventory down'));
+        $inventory->method('availabilityForPurchasable')->willThrowException(new RuntimeException('inventory down'));
 
         $this->app->instance(InventoryQueryServiceInterface::class, $inventory);
         $this->app->forgetInstance(ProductDetailBuilder::class);
@@ -144,5 +144,31 @@ final class ProductDetailBuilderTest extends TestCase
         $this->assertNotNull($data);
         $this->assertSame(0, $data->available);
         $this->assertFalse($data->inStock);
+    }
+
+    public function test_untracked_stock_is_purchasable_with_unknown_availability(): void
+    {
+        $variant = $this->createPurchasableProduct(price: 1100, stock: 1, sku: 'PDP-UNTRACKED-1');
+        app(InventoryServiceInterface::class)->setOnHand($variant->uuid, 0);
+        $variant->update(['track_inventory' => false]);
+
+        $data = app(ProductDetailBuilder::class)->fromSlug($variant->product->slug);
+
+        $this->assertNotNull($data);
+        $this->assertNull($data->available);
+        $this->assertTrue($data->inStock);
+    }
+
+    public function test_allow_backorder_with_zero_stock_is_in_stock(): void
+    {
+        $variant = $this->createPurchasableProduct(price: 1100, stock: 1, sku: 'PDP-ALLOW-1');
+        app(InventoryServiceInterface::class)->setOnHand($variant->uuid, 0);
+        $variant->product->update(['backorder_policy' => 'allow']);
+
+        $data = app(ProductDetailBuilder::class)->fromSlug($variant->product->slug);
+
+        $this->assertNotNull($data);
+        $this->assertSame(0, $data->available);
+        $this->assertTrue($data->inStock);
     }
 }

@@ -155,11 +155,16 @@ final class ShopProductQuery
         }
 
         $query->whereHas('variants', static function (Builder $variantQuery): void {
-            $variantQuery->whereExists(static function ($sub): void {
-                $sub->selectRaw('1')
-                    ->from('inventory_items')
-                    ->whereColumn('inventory_items.purchasable_uuid', 'product_variants.uuid')
-                    ->whereRaw('(on_hand - reserved) > 0');
+            $variantQuery->where(static function (Builder $stockQuery): void {
+                $stockQuery
+                    ->where('product_variants.track_inventory', false)
+                    ->orWhereIn('products.backorder_policy', ['notify', 'allow'])
+                    ->orWhereExists(static function ($sub): void {
+                        $sub->selectRaw('1')
+                            ->from('inventory_items')
+                            ->whereColumn('inventory_items.purchasable_uuid', 'product_variants.uuid')
+                            ->whereRaw('(on_hand - reserved) > 0');
+                    });
             });
         });
     }

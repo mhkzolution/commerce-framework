@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Checkout;
 
+use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Orders\Models\Order;
 use Commerce\Payment\Models\Payment;
-use Commerce\Shipping\Models\ShippingMethod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesPurchasableProduct;
 use Tests\TestCase;
@@ -79,6 +79,50 @@ final class CheckoutFlowTest extends TestCase
         $this->post(route('storefront.checkout.store'), $this->checkoutPayload())
             ->assertRedirect(route('storefront.checkout'))
             ->assertSessionHasErrors('checkout');
+    }
+
+    public function test_allow_backorder_with_zero_stock_can_add_and_checkout(): void
+    {
+        $variant = $this->createPurchasableProduct(price: 1000, stock: 1);
+        app(InventoryServiceInterface::class)->setOnHand($variant->uuid, 0);
+        $variant->product->update(['backorder_policy' => 'allow']);
+
+        $this->post(route('storefront.cart.items.store'), [
+            'purchasable_uuid' => $variant->uuid,
+            'quantity' => 2,
+        ])->assertRedirect(route('storefront.cart.index'))
+            ->assertSessionHasNoErrors();
+
+        $this->post(route('storefront.checkout.store'), $this->checkoutPayload())
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('orders', [
+            'customer_email' => 'buyer@example.com',
+            'status' => 'pending',
+        ]);
+    }
+
+    public function test_untracked_product_can_add_and_checkout_without_inventory_availability(): void
+    {
+        $variant = $this->createPurchasableProduct(price: 1000, stock: 1);
+        app(InventoryServiceInterface::class)->setOnHand($variant->uuid, 0);
+        $variant->update(['track_inventory' => false]);
+
+        $this->post(route('storefront.cart.items.store'), [
+            'purchasable_uuid' => $variant->uuid,
+            'quantity' => 2,
+        ])->assertRedirect(route('storefront.cart.index'))
+            ->assertSessionHasNoErrors();
+
+        $this->post(route('storefront.checkout.store'), $this->checkoutPayload())
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('orders', [
+            'customer_email' => 'buyer@example.com',
+            'status' => 'pending',
+        ]);
     }
 
     public function test_payment_failure_cancels_order(): void

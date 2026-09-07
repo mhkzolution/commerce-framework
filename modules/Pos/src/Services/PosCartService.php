@@ -17,7 +17,9 @@ use Commerce\Contracts\Purchasable\PurchasableInterface;
 use Commerce\Core\Exceptions\DomainException;
 use Commerce\Core\Exceptions\EntityNotFoundException;
 use Commerce\Core\Pricing\PricingContext;
+use Commerce\Inventory\Services\StockPolicyEvaluator;
 use Commerce\Pos\Support\PosCartStorage;
+use Commerce\Product\Models\ProductVariant;
 
 final class PosCartService implements CartServiceInterface
 {
@@ -26,6 +28,7 @@ final class PosCartService implements CartServiceInterface
         private readonly ProductQueryServiceInterface $productQueryService,
         private readonly InventoryQueryServiceInterface $inventoryQueryService,
         private readonly PriceResolverInterface $priceResolver,
+        private readonly StockPolicyEvaluator $stockPolicy,
     ) {}
 
     public function storage(): PosCartStorage
@@ -315,7 +318,13 @@ final class PosCartService implements CartServiceInterface
             throw new DomainException('This product is not available for purchase.');
         }
 
-        if (! $this->inventoryQueryService->isAvailable($purchasableUuid, $quantity)) {
+        if (! $variant instanceof ProductVariant) {
+            throw new EntityNotFoundException("Purchasable variant [{$purchasableUuid}] not found.");
+        }
+
+        $level = $this->inventoryQueryService->getStockLevel($purchasableUuid);
+
+        if (! $this->stockPolicy->canFulfill($variant->product, $variant, $quantity, $level)) {
             throw new DomainException('Insufficient stock for this quantity.');
         }
     }

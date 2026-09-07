@@ -60,7 +60,7 @@ final class ProductDetailBuilder
             displayCurrency: $displayCurrency,
             sku: is_string($variant->sku) && $variant->sku !== '' ? $variant->sku : null,
             available: $available,
-            inStock: $this->inStock($available),
+            inStock: $this->inStock($available, $product),
             variantUuid: (string) $variant->uuid,
             shopUrl: $this->shopUrl(),
             uuid: (string) $product->uuid,
@@ -217,7 +217,7 @@ final class ProductDetailBuilder
 
         foreach ($product->variants as $variant) {
             $available = $this->available((string) $variant->uuid);
-            $inStock = $this->inStock($available);
+            $inStock = $this->inStock($available, $product);
             $meta = is_array($variant->meta) ? $variant->meta : [];
             $options = is_array($meta['options'] ?? null) ? $meta['options'] : [];
             $normalized = [];
@@ -422,15 +422,17 @@ final class ProductDetailBuilder
         }
 
         try {
-            return $this->inventory->getAvailable($variantUuid);
+            return $this->inventory->availabilityForPurchasable($variantUuid);
         } catch (Throwable) {
             return null;
         }
     }
 
-    private function inStock(?int $available): bool
+    private function inStock(?int $available, Product $product): bool
     {
-        return $available === null || $available > 0;
+        return $available === null
+            || $available > 0
+            || in_array($product->backorder_policy, ['notify', 'allow'], true);
     }
 
     private function convert(int $amount, string $from, string $to): int

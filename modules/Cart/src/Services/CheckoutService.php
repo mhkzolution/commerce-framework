@@ -9,6 +9,8 @@ use Commerce\Cart\Contracts\CheckoutServiceInterface;
 use Commerce\Cart\DTO\CartData;
 use Commerce\Cart\DTO\CheckoutData;
 use Commerce\Contracts\Customer\CustomerQueryServiceInterface;
+use Commerce\Contracts\Inventory\InventoryQueryServiceInterface;
+use Commerce\Contracts\Product\ProductQueryServiceInterface;
 use Commerce\Contracts\Promotion\PromotionServiceInterface;
 use Commerce\Contracts\Shipping\ShippingQuoteServiceInterface;
 use Commerce\Contracts\Tax\TaxQuoteServiceInterface;
@@ -18,11 +20,13 @@ use Commerce\Core\Exceptions\EntityNotFoundException;
 use Commerce\Customers\Models\Customer;
 use Commerce\Customers\Models\CustomerAddress;
 use Commerce\Inventory\Contracts\InventoryServiceInterface;
+use Commerce\Inventory\Services\StockPolicyEvaluator;
 use Commerce\Orders\Contracts\OrderServiceInterface;
 use Commerce\Orders\DTO\CreateOrderData;
 use Commerce\Orders\DTO\OrderLineData;
 use Commerce\Orders\Models\Order;
 use Commerce\Payment\Contracts\PaymentServiceInterface;
+use Commerce\Product\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
 
 final class CheckoutService extends BaseService implements CheckoutServiceInterface
@@ -31,6 +35,9 @@ final class CheckoutService extends BaseService implements CheckoutServiceInterf
         private readonly CartServiceInterface $cartService,
         private readonly OrderServiceInterface $orderService,
         private readonly InventoryServiceInterface $inventoryService,
+        private readonly ProductQueryServiceInterface $productQueryService,
+        private readonly InventoryQueryServiceInterface $inventoryQueryService,
+        private readonly StockPolicyEvaluator $stockPolicy,
     ) {}
 
     public function checkout(CheckoutData $data): Order
@@ -46,7 +53,13 @@ final class CheckoutService extends BaseService implements CheckoutServiceInterf
                 throw new DomainException("{$line->name} is no longer available.");
             }
 
-            if ($line->available < $line->quantity) {
+            $variant = $this->productQueryService->findVariantByUuid($line->purchasableUuid);
+            if (! $variant instanceof ProductVariant) {
+                throw new DomainException("{$line->name} is no longer available.");
+            }
+
+            $level = $this->inventoryQueryService->getStockLevel($line->purchasableUuid);
+            if (! $this->stockPolicy->canFulfill($variant->product, $variant, $line->quantity, $level)) {
                 throw new DomainException("Insufficient stock for {$line->name}.");
             }
         }

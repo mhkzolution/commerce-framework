@@ -6,6 +6,7 @@ namespace Tests\Feature\Pos;
 
 use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
+use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Orders\Models\Order;
 use Commerce\Pos\Models\Register;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -71,5 +72,34 @@ final class PosTerminalTest extends TestCase
             'purchasable_uuid' => $variant->uuid,
             'on_hand' => 8,
         ]);
+    }
+
+    public function test_cashier_can_add_zero_stock_backorder_product(): void
+    {
+        $admin = User::query()->first();
+        $register = Register::query()->create([
+            'name' => 'Backorder Counter',
+            'code' => 'REG-02',
+            'location' => 'Store A',
+            'is_active' => true,
+        ]);
+        $variant = $this->createPurchasableProduct(price: 3500, stock: 1, sku: 'POS-BACKORDER-001');
+        app(InventoryServiceInterface::class)->setOnHand($variant->uuid, 0);
+        $variant->product->update(['backorder_policy' => 'allow']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.pos.terminal.open', $register), [
+                'opening_balance' => 0,
+            ])
+            ->assertRedirect(route('admin.pos.terminal.show', $register));
+
+        $this->actingAs($admin)
+            ->post(route('admin.pos.terminal.items.store', $register), [
+                'sku' => $variant->sku,
+                'quantity' => 2,
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('status');
     }
 }

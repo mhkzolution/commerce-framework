@@ -36,6 +36,7 @@ final class StorefrontQuickViewService
 
         $variant = $product->defaultVariant();
         $available = $variant !== null ? $this->available((string) $variant->uuid) : 0;
+        $inStock = $variant !== null && $this->inStock($available, $product);
         $images = $this->imageUrls($product);
         $priceMinor = (int) ($variant?->price ?? 0);
         $compareMinor = $variant?->compare_at_price !== null ? (int) $variant->compare_at_price : null;
@@ -60,7 +61,7 @@ final class StorefrontQuickViewService
             'currency' => 'THB',
             'short_description' => $description !== '' ? Str::limit($description, 140) : '',
             'description' => $description,
-            'stock_status' => ($available ?? 1) > 0 ? 'in_stock' : 'out_of_stock',
+            'stock_status' => $inStock ? 'in_stock' : 'out_of_stock',
             'remaining_stock' => $available ?? 0,
             'sku' => $variant?->sku,
             'brand' => $this->brandName($product),
@@ -75,7 +76,7 @@ final class StorefrontQuickViewService
                 'name' => $item->name ?: $product->name,
                 'available' => $this->available((string) $item->uuid) ?? 0,
             ])->all(),
-            'in_stock' => ($available ?? 1) > 0,
+            'in_stock' => $inStock,
         ];
     }
 
@@ -118,10 +119,17 @@ final class StorefrontQuickViewService
         }
 
         try {
-            return $this->inventory->getAvailable($variantUuid);
+            return $this->inventory->availabilityForPurchasable($variantUuid);
         } catch (Throwable) {
             return null;
         }
+    }
+
+    private function inStock(?int $available, Product $product): bool
+    {
+        return $available === null
+            || $available > 0
+            || in_array($product->backorder_policy, ['notify', 'allow'], true);
     }
 
     private function formatMoney(int $minor): string

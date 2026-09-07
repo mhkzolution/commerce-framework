@@ -48,7 +48,7 @@ final class ProductCardMapper
             compareAtPrice: $variant->compare_at_price !== null ? (int) $variant->compare_at_price : null,
             imageUrl: $imageUrls[0]['url'] ?? null,
             available: $available,
-            inStock: $this->inStock($available),
+            inStock: $this->inStock($available, $product),
             secondaryImageUrl: $imageUrls[1]['url'] ?? null,
             imageSrcset: $imageUrls[0]['srcset'] ?? null,
             secondaryImageSrcset: $imageUrls[1]['srcset'] ?? null,
@@ -116,15 +116,17 @@ final class ProductCardMapper
         }
 
         try {
-            return app(InventoryQueryServiceInterface::class)->getAvailable($variantUuid);
+            return app(InventoryQueryServiceInterface::class)->availabilityForPurchasable($variantUuid);
         } catch (Throwable) {
             return null;
         }
     }
 
-    private function inStock(?int $available): bool
+    private function inStock(?int $available, Product $product): bool
     {
-        return $available === null || $available > 0;
+        return $available === null
+            || $available > 0
+            || in_array($product->backorder_policy, ['notify', 'allow'], true);
     }
 
     private function productUrl(string $slug): string
