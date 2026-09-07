@@ -31,3 +31,14 @@ DONE
 - Confirmed Product never updates `inventory_items.on_hand` directly.
 - Confirmed no Cart, Checkout, POS, storefront, PDP, workspace Blade, or workspace JavaScript changes.
 - Confirmed untracked saves make no Inventory service calls and type is always sourced from the DTO.
+
+## Important review finding fix
+
+- Added a RED regression proving tracked `onHand: "invalid"` was incorrectly accepted as zero.
+- Added request and payload validation requiring optional on-hand values to be non-negative integers before conversion.
+- Confirmed explicit integer zero remains valid and creates the required 0/0 inventory item.
+
+```text
+php vendor/bin/phpunit tests/Feature/Product/ProductWorkspaceStockSaveTest.php tests/Feature/Product/ProductWorkspaceApiTest.php
+{"tool":"phpunit","result":"passed","tests":14,"passed":14,"assertions":53,"duration_ms":2642}
+```

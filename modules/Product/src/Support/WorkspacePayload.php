@@ -89,7 +89,7 @@ final class WorkspacePayload
                 ['trackInventory', 'track_inventory'],
                 true,
             ),
-            onHand: self::nullableInt(self::firstPresent($input, $product, ['onHand', 'on_hand'])),
+            onHand: self::nullableOnHand(self::firstPresent($input, $product, ['onHand', 'on_hand'])),
             sku: self::nullableString(self::firstPresent($input, $product, ['sku'])),
             price: self::nullableString(self::firstPresent($input, $product, ['price'])),
         );
@@ -164,8 +164,33 @@ final class WorkspacePayload
                 $variant['onHand'] = $variant['on_hand'];
             }
 
+            if (array_key_exists('onHand', $variant)) {
+                $variant['onHand'] = self::nullableOnHand($variant['onHand']);
+            }
+
             return $variant;
         }, $variants));
+    }
+
+    private static function nullableOnHand(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_int($value)) {
+            $quantity = $value;
+        } elseif (is_string($value) && preg_match('/^\d+$/D', $value) === 1) {
+            $quantity = (int) $value;
+        } else {
+            throw new DomainException('On-hand quantity must be a non-negative integer.');
+        }
+
+        if ($quantity < 0) {
+            throw new DomainException('On-hand quantity must be a non-negative integer.');
+        }
+
+        return $quantity;
     }
 
     /**

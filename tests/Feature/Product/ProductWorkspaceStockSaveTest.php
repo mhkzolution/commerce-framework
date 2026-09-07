@@ -170,6 +170,40 @@ final class ProductWorkspaceStockSaveTest extends TestCase
         ]);
     }
 
+    public function test_tracked_on_hand_rejects_invalid_value_but_accepts_explicit_zero(): void
+    {
+        $this->createWorkspace([
+            'product' => $this->productPayload('Invalid Tracked Quantity', [
+                'type' => 'simple',
+                'trackInventory' => true,
+                'sku' => 'INVALID-TRACKED-QUANTITY',
+                'price' => '15',
+                'onHand' => 'invalid',
+            ]),
+            'variants' => [],
+        ])->assertUnprocessable();
+
+        $this->assertDatabaseMissing('products', ['name' => 'Invalid Tracked Quantity']);
+
+        $this->createWorkspace([
+            'product' => $this->productPayload('Zero Tracked Quantity', [
+                'type' => 'simple',
+                'trackInventory' => true,
+                'sku' => 'ZERO-TRACKED-QUANTITY',
+                'price' => '15',
+                'onHand' => 0,
+            ]),
+            'variants' => [],
+        ])->assertCreated();
+
+        $variant = Product::query()->where('name', 'Zero Tracked Quantity')->firstOrFail()->defaultVariant();
+        $this->assertDatabaseHas('inventory_items', [
+            'purchasable_uuid' => $variant?->uuid,
+            'on_hand' => 0,
+            'reserved' => 0,
+        ]);
+    }
+
     public function test_new_tracked_variant_gets_zero_inventory_item(): void
     {
         $this->createWorkspace([

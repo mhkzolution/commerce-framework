@@ -30,6 +30,8 @@ final class UpdateProductRequest extends FormRequest
             'type' => ['nullable', 'string', Rule::in(['simple', 'variable'])],
             'backorder_policy' => ['nullable', 'string', Rule::in(['deny', 'notify', 'allow'])],
             'backorderPolicy' => ['nullable', 'string', Rule::in(['deny', 'notify', 'allow'])],
+            'onHand' => ['nullable', 'integer', 'min:0'],
+            'on_hand' => ['nullable', 'integer', 'min:0'],
             'publish_at' => ['nullable', 'date'],
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer', 'exists:categories,id'],
@@ -60,16 +62,19 @@ final class UpdateProductRequest extends FormRequest
             }
 
             $payload = json_decode((string) $this->input('workspace_payload'), true);
-            $product = is_array($payload['product'] ?? null) ? $payload['product'] : [];
-            $nested = Validator::make($product, [
-                'type' => ['sometimes', 'string', Rule::in(['simple', 'variable'])],
-                'backorderPolicy' => ['sometimes', 'string', Rule::in(['deny', 'notify', 'allow'])],
-                'backorder_policy' => ['sometimes', 'string', Rule::in(['deny', 'notify', 'allow'])],
+            $nested = Validator::make(is_array($payload) ? $payload : [], [
+                'product.type' => ['sometimes', 'string', Rule::in(['simple', 'variable'])],
+                'product.backorderPolicy' => ['sometimes', 'string', Rule::in(['deny', 'notify', 'allow'])],
+                'product.backorder_policy' => ['sometimes', 'string', Rule::in(['deny', 'notify', 'allow'])],
+                'product.onHand' => ['nullable', 'integer', 'min:0'],
+                'product.on_hand' => ['nullable', 'integer', 'min:0'],
+                'variants.*.onHand' => ['nullable', 'integer', 'min:0'],
+                'variants.*.on_hand' => ['nullable', 'integer', 'min:0'],
             ]);
 
             foreach ($nested->errors()->messages() as $field => $messages) {
                 foreach ($messages as $message) {
-                    $validator->errors()->add('workspace_payload.product.'.$field, $message);
+                    $validator->errors()->add('workspace_payload.'.$field, $message);
                 }
             }
         });
