@@ -136,13 +136,55 @@ final class ShopProductQuery
             return;
         }
 
-        $query->whereHas('attributeValues', static function (Builder $valueQuery) use ($attributeIds, $value): void {
-            $valueQuery
-                ->whereIn('attribute_id', $attributeIds)
-                ->where(static function (Builder $matchQuery) use ($value): void {
-                    StorefrontAttributeFilterValue::applyStoredMatch($matchQuery, 'value', $value);
+        $query->where(function (Builder $groupQuery) use ($attributeIds, $value): void {
+            $groupQuery
+                ->where(function (Builder $nonAxisQuery) use ($attributeIds, $value): void {
+                    $nonAxisQuery
+                        ->whereDoesntHave('productAttributes', static function (Builder $axisQuery) use ($attributeIds): void {
+                            $axisQuery
+                                ->whereIn('attribute_id', $attributeIds)
+                                ->where('used_for_variations', true);
+                        })
+                        ->whereHas('attributeValues', static function (Builder $valueQuery) use ($attributeIds, $value): void {
+                            $valueQuery
+                                ->whereIn('attribute_id', $attributeIds)
+                                ->whereNull('product_variant_id')
+                                ->where(static function (Builder $matchQuery) use ($value): void {
+                                    self::matchAttributeFilterValue($matchQuery, $value);
+                                });
+                        });
+                })
+                ->orWhere(function (Builder $axisQuery) use ($attributeIds, $value): void {
+                    $axisQuery
+                        ->whereHas('productAttributes', static function (Builder $productAttributeQuery) use ($attributeIds): void {
+                            $productAttributeQuery
+                                ->whereIn('attribute_id', $attributeIds)
+                                ->where('used_for_variations', true);
+                        })
+                        ->whereHas('attributeValues', static function (Builder $valueQuery) use ($attributeIds, $value): void {
+                            $valueQuery
+                                ->whereIn('attribute_id', $attributeIds)
+                                ->whereNotNull('product_variant_id')
+                                ->where(static function (Builder $matchQuery) use ($value): void {
+                                    self::matchAttributeFilterValue($matchQuery, $value);
+                                });
+                        });
                 });
         });
+    }
+
+    /**
+     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $query
+     */
+    private static function matchAttributeFilterValue(Builder $query, string $value): void
+    {
+        $query
+            ->whereHas('attributeValue', static function (Builder $attributeValueQuery) use ($value): void {
+                $attributeValueQuery->where('code', $value);
+            })
+            ->orWhere(static function (Builder $legacyQuery) use ($value): void {
+                StorefrontAttributeFilterValue::applyStoredMatch($legacyQuery, 'value', $value);
+            });
     }
 
     /**

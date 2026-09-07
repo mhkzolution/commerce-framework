@@ -166,15 +166,34 @@ final class ShopFilterCatalogService
         $attributeIds = $attributes->pluck('id')->all();
         $values = [];
 
-        $rows = DB::table('product_attribute_values')
-            ->whereIn('attribute_id', $attributeIds)
-            ->whereNull('product_variant_id')
-            ->distinct()
-            ->pluck('value');
+        $rowsQuery = DB::table('product_attribute_values as pav')
+            ->whereIn('pav.attribute_id', $attributeIds);
 
-        foreach ($rows as $value) {
-            foreach (StorefrontAttributeFilterValue::parts((string) $value) as $part) {
-                $values[$part] = $part;
+        if (Schema::hasTable('attribute_values') && Schema::hasColumn('product_attribute_values', 'attribute_value_id')) {
+            $rows = $rowsQuery
+                ->leftJoin('attribute_values as av', 'av.id', '=', 'pav.attribute_value_id')
+                ->select(['pav.value', 'pav.attribute_value_id', 'av.code'])
+                ->distinct()
+                ->get();
+
+            foreach ($rows as $row) {
+                $code = is_string($row->code ?? null) ? trim((string) $row->code) : '';
+
+                if ($row->attribute_value_id !== null && $code !== '') {
+                    $values[$code] = $code;
+
+                    continue;
+                }
+
+                foreach (StorefrontAttributeFilterValue::parts((string) ($row->value ?? '')) as $part) {
+                    $values[$part] = $part;
+                }
+            }
+        } else {
+            foreach ($rowsQuery->distinct()->pluck('pav.value') as $value) {
+                foreach (StorefrontAttributeFilterValue::parts((string) $value) as $part) {
+                    $values[$part] = $part;
+                }
             }
         }
 
