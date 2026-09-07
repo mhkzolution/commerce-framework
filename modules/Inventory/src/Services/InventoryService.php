@@ -98,6 +98,11 @@ final class InventoryService extends BaseService implements InventoryServiceInte
 
             $item = $this->ensureItem($purchasableUuid);
             $onHandBefore = $item->on_hand;
+
+            if ($variant->product->backorder_policy === 'deny' && $onHandBefore < $quantity) {
+                throw new DomainException('Insufficient stock for sale.');
+            }
+
             $onHandAfter = max(0, $onHandBefore - $quantity);
             $reservedAfter = $item->reserved - min($item->reserved, $quantity);
 

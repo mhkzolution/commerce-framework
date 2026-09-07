@@ -96,6 +96,27 @@ final class StockPolicyEvaluatorTest extends TestCase
         ]);
     }
 
+    public function test_deny_sale_rejects_quantity_beyond_remaining_on_hand(): void
+    {
+        $variant = $this->createPurchasableProduct(stock: 5);
+        $inventory = app(InventoryServiceInterface::class);
+
+        $firstSale = $inventory->sale($variant->uuid, 3);
+        $this->assertSame(2, $firstSale->getOnHand());
+        $this->assertSame(0, $firstSale->getReserved());
+
+        try {
+            $inventory->sale($variant->uuid, 3);
+            $this->fail('Expected a deny sale beyond on-hand to fail.');
+        } catch (DomainException $exception) {
+            $this->assertSame('Insufficient stock for sale.', $exception->getMessage());
+        }
+
+        $level = app(InventoryQueryServiceInterface::class)->getStockLevel($variant->uuid);
+        $this->assertSame(2, $level->getOnHand());
+        $this->assertSame(0, $level->getReserved());
+    }
+
     public function test_confirm_sale_consumes_only_its_quantity_from_aggregate_reserved(): void
     {
         $variant = $this->createPurchasableProduct(stock: 10);
