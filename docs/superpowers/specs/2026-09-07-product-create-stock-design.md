@@ -2,6 +2,7 @@
 
 **Date:** 2026-09-07  
 **Status:** Locked  
+**Implementation:** Complete (Task 8, 2026-09-07)  
 **Owner:** Product workspace (`modules/Product`) + Inventory ledger (`modules/Inventory`) + purchasability in Cart / POS / checkout  
 **Related:** `docs/superpowers/specs/2026-09-04-order-inventory-reservation.md`
 
@@ -308,3 +309,47 @@ Presence of an inventory item is treated as **historical evidence** that the var
 - Deleting inventory rows when unchecking track
 - Changing Inventory admin adjust/receive UX beyond using the same ledger
 - Replacing the whole workspace with a WooCommerce clone of every advanced tab
+
+---
+
+## 12. Task 8 coverage (2026-09-07)
+
+### Acceptance matrix
+
+| §10 | Coverage |
+|---|---|
+| 1 Create simple tracked | `ProductWorkspaceStockSaveTest::test_create_simple_tracked_sets_on_hand_via_movement` |
+| 2 Create simple untracked + PDP in stock | Save: `test_create_simple_untracked_has_no_inventory_item`. PDP: `ProductDetailBuilderTest::test_untracked_stock_is_purchasable_with_unknown_availability` |
+| 3 Variable type + auto SKU | `test_create_variable_does_not_infer_type_from_one_variant`; auto SKU in `ProductWorkspaceStockSaveTest` / SKU generator tests |
+| 4 Duplicate SKU rejected | `ProductWorkspaceStockSaveTest` duplicate SKU case |
+| 5 Enable track without qty 422; with qty 7 | `test_enable_track_without_qty_fails_validation` (same test then sets `onHand = 7`) |
+| 6 New tracked variant 0/0 | `test_new_tracked_variant_creates_inventory_item_at_zero` |
+| 7 `setOnHand` path | Workspace save and CSV import call `InventoryServiceInterface::setOnHand` only. No `inventory_items.on_hand =` writes in Product |
+| 8 Type transition guards | `ProductTypeChangeGuardTest` (pending/confirmed block; completed/cancelled allow) + workspace reserved-block test |
+| 9 Checkout policy | `CheckoutFlowTest` deny/allow/untracked. POS: `PosTerminalTest::test_cashier_can_add_zero_stock_backorder_product` |
+| 10 Shop in-stock filter | `Ws002ShopListingContractTest::test_in_stock_filter_includes_untracked_and_allow_backorder_products` |
+| 11 Uncheck track keeps ledger | `test_uncheck_track_keeps_item_and_movements` + `StockPolicyEvaluatorTest::test_paginate_omits_untracked_inventory_items` |
+
+Manual smoke 1–6 (workspace UI) passed before this check.
+
+### Contract
+
+Product owns `type`, `track_inventory` (copied from the product-level toggle), `backorder_policy`, and initial on-hand **input**. Inventory owns `on_hand`, `reserved`, movements, and derived `available`. Workspace persist writes type from payload (`ProductWorkspaceSaveService`); it does not infer type from `count($variants)`.
+
+Buy gates use `StockPolicyEvaluator` (`InventoryService::reserve`/`sale`, `CartService`, `CheckoutService`, `PosCartService`, `OrderService::confirm`). Presentation `inStock()` treats untracked (`available === null`), positive available, and `notify`/`allow` at zero as in stock.
+
+### Remaining `available > 0` sites (not buy-gate regressions)
+
+These still compare ledger `available` for **display or quantity UX**, not storefront/POS purchasability:
+
+- Inventory admin low/out badges
+- Warehouse scanner shelf status
+- Admin order lookup `stock_status`
+- Admin `order-create.js` qty cap (out of spec §9; still ledger-based)
+- PDP qty `max` when `available > 0`; backorder removes the max
+- `product.js` `variantIsInStock` falls back to `available > 0` only if `in_stock` is missing
+- Storefront axis selector `count($variants) > 1` is UI, not type inference
+
+`InventoryQueryService::isAvailable()` still compares raw `getAvailable()` and has **no production callers**. Leave the contract method; do not use it as a buy gate.
+
+Catalog V2 Wave 1 start gate is open after this close. Do not mix leftover stock work into Catalog V2.

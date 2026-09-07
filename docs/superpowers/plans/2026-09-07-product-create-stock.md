@@ -315,8 +315,10 @@ Walk spec §2–§10. Confirm:
 
 If a row is missing, add a test to that task before calling the work done.
 
-- [ ] **Step 1: Run** `php vendor/bin/phpunit tests/Feature/Product tests/Feature/Inventory tests/Feature/Checkout tests/Unit/Product tests/Unit/Cart/ProductDetailBuilderTest.php`
-- [ ] **Step 2: Commit** only if leftover docs/comments `docs: note product stock policy implementation complete`
+- [x] **Step 1: Run** `php vendor/bin/phpunit tests/Feature/Product tests/Feature/Inventory tests/Feature/Checkout tests/Unit/Product tests/Unit/Cart/ProductDetailBuilderTest.php`
+- [x] **Step 2: Commit** only if leftover docs/comments `docs: note product stock policy implementation complete`
+
+CSV export fixture now sends `type=variable` and `trackInventory=false` so default track-on validation does not drop the product. Mapping lives in spec §12.
 
 ---
 

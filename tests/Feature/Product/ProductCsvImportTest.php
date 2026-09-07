@@ -241,7 +241,13 @@ final class ProductCsvImportTest extends TestCase
     {
         $this->actingAs(User::query()->first())
             ->post(route('admin.products.store'), $this->variableWorkspacePayload())
+            ->assertSessionHasNoErrors()
             ->assertRedirect();
+
+        $this->assertSame(
+            'variable',
+            Product::query()->where('name', 'Export Hoodie')->value('type'),
+        );
 
         $response = $this->actingAs(User::query()->first())
             ->get(route('admin.products.export'));
@@ -433,6 +439,8 @@ final class ProductCsvImportTest extends TestCase
                 'slug' => 'export-hoodie',
                 'status' => 'published',
                 'visibility' => 'public',
+                'type' => 'variable',
+                'trackInventory' => false,
             ],
             'options' => [
                 ['id' => 'opt_color', 'name' => 'Color', 'values' => ['Red', 'Blue']],

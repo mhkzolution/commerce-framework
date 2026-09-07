@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-07-catalog-v2-attribute-variant-design.md` (Locked)
 
-**Start gate:** Do not implement this plan until Product Stock V1 is closed (manual workspace smoke test + Task 8 coverage). Both features edit the product workspace; mixing them hides the source of regressions.
+**Start gate:** Product Stock V1 is Complete (manual smoke 1–6 + Task 8). Implement this plan only after that close; do not mix Catalog V2 into leftover stock work. Both features edit the product workspace; mixing them hides the source of regressions.
 
 ## Global Constraints
 
