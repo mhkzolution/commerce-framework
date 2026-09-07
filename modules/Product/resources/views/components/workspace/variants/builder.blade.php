@@ -22,9 +22,11 @@
         </p>
     </header>
 
-    <div class="cf-variant-builder__steps">
-        <x-product::workspace.variants.option-selector :presets="$optionPresets" :options="$options" />
+    <p class="cf-product-workspace__section-desc" data-variants-from-attributes-hint>
+        {{ __('product::workspace.variants_from_attributes_hint') }}
+    </p>
 
+    <div class="cf-variant-builder__steps">
         <x-product::workspace.variants.matrix-generator :sku-patterns="$skuPatterns" />
     </div>
 

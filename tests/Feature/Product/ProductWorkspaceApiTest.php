@@ -55,6 +55,22 @@ final class ProductWorkspaceApiTest extends TestCase
         );
     }
 
+    public function test_variable_workspace_shows_generate_and_variation_toggle(): void
+    {
+        $html = $this->actingAs(User::query()->first())
+            ->get(route('admin.products.create'))
+            ->assertOk()
+            ->assertSee('data-generate-variants', false)
+            ->assertSee('data-used-for-variations', false)
+            ->getContent();
+
+        $this->assertStringContainsString(__('product::workspace.used_for_variations'), $html);
+        $this->assertMatchesRegularExpression(
+            '/<button[^>]*data-generate-variants[^>]*>/s',
+            $html,
+        );
+    }
+
     public function test_variable_edit_page_shows_sku_prefix_not_variant_sku(): void
     {
         $this->actingAs(User::query()->first())

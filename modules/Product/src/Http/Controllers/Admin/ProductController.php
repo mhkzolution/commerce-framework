@@ -240,7 +240,7 @@ final class ProductController extends Controller
     private function attributeSetsPayload(): array
     {
         return AttributeSet::query()
-            ->with('attributes')
+            ->with(['attributes.values'])
             ->orderBy('name')
             ->get()
             ->map(static function (AttributeSet $set): array {
@@ -248,11 +248,23 @@ final class ProductController extends Controller
                     'id' => $set->id,
                     'name' => $set->name,
                     'attributes' => $set->attributes->map(static function ($attribute): array {
+                        $values = $attribute->values
+                            ->map(static fn ($value): array => [
+                                'id' => $value->id,
+                                'label' => $value->label,
+                                'code' => $value->code,
+                            ])
+                            ->values()
+                            ->all();
+
                         return [
                             'id' => $attribute->id,
                             'name' => $attribute->name,
                             'type' => $attribute->type,
-                            'options' => $attribute->options ?? [],
+                            'values' => $values,
+                            'options' => $values !== []
+                                ? array_column($values, 'label')
+                                : ($attribute->options ?? []),
                             'is_required' => (bool) ($attribute->pivot?->is_required ?? $attribute->is_required),
                         ];
                     })->values()->all(),

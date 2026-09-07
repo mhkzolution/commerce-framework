@@ -22,6 +22,10 @@ function randomSku() {
     return `SKU-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
+export function variantIdentityKey(valueIds) {
+    return [...valueIds].map(Number).sort((a, b) => a - b).join('-');
+}
+
 function cartesianProduct(arrays) {
     if (!arrays.length) {
         return [[]];
@@ -90,6 +94,9 @@ export function createInitialState(overrides = {}) {
             variantMap: overrides.media?.variantMap ?? {},
         },
         options: overrides.options ?? [],
+        productAttributes: overrides.productAttributes ?? [],
+        generateVariants: false,
+        attributeSets: overrides.attributeSets ?? [],
         variants: overrides.variants?.length
             ? overrides.variants
             : [createDefaultVariant(productName || 'Default')],
@@ -315,6 +322,190 @@ export class ProductWorkspaceState {
         this.markDirty({ rebuild: true });
     }
 
+    variationAxes() {
+        return (this.data.productAttributes ?? []).filter((row) => row.usedForVariations);
+    }
+
+    axisValueIds(row) {
+        return (row.valueIds ?? []).map(Number).filter((id) => id > 0);
+    }
+
+    axisHasValues(row) {
+        return this.axisValueIds(row).length > 0
+            || (row.newLabels ?? []).some((label) => String(label).trim() !== '');
+    }
+
+    canGenerateVariants() {
+        if (this.data.product.type !== 'variable') {
+            return false;
+        }
+
+        const axes = this.variationAxes();
+        if (!axes.length) {
+            return false;
+        }
+
+        return axes.every((row) => this.axisHasValues(row));
+    }
+
+    hasGeneratedMatrix() {
+        return (this.data.variants ?? []).some((variant) => (
+            (variant.valueIds ?? []).length > 0 || Boolean(variant.uuid)
+        ));
+    }
+
+    setAttributeValues(attributeId, valueIds) {
+        const row = (this.data.productAttributes ?? []).find(
+            (item) => Number(item.attributeId) === Number(attributeId),
+        );
+        if (!row) {
+            return;
+        }
+
+        row.valueIds = [...valueIds].map(Number).filter((id) => id > 0);
+        this.markDirty();
+    }
+
+    addAttributeLabel(attributeId, label) {
+        const row = (this.data.productAttributes ?? []).find(
+            (item) => Number(item.attributeId) === Number(attributeId),
+        );
+        const normalized = String(label ?? '').trim();
+        if (!row || !normalized) {
+            return;
+        }
+
+        row.newLabels = [...(row.newLabels ?? []), normalized];
+        this.markDirty();
+    }
+
+    setUsedForVariations(attributeId, used, confirmFn = globalThis.confirm) {
+        const row = (this.data.productAttributes ?? []).find(
+            (item) => Number(item.attributeId) === Number(attributeId),
+        );
+        if (!row) {
+            return false;
+        }
+
+        if (row.usedForVariations && !used && this.hasGeneratedMatrix()) {
+            const message = this.data.labels.usedForVariationsUncheckConfirm
+                ?? 'Unchecking this will rebuild or remove existing variants. Continue?';
+            if (typeof confirmFn === 'function' && !confirmFn(message)) {
+                return false;
+            }
+        }
+
+        row.usedForVariations = Boolean(used);
+        this.markDirty();
+        return true;
+    }
+
+    syncProductAttributesFromSet(setId, catalog = [], { dirty = true } = {}) {
+        this.data.product.attributeSetId = setId;
+        const sets = catalog.length ? catalog : (this.data.attributeSets ?? []);
+        const selected = sets.find((set) => String(set.id) === String(setId));
+        const attributes = selected?.attributes ?? [];
+        const previous = new Map(
+            (this.data.productAttributes ?? []).map((row) => [Number(row.attributeId), row]),
+        );
+
+        this.data.productAttributes = attributes.map((attribute, index) => {
+            const existing = previous.get(Number(attribute.id));
+
+            return {
+                attributeId: Number(attribute.id),
+                usedForVariations: existing?.usedForVariations ?? false,
+                valueIds: existing?.valueIds ?? [],
+                newLabels: existing?.newLabels ?? [],
+                position: existing?.position ?? index,
+                name: attribute.name,
+                type: attribute.type,
+            };
+        });
+
+        if (dirty) {
+            this.markDirty();
+            return;
+        }
+
+        this.notify();
+    }
+
+    generateFromAttributes() {
+        if (!this.canGenerateVariants()) {
+            return;
+        }
+
+        const axes = this.variationAxes().filter((axis) => this.axisValueIds(axis).length > 0);
+        if (axes.length === this.variationAxes().length && axes.length > 0) {
+            const combinations = cartesianProduct(axes.map((axis) => this.axisValueIds(axis)));
+            const existingMap = new Map();
+            this.data.variants.forEach((variant) => {
+                const ids = variant.valueIds ?? [];
+                if (ids.length) {
+                    existingMap.set(variantIdentityKey(ids), variant);
+                }
+            });
+
+            const slug = this.data.product.slug || 'product';
+            this.data.variants = combinations.map((combo, index) => {
+                const existing = existingMap.get(variantIdentityKey(combo));
+                const optionMap = {};
+                axes.forEach((axis, axisIndex) => {
+                    const name = String(axis.name ?? axis.attributeId).toLowerCase();
+                    optionMap[name] = String(combo[axisIndex]);
+                });
+
+                if (existing) {
+                    return {
+                        ...existing,
+                        valueIds: combo,
+                        options: optionMap,
+                        name: existing.name || combo.join(' / '),
+                    };
+                }
+
+                return {
+                    id: randomId(),
+                    uuid: null,
+                    name: combo.join(' / '),
+                    sku: generateSku(this.data.skuPattern, slug, optionMap, this.data.product.skuPrefix),
+                    price: '',
+                    cost: '',
+                    comparePrice: '',
+                    weight: '',
+                    status: 'active',
+                    imageMediaUuid: null,
+                    options: optionMap,
+                    valueIds: combo,
+                    stock: { onHand: 0, reserved: 0, available: 0, incoming: 0 },
+                    trackInventory: this.data.product.trackInventory,
+                    skuIsAuto: true,
+                    isDefault: index === 0,
+                };
+            });
+        }
+
+        this.data.generateVariants = true;
+        this.markDirty({ rebuild: true });
+    }
+
+    consumeGenerateFlag() {
+        this.data.generateVariants = false;
+    }
+
+    serializedProductAttributes() {
+        return (this.data.productAttributes ?? []).map((row, index) => ({
+            attributeId: Number(row.attributeId),
+            usedForVariations: this.data.product.type === 'simple'
+                ? false
+                : Boolean(row.usedForVariations),
+            valueIds: this.axisValueIds(row),
+            newLabels: (row.newLabels ?? []).map((label) => String(label).trim()).filter(Boolean),
+            position: row.position ?? index,
+        }));
+    }
+
     updateVariant(variantId, field, value, { rebuild = false } = {}) {
         const variant = this.data.variants.find((item) => item.id === variantId);
         if (!variant) {
@@ -414,11 +605,15 @@ export class ProductWorkspaceState {
 
     serialize() {
         const trackInventory = Boolean(this.data.product.trackInventory);
-        let variants = this.data.variants.map((variant) => ({
-            ...variant,
-            onHand: variant.stock?.onHand,
-            trackInventory,
-        }));
+        let variants = this.data.variants.map((variant) => {
+            const { valueIds, ...rest } = variant;
+
+            return {
+                ...rest,
+                onHand: variant.stock?.onHand,
+                trackInventory,
+            };
+        });
 
         if (this.data.product.type === 'simple') {
             const defaultVariant = variants[0] ?? createDefaultVariant(this.data.product.name);
@@ -448,6 +643,8 @@ export class ProductWorkspaceState {
             product,
             media: this.data.media,
             options: this.data.options,
+            productAttributes: this.serializedProductAttributes(),
+            generateVariants: Boolean(this.data.generateVariants),
             variants,
             skuPattern: this.data.skuPattern,
         });

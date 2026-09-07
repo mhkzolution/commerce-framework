@@ -55,6 +55,7 @@ final class ProductWorkspaceStateBuilder
                     'imageMediaUuid' => $imageUuid,
                     'imagePreviewUrl' => $this->variantImagePreview($imageUuid),
                     'options' => $this->variantOptionsFromRelations($product, $variant),
+                    'valueIds' => $this->variantValueIdsFromRelations($product, $variant),
                     'stock' => [
                         'onHand' => $stock?->getOnHand() ?? 0,
                         'reserved' => $stock?->getReserved() ?? 0,
@@ -76,6 +77,8 @@ final class ProductWorkspaceStateBuilder
                 'allChangesSaved' => __('product::workspace.all_changes_saved'),
                 'unsavedChanges' => __('product::workspace.unsaved_changes'),
                 'discardConfirm' => __('product::workspace.discard_confirm'),
+                'usedForVariations' => __('product::workspace.used_for_variations'),
+                'usedForVariationsUncheckConfirm' => __('product::workspace.used_for_variations_uncheck_confirm'),
             ],
             'product' => [
                 'name' => $product?->name ?? '',
@@ -135,6 +138,8 @@ final class ProductWorkspaceStateBuilder
                 'usedForVariations' => (bool) $row->used_for_variations,
                 'position' => (int) $row->position,
                 'valueIds' => $valueIds,
+                'name' => (string) ($row->attribute?->name ?? ''),
+                'type' => (string) ($row->attribute?->type ?? 'select'),
             ];
         })->values()->all();
     }
@@ -159,6 +164,22 @@ final class ProductWorkspaceStateBuilder
         }
 
         return $options;
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function variantValueIdsFromRelations(Product $product, ProductVariant $variant): array
+    {
+        return $product->attributeValues
+            ->filter(static function ($row) use ($variant): bool {
+                return (int) $row->product_variant_id === (int) $variant->id
+                    && $row->attribute_value_id !== null;
+            })
+            ->pluck('attribute_value_id')
+            ->map(static fn ($id): int => (int) $id)
+            ->values()
+            ->all();
     }
 
     /**

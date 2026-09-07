@@ -1,6 +1,7 @@
 import '../../css/admin/product-workspace.css';
 
 import { ProductWorkspaceState } from './product-workspace/state.js';
+import { bindAttributesPanel } from './product-workspace/attributes-panel.js';
 import { bindVariantBuilder } from './product-workspace/variant-builder.js';
 
 function initTabs(workspace) {
@@ -246,6 +247,7 @@ function initDirtyState(workspace, state) {
         if (payloadInput) {
             payloadInput.value = state.serialize();
         }
+        state.consumeGenerateFlag();
         state.setDirty(false);
     });
 
@@ -278,6 +280,11 @@ export function initProductWorkspaces() {
             initTabs(workspace);
             initStockControls(workspace, state);
             initDirtyState(workspace, state);
+
+            const attributesPanel = workspace.querySelector('[data-attributes-panel]');
+            if (attributesPanel) {
+                bindAttributesPanel(attributesPanel, state);
+            }
 
             const builder = workspace.querySelector('[data-variant-builder]');
             if (builder) {

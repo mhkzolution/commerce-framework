@@ -36,12 +36,11 @@
         @endif
     </div>
 
-    @include('product::admin.products._attributes', [
-        'product' => $product,
-        'attributeSets' => $attributeSets,
-        'attributeSetsPayload' => $attributeSetsPayload,
-        'attributeOptionPresets' => $attributeOptionPresets,
-        'attributeValues' => $attributeValues,
-        'defaultAttributeSetId' => $defaultAttributeSetId,
-    ])
+    <x-product::workspace.attributes-panel
+        :product="$product"
+        :attribute-sets="$attributeSets"
+        :attribute-sets-payload="$attributeSetsPayload"
+        :attribute-values="$attributeValues"
+        :default-attribute-set-id="$defaultAttributeSetId"
+    />
 </section>

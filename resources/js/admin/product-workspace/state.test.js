@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { generateSku, ProductWorkspaceState } from './state.js';
+import { generateSku, ProductWorkspaceState, variantIdentityKey } from './state.js';
 import { applyVariantBuilderNotification } from './variant-builder-render.js';
 
 test('variable SKU prefix beats the pattern tokens', () => {
@@ -90,4 +90,114 @@ test('generateMatrix uses the product SKU prefix', () => {
 
     assert.equal(state.getState().variants[0].sku, 'TSHIRT-RED');
     assert.ok(state.getState().uiEpoch > 0);
+});
+
+test('variantIdentityKey matches PHP VariantIdentity::key', () => {
+    assert.equal(variantIdentityKey([5, 1]), '1-5');
+    assert.equal(variantIdentityKey(['5', '1']), '1-5');
+    assert.equal(variantIdentityKey([10, 2, 3]), '2-3-10');
+});
+
+test('serialize always includes productAttributes and generateVariants false by default', () => {
+    const state = new ProductWorkspaceState({
+        product: { type: 'variable', skuPrefix: 'TSHIRT' },
+        productAttributes: [
+            { attributeId: 7, usedForVariations: true, valueIds: [3, 1], newLabels: ['Burgundy'], position: 0 },
+        ],
+    });
+
+    const payload = JSON.parse(state.serialize());
+
+    assert.ok(Array.isArray(payload.productAttributes));
+    assert.equal(payload.productAttributes.length, 1);
+    assert.equal(payload.productAttributes[0].attributeId, 7);
+    assert.equal(payload.productAttributes[0].usedForVariations, true);
+    assert.deepEqual(payload.productAttributes[0].valueIds, [3, 1]);
+    assert.deepEqual(payload.productAttributes[0].newLabels, ['Burgundy']);
+    assert.equal(payload.generateVariants, false);
+    assert.equal(payload.variants[0].valueIds, undefined);
+});
+
+test('generate from attributes sets generateVariants once and rematches identity', () => {
+    const state = new ProductWorkspaceState({
+        product: { type: 'variable', skuPrefix: 'TSHIRT', slug: 'tee' },
+        productAttributes: [
+            { attributeId: 1, usedForVariations: true, valueIds: [5, 1], position: 0 },
+        ],
+        variants: [{
+            id: 'kept',
+            uuid: 'uuid-red',
+            sku: 'TSHIRT-RED',
+            stock: { onHand: 4, reserved: 0, available: 4 },
+            valueIds: [5],
+        }],
+    });
+
+    state.generateFromAttributes();
+    const kept = state.getState().variants.find((row) => variantIdentityKey(row.valueIds ?? []) === '5');
+    assert.equal(kept?.uuid, 'uuid-red');
+    assert.equal(kept?.sku, 'TSHIRT-RED');
+    assert.equal(state.getState().variants.length, 2);
+
+    const first = JSON.parse(state.serialize());
+    assert.equal(first.generateVariants, true);
+    assert.equal(first.variants.length, 2);
+    assert.ok(first.variants.every((row) => row.valueIds === undefined));
+
+    state.consumeGenerateFlag();
+    const second = JSON.parse(state.serialize());
+    assert.equal(second.generateVariants, false);
+    assert.ok(Array.isArray(second.productAttributes));
+    assert.equal(second.productAttributes[0].attributeId, 1);
+});
+
+test('generate is blocked until each variation axis has a value', () => {
+    const state = new ProductWorkspaceState({
+        product: { type: 'variable' },
+        productAttributes: [
+            { attributeId: 1, usedForVariations: true, valueIds: [1] },
+            { attributeId: 2, usedForVariations: true, valueIds: [] },
+        ],
+    });
+
+    assert.equal(state.canGenerateVariants(), false);
+    state.setAttributeValues(2, [9]);
+    assert.equal(state.canGenerateVariants(), true);
+});
+
+test('unchecking used for variations confirms when a matrix exists', () => {
+    const state = new ProductWorkspaceState({
+        product: { type: 'variable' },
+        productAttributes: [
+            { attributeId: 1, usedForVariations: true, valueIds: [5] },
+        ],
+        variants: [{ id: 'a', uuid: 'u1', valueIds: [5], stock: { onHand: 0 } }],
+        labels: { usedForVariationsUncheckConfirm: 'warn' },
+    });
+
+    let asked = '';
+    const blocked = state.setUsedForVariations(1, false, (message) => {
+        asked = message;
+        return false;
+    });
+
+    assert.equal(blocked, false);
+    assert.equal(asked, 'warn');
+    assert.equal(state.getState().productAttributes[0].usedForVariations, true);
+
+    assert.equal(state.setUsedForVariations(1, false, () => true), true);
+    assert.equal(state.getState().productAttributes[0].usedForVariations, false);
+});
+
+test('simple serialize forces usedForVariations false', () => {
+    const state = new ProductWorkspaceState({
+        product: { type: 'simple' },
+        productAttributes: [
+            { attributeId: 4, usedForVariations: true, valueIds: [2] },
+        ],
+    });
+
+    const payload = JSON.parse(state.serialize());
+    assert.equal(payload.productAttributes[0].usedForVariations, false);
+    assert.equal(payload.generateVariants, false);
 });

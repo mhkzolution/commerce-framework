@@ -842,3 +842,72 @@
 [data-image-item] {
     cursor: grab;
 }
+
+.cf-attributes-panel__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.cf-attributes-panel__field-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.cf-attributes-panel__variation {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8125rem;
+    color: var(--color-text);
+}
+
+.cf-attributes-panel__values {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.cf-attributes-panel__value {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.cf-attributes-panel__pending {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+.cf-attributes-panel__add {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.cf-attributes-panel__add .cf-input {
+    flex: 1;
+    min-width: 10rem;
+}
+
+.cf-attributes-panel__generate {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+}
+
+.cf-attributes-panel__generate-hint {
+    font-size: 0.8125rem;
+    color: var(--color-muted);
+}

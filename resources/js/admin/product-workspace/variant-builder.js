@@ -48,17 +48,17 @@ export function bindVariantBuilder(root, state) {
             return;
         }
 
-        const count = state.matrixCount();
+        const count = state.getState().variants.length;
         matrixCount.textContent = `${count} variant${count === 1 ? '' : 's'}`;
 
-        const options = state.getState().options;
-        if (!options.length) {
+        const axes = typeof state.variationAxes === 'function' ? state.variationAxes() : [];
+        if (!axes.length) {
             matrixFormula.textContent = 'Default variant only';
             return;
         }
 
-        matrixFormula.textContent = options
-            .map((opt) => `${opt.values.length} ${opt.name}`)
+        matrixFormula.textContent = axes
+            .map((axis) => `${(axis.valueIds ?? []).length} ${axis.name ?? axis.attributeId}`)
             .join(' × ');
     };
 
@@ -417,6 +417,11 @@ export function bindVariantBuilder(root, state) {
     });
 
     generateBtn?.addEventListener('click', () => {
+        if (typeof state.generateFromAttributes === 'function') {
+            state.generateFromAttributes();
+            return;
+        }
+
         state.generateMatrix();
     });
 
