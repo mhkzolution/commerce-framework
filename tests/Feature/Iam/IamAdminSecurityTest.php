@@ -19,6 +19,24 @@ final class IamAdminSecurityTest extends TestCase
         $this->seed(\Commerce\Iam\Database\Seeders\IamSeeder::class);
     }
 
+    public function test_admin_can_view_user_create_page(): void
+    {
+        $this->actingAs(User::query()->first())
+            ->get(route('admin.iam.users.create'))
+            ->assertOk()
+            ->assertSee('New User')
+            ->assertSee('Create user', false);
+    }
+
+    public function test_admin_can_view_role_create_page(): void
+    {
+        $this->actingAs(User::query()->first())
+            ->get(route('admin.iam.roles.create'))
+            ->assertOk()
+            ->assertSee('New Role')
+            ->assertSee('Create role', false);
+    }
+
     public function test_admin_can_view_security_page(): void
     {
         $this->actingAs(User::query()->first())

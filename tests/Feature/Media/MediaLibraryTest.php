@@ -38,6 +38,14 @@ final class MediaLibraryTest extends TestCase
             ->assertSee(__('media::admin.select_all_loaded', ['count' => 0]));
     }
 
+    public function test_public_media_file_is_served_at_storage_url(): void
+    {
+        Storage::disk('public')->put('media/sample.jpg', 'image-bytes');
+
+        $this->get('/storage/media/sample.jpg')
+            ->assertOk();
+    }
+
     public function test_library_json_lists_files_from_all_folders(): void
     {
         $folder = MediaFolder::query()->create(['name' => 'Products']);

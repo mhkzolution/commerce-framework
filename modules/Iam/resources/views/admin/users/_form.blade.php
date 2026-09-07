@@ -1,3 +1,7 @@
+@php
+    $user ??= null;
+@endphp
+
 <div class="grid gap-4 md:grid-cols-2">
     <div>
         <label class="block text-sm font-medium text-text" for="name">Name</label>

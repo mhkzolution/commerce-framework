@@ -15,7 +15,7 @@
         <x-admin.form.shell action="{{ route('admin.iam.users.store') }}" method="POST" class="max-w-2xl">
             @csrf
             <x-admin.form.section title="Account details">
-                @include('iam::admin.users._form', ['statuses' => $statuses, 'roles' => $roles])
+                @include('iam::admin.users._form', ['user' => null, 'statuses' => $statuses, 'roles' => $roles])
             </x-admin.form.section>
             <x-slot:actions>
                 <x-admin.button variant="secondary" :href="route('admin.iam.users.index')">Cancel</x-admin.button>

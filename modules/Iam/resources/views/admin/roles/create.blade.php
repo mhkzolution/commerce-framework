@@ -15,7 +15,7 @@
         <x-admin.form.shell action="{{ route('admin.iam.roles.store') }}" method="POST" class="max-w-3xl">
             @csrf
             <x-admin.form.section title="Role details">
-                @include('iam::admin.roles._form', ['permissionsByModule' => $permissionsByModule])
+                @include('iam::admin.roles._form', ['role' => null, 'permissionsByModule' => $permissionsByModule])
             </x-admin.form.section>
             <x-slot:actions>
                 <x-admin.button variant="secondary" :href="route('admin.iam.roles.index')">Cancel</x-admin.button>
