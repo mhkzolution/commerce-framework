@@ -132,6 +132,8 @@ final class ProductDetailBuilderTest extends TestCase
         $this->assertNotNull($data);
         $this->assertNull($data->available);
         $this->assertTrue($data->inStock);
+        $this->assertNull($data->variants[0]['available']);
+        $this->assertTrue($data->variants[0]['in_stock']);
     }
 
     public function test_zero_stock_is_out_of_stock(): void
@@ -157,6 +159,8 @@ final class ProductDetailBuilderTest extends TestCase
         $this->assertNotNull($data);
         $this->assertNull($data->available);
         $this->assertTrue($data->inStock);
+        $this->assertNull($data->variants[0]['available']);
+        $this->assertTrue($data->variants[0]['in_stock']);
     }
 
     public function test_allow_backorder_with_zero_stock_is_in_stock(): void
@@ -170,5 +174,7 @@ final class ProductDetailBuilderTest extends TestCase
         $this->assertNotNull($data);
         $this->assertSame(0, $data->available);
         $this->assertTrue($data->inStock);
+        $this->assertSame(0, $data->variants[0]['available']);
+        $this->assertTrue($data->variants[0]['in_stock']);
     }
 }

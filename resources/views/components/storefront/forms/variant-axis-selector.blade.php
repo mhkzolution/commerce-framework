@@ -54,7 +54,8 @@
                         @php
                             $matchVariant = $resolveVariantForValue($variants, $axisKey, $value);
                             $isActive = $selectedValue === $value;
-                            $isDisabled = $matchVariant === null || ($matchVariant['available'] ?? 0) <= 0;
+                            $isDisabled = $matchVariant === null
+                                || ! ($matchVariant['in_stock'] ?? (($matchVariant['available'] ?? 0) > 0));
                             $thumb = $matchVariant['image_thumbnail'] ?? null;
                         @endphp
 
@@ -88,7 +89,7 @@
                 class="storefront-variant-selector__option {{ ($variant['uuid'] ?? '') === $selectedUuid ? 'storefront-variant-selector__option--active' : '' }}"
                 data-variant-option
                 data-variant-uuid="{{ $variant['uuid'] }}"
-                @disabled(($variant['available'] ?? 0) <= 0)
+                @disabled(! ($variant['in_stock'] ?? (($variant['available'] ?? 0) > 0)))
             >
                 {{ $variant['sku'] ?? $variant['uuid'] }}
             </button>

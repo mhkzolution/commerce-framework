@@ -59,7 +59,7 @@
                                 @csrf
                                 @method('PATCH')
                                 <button type="button" class="storefront-qty-stepper__btn" data-qty-dec aria-label="{{ __('storefront::storefront.decrease_quantity') }}">−</button>
-                                <input type="number" name="quantity" value="{{ $line->quantity }}" min="0" max="{{ $line->available }}" class="storefront-qty-stepper__input" aria-label="{{ __('storefront::storefront.quantity') }}">
+                                <input type="number" name="quantity" value="{{ $line->quantity }}" min="0" @if ($line->quantityLimited) max="{{ $line->available }}" @endif class="storefront-qty-stepper__input" aria-label="{{ __('storefront::storefront.quantity') }}">
                                 <button type="button" class="storefront-qty-stepper__btn" data-qty-inc aria-label="{{ __('storefront::storefront.increase_quantity') }}">+</button>
                             </form>
                             <form method="POST" action="{{ route('storefront.cart.items.destroy', $line->purchasableUuid) }}" data-cart-remove>

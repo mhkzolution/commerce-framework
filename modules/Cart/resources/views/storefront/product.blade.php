@@ -95,7 +95,7 @@
                                             name="quantity"
                                             value="1"
                                             min="1"
-                                            @if ($product->available !== null) max="{{ $product->available }}" @endif
+                                            @if ($product->available !== null && $product->available > 0) max="{{ $product->available }}" @endif
                                             class="storefront-qty-stepper__input"
                                             data-buy-quantity
                                             aria-label="{{ __('storefront::storefront.quantity') }}"

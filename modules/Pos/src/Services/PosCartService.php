@@ -272,6 +272,7 @@ final class PosCartService implements CartServiceInterface
                 lineTotal: $lineTotal,
                 available: $available,
                 isPurchasable: $isPurchasable,
+                quantityLimited: $variant->track_inventory && $variant->product?->backorder_policy === 'deny',
             );
 
             $subtotal += $lineTotal;

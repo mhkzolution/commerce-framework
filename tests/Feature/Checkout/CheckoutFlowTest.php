@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Checkout;
 
+use Commerce\Cart\Contracts\CartServiceInterface;
 use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Orders\Models\Order;
 use Commerce\Payment\Models\Payment;
@@ -92,6 +93,18 @@ final class CheckoutFlowTest extends TestCase
             'quantity' => 2,
         ])->assertRedirect(route('storefront.cart.index'))
             ->assertSessionHasNoErrors();
+
+        $cart = app(CartServiceInterface::class)->get();
+        $this->assertFalse($cart->lines[0]->quantityLimited);
+
+        $cartHtml = $this->get(route('storefront.cart.index'))
+            ->assertOk()
+            ->getContent();
+        $this->assertStringNotContainsString('max="0"', $cartHtml);
+        $this->assertStringNotContainsString(
+            __('storefront::storefront.only_n_available', ['count' => 0]),
+            $cartHtml,
+        );
 
         $this->post(route('storefront.checkout.store'), $this->checkoutPayload())
             ->assertRedirect()

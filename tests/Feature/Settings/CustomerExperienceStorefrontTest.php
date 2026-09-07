@@ -49,6 +49,19 @@ final class CustomerExperienceStorefrontTest extends TestCase
             ->assertJsonPath('data.formatted_price', '25.00');
     }
 
+    public function test_quick_view_keeps_untracked_variant_availability_unknown_and_purchasable(): void
+    {
+        $variant = $this->createPurchasableProduct(price: 2500, stock: 1, sku: 'CX-QV-UNTRACKED');
+        $variant->update(['track_inventory' => false]);
+
+        $this->getJson(route('api.v1.storefront.products.quick-view', $variant->product->uuid))
+            ->assertOk()
+            ->assertJsonPath('data.remaining_stock', null)
+            ->assertJsonPath('data.in_stock', true)
+            ->assertJsonPath('data.variants.0.available', null)
+            ->assertJsonPath('data.variants.0.in_stock', true);
+    }
+
     public function test_quick_view_api_is_hidden_when_module_disabled(): void
     {
         $variant = $this->createPurchasableProduct(price: 2500, sku: 'CX-QV-OFF');

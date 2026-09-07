@@ -31,6 +31,7 @@ function show(path, config) {
 
 function renderQuickView(product, config, i18n) {
     const price = product.sale_price && config.showSalePrice ? product.sale_price : product.price;
+    const variantInStock = (variant) => variant.in_stock ?? product.in_stock;
     const images = (product.images || []).filter(Boolean);
     const imageHtml = show('showImages', config) && images.length
         ? `<div class="cx-store-qv__images">${images.map((src, index) => `<img src="${escapeHtml(src)}" alt="${escapeHtml(product.name)}" ${index === 0 ? '' : 'loading="lazy"'}>`).join('')}</div>`
@@ -64,13 +65,13 @@ function renderQuickView(product, config, i18n) {
     if (show('showStockStatus', config)) {
         stockBits.push(product.in_stock ? i18n.inStock : i18n.outOfStock);
     }
-    if (show('showRemainingStock', config) && product.in_stock) {
+    if (show('showRemainingStock', config) && product.in_stock && typeof product.remaining_stock === 'number') {
         stockBits.push(i18n.remaining.replace(':count', String(product.remaining_stock)));
     }
     const variants = show('showVariants', config) && Array.isArray(product.variants) && product.variants.length > 1
         ? `<div class="cx-store-qv__variants" data-qv-variants>
                 ${product.variants.map((variant) => `
-                    <button type="button" class="cx-store-qv__chip${variant.uuid === product.default_variant_uuid ? ' is-active' : ''}" data-qv-variant="${escapeHtml(variant.uuid)}" data-available="${variant.available ?? 0}">
+                    <button type="button" class="cx-store-qv__chip${variant.uuid === product.default_variant_uuid ? ' is-active' : ''}" data-qv-variant="${escapeHtml(variant.uuid)}" data-in-stock="${variantInStock(variant) ? '1' : '0'}"${variantInStock(variant) ? '' : ' disabled'}>
                         ${escapeHtml(variant.name)}
                     </button>
                 `).join('')}

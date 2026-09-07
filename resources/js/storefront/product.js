@@ -615,6 +615,10 @@ function buildInitialSelections(variant, axes) {
     return selections;
 }
 
+function variantIsInStock(variant) {
+    return variant?.in_stock ?? (typeof variant?.available === 'number' && variant.available > 0);
+}
+
 function resolveVariant(variants, selections) {
     const entries = Object.entries(selections).filter(([, value]) => value !== undefined && value !== '');
 
@@ -632,7 +636,7 @@ function resolveVariant(variants, selections) {
         return optionValue === undefined || String(optionValue) === String(value);
     }));
 
-    return partialMatches.find((variant) => variant.available > 0) ?? partialMatches[0] ?? null;
+    return partialMatches.find(variantIsInStock) ?? partialMatches[0] ?? null;
 }
 
 function initVariants(page) {
@@ -706,11 +710,15 @@ function initVariants(page) {
             variantInput.value = variant.uuid;
         }
         if (quantityInput) {
-            quantityInput.max = String(Math.max(variant.available, 1));
+            if (typeof variant.available === 'number' && variant.available > 0) {
+                quantityInput.max = String(variant.available);
+            } else {
+                quantityInput.removeAttribute('max');
+            }
             quantityInput.value = '1';
         }
         if (stockNoteEl) {
-            stockNoteEl.textContent = variant.available > 0
+            stockNoteEl.textContent = variantIsInStock(variant)
                 ? stockNoteEl.dataset.inStockLabel || stockNoteEl.textContent
                 : stockNoteEl.dataset.outOfStockLabel || 'Out of stock';
         }
@@ -764,9 +772,11 @@ function initQuantityStepper(page) {
 
         const clamp = () => {
             const min = Number(input.min || 1);
-            const max = Number(input.max || min);
             let value = Number(input.value || min);
-            value = Math.min(Math.max(value, min), max);
+            value = Math.max(value, min);
+            if (input.max !== '') {
+                value = Math.min(value, Number(input.max));
+            }
             input.value = String(value);
         };
 

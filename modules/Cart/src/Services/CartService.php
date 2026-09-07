@@ -219,6 +219,7 @@ final class CartService extends BaseService implements CartServiceInterface
                 lineTotal: $lineTotal,
                 available: $available,
                 isPurchasable: $isPurchasable,
+                quantityLimited: $variant->track_inventory && $product?->backorder_policy === 'deny',
                 imageUrl: $this->lineImageUrl($variant),
                 imageSrcset: $this->lineImageSrcset($variant),
                 url: $slug ? route('storefront.products.show', $slug) : null,

@@ -209,7 +209,7 @@ final class ProductDetailBuilder
     }
 
     /**
-     * @return list<array{uuid: string, price: int, compare_at_price: ?int, available: int, options: array<string, string>, image_thumbnail: ?string, sku: ?string}>
+     * @return list<array{uuid: string, price: int, compare_at_price: ?int, available: ?int, in_stock: bool, options: array<string, string>, image_thumbnail: ?string, sku: ?string}>
      */
     private function variantPayload(Product $product, string $baseCurrency, string $displayCurrency): array
     {
@@ -234,7 +234,8 @@ final class ProductDetailBuilder
                 'compare_at_price' => $variant->compare_at_price !== null
                     ? $this->convert((int) $variant->compare_at_price, $baseCurrency, $displayCurrency)
                     : null,
-                'available' => $available ?? ($inStock ? 9999 : 0),
+                'available' => $available,
+                'in_stock' => $inStock,
                 'options' => $normalized,
                 'image_thumbnail' => $image['url'] ?? null,
                 'image_srcset' => $image['srcset'] ?? null,

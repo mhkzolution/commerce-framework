@@ -65,7 +65,7 @@
                                     <p class="storefront-muted">{{ $line->variantLabel }}</p>
                                 @endif
                                 <p class="storefront-muted">{{ $line->sku }}</p>
-                                @if ($line->available < $line->quantity)
+                                @if ($line->quantityLimited && $line->available < $line->quantity)
                                     <p class="storefront-danger">{{ __('storefront::storefront.only_n_available', ['count' => $line->available]) }}</p>
                                 @endif
                                 <p class="storefront-cart-item__price">{{ number_format($line->unitPrice / 100, 2) }} {{ $cart->currency }}</p>
@@ -75,7 +75,7 @@
                                     @csrf
                                     @method('PATCH')
                                     <button type="button" class="storefront-qty-stepper__btn" data-qty-dec aria-label="{{ __('storefront::storefront.decrease_quantity') }}">−</button>
-                                    <input type="number" name="quantity" value="{{ $line->quantity }}" min="0" max="{{ $line->available }}" class="storefront-qty-stepper__input">
+                                    <input type="number" name="quantity" value="{{ $line->quantity }}" min="0" @if ($line->quantityLimited) max="{{ $line->available }}" @endif class="storefront-qty-stepper__input">
                                     <button type="button" class="storefront-qty-stepper__btn" data-qty-inc aria-label="{{ __('storefront::storefront.increase_quantity') }}">+</button>
                                 </form>
                                 <p class="storefront-cart-item__total">{{ number_format($line->lineTotal / 100, 2) }}</p>

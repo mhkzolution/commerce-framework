@@ -7,6 +7,7 @@ namespace Tests\Feature\Pos;
 use Commerce\Currency\Database\Seeders\CurrencySeeder;
 use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
+use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Orders\Models\Order;
 use Commerce\Pos\Models\Register;
 use Commerce\Settings\Database\Seeders\SettingsSeeder;
@@ -82,6 +83,29 @@ final class PosInterfaceTest extends TestCase
             'purchasable_uuid' => $variant->uuid,
             'on_hand' => 8,
         ]);
+    }
+
+    public function test_pos_does_not_warn_out_of_stock_for_backorder_line(): void
+    {
+        $admin = User::query()->first();
+        Register::query()->create([
+            'name' => 'Backorder Counter',
+            'code' => 'POS-BACKORDER',
+            'is_active' => true,
+        ]);
+        $variant = $this->createPurchasableProduct(price: 5000, stock: 1, sku: 'POS-PRESENT-001');
+        app(InventoryServiceInterface::class)->setOnHand($variant->uuid, 0);
+        $variant->product->update(['backorder_policy' => 'allow']);
+
+        $this->actingAs($admin)->post(route('pos.session.open'));
+
+        $this->actingAs($admin)
+            ->postJson(route('pos.api.cart.items.store'), [
+                'sku' => $variant->sku,
+                'quantity' => 2,
+            ])
+            ->assertOk()
+            ->assertJsonPath('cart.lines.0.stock_warning', null);
     }
 
     public function test_pos_can_hold_and_resume_sale(): void
