@@ -6,14 +6,6 @@ namespace Commerce\Product\Services;
 
 use Closure;
 
-final readonly class GeneratedSku
-{
-    public function __construct(
-        public string $sku,
-        public bool $isAuto,
-    ) {}
-}
-
 final class VariantSkuGenerator
 {
     /**
