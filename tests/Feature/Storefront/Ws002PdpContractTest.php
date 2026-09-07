@@ -5,9 +5,16 @@ declare(strict_types=1);
 namespace Tests\Feature\Storefront;
 
 use Commerce\Cart\Services\ProductDetailBuilder;
+use Commerce\Catalog\Models\Attribute;
+use Commerce\Catalog\Models\AttributeValue;
+use Commerce\Catalog\Services\AttributeValueService;
 use Commerce\Contracts\Media\MediaQueryServiceInterface;
 use Commerce\Inventory\Contracts\InventoryServiceInterface;
+use Commerce\Product\Models\Product;
+use Commerce\Product\Models\ProductAttribute;
+use Commerce\Product\Models\ProductAttributeValue;
 use Commerce\Product\Models\ProductMedia;
+use Commerce\Product\Models\ProductVariant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesPurchasableProduct;
 use Tests\TestCase;
@@ -113,7 +120,14 @@ final class Ws002PdpContractTest extends TestCase
     {
         $default = $this->createPurchasableProduct(price: 1800, stock: 1, sku: 'PDP-MULTI-OOS-2');
         app(InventoryServiceInterface::class)->setOnHand($default->uuid, 0);
-        $sibling = $default->product->variants()->create([
+        $size = $this->createSelectAttribute('Size');
+        $small = $this->createAttributeValue($size, 'Small', 0);
+        $large = $this->createAttributeValue($size, 'Large', 1);
+        $product = $default->product;
+        $product->update(['type' => 'variable']);
+        $this->attachVariationAttribute($product, $size);
+        $this->attachVariantValue($product, $default, $size, $small);
+        $sibling = $product->variants()->create([
             'tenant_id' => $default->tenant_id,
             'sku' => 'PDP-MULTI-IN-2',
             'track_inventory' => true,
@@ -121,8 +135,8 @@ final class Ws002PdpContractTest extends TestCase
             'price' => 1800,
             'is_default' => false,
             'position' => 1,
-            'meta' => ['options' => ['Size' => 'Large']],
         ]);
+        $this->attachVariantValue($product, $sibling, $size, $large);
         app(InventoryServiceInterface::class)->receive($sibling->uuid, 3);
 
         $html = $this->get(route('storefront.products.show', $default->product->slug))
@@ -139,8 +153,20 @@ final class Ws002PdpContractTest extends TestCase
     {
         $default = $this->createPurchasableProduct(price: 1800, stock: 1, sku: 'PDP-RED-SMALL');
         app(InventoryServiceInterface::class)->setOnHand($default->uuid, 0);
-        $default->update(['meta' => ['options' => ['Color' => 'Red', 'Size' => 'Small']]]);
-        $sibling = $default->product->variants()->create([
+
+        $color = $this->createSelectAttribute('Color');
+        $size = $this->createSelectAttribute('Size');
+        $red = $this->createAttributeValue($color, 'Red', 0);
+        $small = $this->createAttributeValue($size, 'Small', 0);
+        $large = $this->createAttributeValue($size, 'Large', 1);
+        $product = $default->product;
+        $product->update(['type' => 'variable']);
+        $this->attachVariationAttribute($product, $color, 0);
+        $this->attachVariationAttribute($product, $size, 1);
+        $this->attachVariantValue($product, $default, $color, $red);
+        $this->attachVariantValue($product, $default, $size, $small);
+
+        $sibling = $product->variants()->create([
             'tenant_id' => $default->tenant_id,
             'sku' => 'PDP-RED-LARGE',
             'track_inventory' => true,
@@ -148,8 +174,9 @@ final class Ws002PdpContractTest extends TestCase
             'price' => 1800,
             'is_default' => false,
             'position' => 1,
-            'meta' => ['options' => ['Color' => 'Red', 'Size' => 'Large']],
         ]);
+        $this->attachVariantValue($product, $sibling, $color, $red);
+        $this->attachVariantValue($product, $sibling, $size, $large);
         app(InventoryServiceInterface::class)->receive($sibling->uuid, 3);
 
         $html = $this->get(route('storefront.products.show', $default->product->slug))
@@ -170,5 +197,53 @@ final class Ws002PdpContractTest extends TestCase
             'quantity' => 1,
             'redirect_to' => 'checkout',
         ])->assertRedirect(route('storefront.checkout'));
+    }
+
+    private function createSelectAttribute(string $name): Attribute
+    {
+        return Attribute::query()->create([
+            'code' => strtolower($name).'-'.uniqid(),
+            'name' => $name,
+            'type' => 'select',
+            'is_filterable' => true,
+            'is_visible' => true,
+            'options' => [],
+        ]);
+    }
+
+    private function createAttributeValue(Attribute $attribute, string $label, int $position): AttributeValue
+    {
+        return AttributeValue::query()->create([
+            'tenant_id' => $attribute->tenant_id,
+            'attribute_id' => $attribute->id,
+            'code' => app(AttributeValueService::class)->allocateCode($attribute->id, $label),
+            'label' => $label,
+            'position' => $position,
+        ]);
+    }
+
+    private function attachVariationAttribute(Product $product, Attribute $attribute, int $position = 0): void
+    {
+        ProductAttribute::query()->create([
+            'product_id' => $product->id,
+            'attribute_id' => $attribute->id,
+            'used_for_variations' => true,
+            'position' => $position,
+        ]);
+    }
+
+    private function attachVariantValue(
+        Product $product,
+        ProductVariant $variant,
+        Attribute $attribute,
+        AttributeValue $value,
+    ): void {
+        ProductAttributeValue::query()->create([
+            'product_id' => $product->id,
+            'attribute_id' => $attribute->id,
+            'product_variant_id' => $variant->id,
+            'attribute_value_id' => $value->id,
+            'value' => $value->label,
+        ]);
     }
 }

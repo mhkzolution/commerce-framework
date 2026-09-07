@@ -28,6 +28,36 @@
     $variantIsInStock = static fn (array $variant): bool => $variant['in_stock']
         ?? (($variant['available'] ?? 0) > 0);
 
+    $optionValue = static function (array $options, string $axisKey): ?string {
+        foreach ($options as $optionKey => $optionValue) {
+            if (strtolower((string) $optionKey) === strtolower($axisKey)) {
+                return (string) $optionValue;
+            }
+        }
+
+        return null;
+    };
+
+    $combinationExists = static function (array $variants, array $selections) use ($optionValue): bool {
+        foreach ($variants as $variant) {
+            $options = is_array($variant['options'] ?? null) ? $variant['options'] : [];
+            $matches = true;
+
+            foreach ($selections as $key => $value) {
+                if ($optionValue($options, (string) $key) !== (string) $value) {
+                    $matches = false;
+                    break;
+                }
+            }
+
+            if ($matches) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
     $isColorAxis = static function (array $axis): bool {
         $needle = strtolower(($axis['name'] ?? '').' '.($axis['key'] ?? ''));
 
@@ -40,15 +70,7 @@
         @foreach ($axes as $axis)
             @php
                 $axisKey = $axis['key'];
-                $selectedValue = null;
-
-                foreach ($selectedOptions as $optionKey => $optionValue) {
-                    if (strtolower((string) $optionKey) === strtolower($axisKey)) {
-                        $selectedValue = (string) $optionValue;
-                        break;
-                    }
-                }
-
+                $selectedValue = $optionValue($selectedOptions, (string) $axisKey);
                 $colorAxis = $isColorAxis($axis);
             @endphp
 
@@ -62,8 +84,12 @@
                             $matchVariant = collect($matchingVariants)->first($variantIsInStock)
                                 ?? ($matchingVariants[0] ?? null);
                             $isActive = $selectedValue === $value;
-                            $isDisabled = $matchingVariants === []
-                                || ! collect($matchingVariants)->contains($variantIsInStock);
+                            $trial = [];
+                            foreach ($selectedOptions as $selectedKey => $selectedOptionValue) {
+                                $trial[strtolower((string) $selectedKey)] = (string) $selectedOptionValue;
+                            }
+                            $trial[strtolower((string) $axisKey)] = (string) $value;
+                            $isDisabled = ! $combinationExists($variants, $trial);
                             $thumb = $matchVariant['image_thumbnail'] ?? null;
                         @endphp
 
