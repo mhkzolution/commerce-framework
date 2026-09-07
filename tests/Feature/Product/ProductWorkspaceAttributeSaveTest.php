@@ -10,10 +10,12 @@ use Commerce\Catalog\Models\AttributeValue;
 use Commerce\Catalog\Services\AttributeValueService;
 use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
+use Commerce\Product\Contracts\ProductServiceInterface;
 use Commerce\Product\Models\Product;
 use Commerce\Product\Models\ProductAttribute;
 use Commerce\Product\Models\ProductAttributeValue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 final class ProductWorkspaceAttributeSaveTest extends TestCase
@@ -245,6 +247,45 @@ final class ProductWorkspaceAttributeSaveTest extends TestCase
             ->where('attribute_value_id', $red->id)
             ->exists();
         $this->assertTrue($identified);
+    }
+
+    public function test_product_service_publish_rejects_draft_variable_without_identity(): void
+    {
+        [$set, $color] = $this->apparelSet();
+        $red = $this->createAttributeValue($color, 'Red', 0);
+
+        $this->createWorkspace([
+            'product' => $this->productPayload('Draft Variable Admin Publish', [
+                'type' => 'variable',
+                'status' => 'draft',
+                'attributeSetId' => $set->id,
+                'trackInventory' => false,
+                'productAttributes' => [
+                    [
+                        'attributeId' => $color->id,
+                        'usedForVariations' => true,
+                        'valueIds' => [$red->id],
+                    ],
+                ],
+            ]),
+            'variants' => [],
+        ], 'draft')->assertCreated();
+
+        $product = Product::query()->where('name', 'Draft Variable Admin Publish')->firstOrFail();
+        $this->assertSame('draft', $product->status);
+        $this->assertSame(0, ProductAttributeValue::query()
+            ->where('product_id', $product->id)
+            ->whereNotNull('product_variant_id')
+            ->count());
+
+        try {
+            app(ProductServiceInterface::class)->publish($product->uuid);
+            $this->fail('Expected ValidationException when publishing a variable product without identity.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('status', $exception->errors());
+        }
+
+        $this->assertSame('draft', $product->fresh()->status);
     }
 
     public function test_used_for_variations_on_non_select_attribute_is_rejected(): void

@@ -25,6 +25,7 @@ use Commerce\Product\Models\ProductVariant;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 final class ProductService extends BaseService implements ProductServiceInterface
 {
@@ -34,6 +35,7 @@ final class ProductService extends BaseService implements ProductServiceInterfac
         private readonly SlugServiceInterface $slugService,
         private readonly UrlRedirectServiceInterface $urlRedirectService,
         private readonly ProductSearchIndexer $searchIndexer,
+        private readonly VariableProductPublishGuard $publishGuard,
     ) {}
 
     public function create(CreateProductData $data): Product
@@ -167,6 +169,8 @@ final class ProductService extends BaseService implements ProductServiceInterfac
             return $product;
         }
 
+        $this->publishGuard->assertCanPublish($product);
+
         $product->update([
             'status' => 'published',
             'published_at' => now(),
@@ -198,6 +202,12 @@ final class ProductService extends BaseService implements ProductServiceInterfac
             ->where('publish_at', '<=', now())
             ->orderBy('id')
             ->each(function (Product $product) use (&$count): void {
+                try {
+                    $this->publishGuard->assertCanPublish($product);
+                } catch (ValidationException) {
+                    return;
+                }
+
                 $product->update([
                     'status' => 'published',
                     'published_at' => $product->publish_at ?? now(),

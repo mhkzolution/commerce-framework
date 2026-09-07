@@ -16,10 +16,6 @@ final class VariableProductPublishGuard
             return;
         }
 
-        if (! in_array($product->status, ['published', 'scheduled'], true)) {
-            return;
-        }
-
         $axisIds = $product->productAttributes()
             ->where('used_for_variations', true)
             ->orderBy('position')

@@ -165,7 +165,9 @@ final class ProductWorkspaceSaveService
         $this->syncRelations($product, $data->categoryIds, $data->collectionIds, $data->tagIds, $data->mediaUuids);
         $this->syncAssignedAttributes($product, $data);
         $this->syncGeneratedMatrix($product, $data);
-        $this->publishGuard->assertCanPublish($product->fresh(['variants', 'productAttributes']));
+        if (in_array($product->status, ['published', 'scheduled'], true)) {
+            $this->publishGuard->assertCanPublish($product->fresh(['variants', 'productAttributes']));
+        }
         $this->syncSeo($product, $data->seo);
 
         $this->slugService->register($slug, Product::SEO_ENTITY_TYPE, $product->uuid, $product->tenant_id);
