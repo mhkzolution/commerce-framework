@@ -92,6 +92,12 @@ final class WorkspacePayload
             onHand: self::nullableOnHand(self::firstPresent($input, $product, ['onHand', 'on_hand'])),
             sku: self::nullableString(self::firstPresent($input, $product, ['sku'])),
             price: self::nullableString(self::firstPresent($input, $product, ['price'])),
+            productAttributes: self::normalizeProductAttributes(
+                $payload['productAttributes'] ?? $product['productAttributes'] ?? [],
+            ),
+            generateVariants: self::booleanFlag(
+                $payload['generateVariants'] ?? $product['generateVariants'] ?? false,
+            ),
         );
     }
 
@@ -124,6 +130,48 @@ final class WorkspacePayload
     private static function intList(array $values): array
     {
         return array_values(array_map('intval', array_filter($values, static fn ($value) => $value !== null && $value !== '')));
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private static function normalizeProductAttributes(mixed $raw): array
+    {
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($raw as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $normalized[] = [
+                'attributeId' => (int) ($row['attributeId'] ?? $row['attribute_id'] ?? 0),
+                'usedForVariations' => (bool) ($row['usedForVariations'] ?? $row['used_for_variations'] ?? false),
+                'valueIds' => self::intList(is_array($row['valueIds'] ?? null) ? $row['valueIds'] : ($row['value_ids'] ?? [])),
+                'newLabels' => self::stringList(is_array($row['newLabels'] ?? null)
+                    ? $row['newLabels']
+                    : ($row['new_labels'] ?? $row['labels'] ?? [])),
+                'position' => self::nullableInt($row['position'] ?? null),
+            ];
+        }
+
+        return $normalized;
+    }
+
+    private static function booleanFlag(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            return in_array(strtolower($value), ['1', 'true', 'yes', 'on'], true);
+        }
+
+        return (bool) $value;
     }
 
     /**

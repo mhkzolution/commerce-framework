@@ -91,7 +91,7 @@ final class ProductController extends Controller
     public function edit(string $product): View
     {
         $model = Product::query()
-            ->with(['variants', 'media', 'categories', 'collections', 'tags', 'attributeValues', 'attributeSet.attributes'])
+            ->with(['variants', 'media', 'categories', 'collections', 'tags', 'attributeValues.attribute', 'attributeValues.attributeValue', 'attributeSet.attributes', 'productAttributes.attribute'])
             ->where('uuid', $product)
             ->firstOrFail();
 

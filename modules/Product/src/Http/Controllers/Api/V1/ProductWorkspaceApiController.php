@@ -25,7 +25,7 @@ final class ProductWorkspaceApiController extends Controller
     public function show(string $uuid)
     {
         $product = Product::query()
-            ->with(['variants', 'media', 'categories', 'tags', 'attributeValues', 'attributeSet.attributes'])
+            ->with(['variants', 'media', 'categories', 'tags', 'attributeValues.attribute', 'attributeValues.attributeValue', 'attributeSet.attributes', 'productAttributes.attribute'])
             ->where('uuid', $uuid)
             ->first();
 

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Commerce\Product\Services;
 
+use Commerce\Catalog\Models\Attribute;
+use Commerce\Catalog\Models\AttributeValue;
+use Commerce\Catalog\Services\AttributeValueService;
 use Commerce\Contracts\Event\EventBusInterface;
 use Commerce\Contracts\Seo\SeoServiceInterface;
 use Commerce\Contracts\Seo\SlugServiceInterface;
@@ -18,6 +21,7 @@ use Commerce\Product\Events\ProductPublished;
 use Commerce\Product\Events\ProductUnpublished;
 use Commerce\Product\Events\ProductUpdated;
 use Commerce\Product\Models\Product;
+use Commerce\Product\Models\ProductAttribute;
 use Commerce\Product\Models\ProductAttributeValue;
 use Commerce\Product\Models\ProductMedia;
 use Commerce\Product\Models\ProductVariant;
@@ -34,9 +38,12 @@ final class ProductWorkspaceSaveService
         private readonly SlugServiceInterface $slugService,
         private readonly UrlRedirectServiceInterface $urlRedirectService,
         private readonly ProductSearchIndexer $searchIndexer,
-        private readonly VariantOptionAttributeProvisioner $variantOptionAttributeProvisioner,
         private readonly ProductTypeChangeGuard $productTypeChangeGuard,
         private readonly InventoryServiceInterface $inventoryService,
+        private readonly VariantMatrixGenerator $variantMatrixGenerator,
+        private readonly VariableProductPublishGuard $publishGuard,
+        private readonly AttributeValueService $attributeValueService,
+        private readonly ProductAttributeSetSync $productAttributeSetSync,
     ) {}
 
     public function create(SaveProductWorkspaceData $data): Product
@@ -91,11 +98,11 @@ final class ProductWorkspaceSaveService
         $existingType = $existing?->type;
         $variants = $data->variants;
 
-        if ($data->type === 'simple' && $variants === []) {
+        if ($variants === []) {
             $variants = [[
                 'uuid' => $existing?->defaultVariant()?->uuid,
                 'name' => $data->name,
-                'sku' => $data->sku,
+                'sku' => $data->type === 'simple' ? $data->sku : null,
                 'price' => $data->price,
                 'onHand' => $data->onHand,
                 'options' => [],
@@ -111,9 +118,9 @@ final class ProductWorkspaceSaveService
         $schedule = $this->resolveSchedule($data->status, $data->publishAt, $existing);
 
         $meta = array_merge($existing?->meta ?? [], $data->meta, [
-            'variant_options' => $data->variantOptions,
             'sku_pattern' => $data->skuPattern,
         ]);
+        unset($meta['variant_options']);
 
         if ($data->type === 'variable' && $data->sku !== null && trim($data->sku) !== '') {
             $meta['sku_prefix'] = trim($data->sku);
@@ -156,13 +163,24 @@ final class ProductWorkspaceSaveService
 
         $this->syncVariants($product, $variants, $data, $existing === null);
         $this->syncRelations($product, $data->categoryIds, $data->collectionIds, $data->tagIds, $data->mediaUuids);
-        $this->syncProductAttributeValues($product, $data->attributeValues);
+        $this->syncAssignedAttributes($product, $data);
+        $this->syncGeneratedMatrix($product, $data);
+        $this->publishGuard->assertCanPublish($product->fresh(['variants', 'productAttributes']));
         $this->syncSeo($product, $data->seo);
 
         $this->slugService->register($slug, Product::SEO_ENTITY_TYPE, $product->uuid, $product->tenant_id);
         $this->searchIndexer->index($product->fresh(['variants', 'categories']));
 
-        return $product->fresh(['variants', 'media', 'categories', 'collections', 'tags', 'attributeValues.attribute']);
+        return $product->fresh([
+            'variants',
+            'media',
+            'categories',
+            'collections',
+            'tags',
+            'attributeValues.attribute',
+            'attributeValues.attributeValue',
+            'productAttributes',
+        ]);
     }
 
     /**
@@ -211,6 +229,15 @@ final class ProductWorkspaceSaveService
                 $defaultAssigned = true;
             }
             $status = self::normalizeVariantStatus($row['status'] ?? 'active');
+            $meta = is_array($variant?->meta) ? $variant->meta : [];
+            unset($meta['options']);
+            $meta = array_filter(array_merge($meta, [
+                'image_media_uuid' => self::nullableString($row['imageMediaUuid'] ?? $meta['image_media_uuid'] ?? null),
+                'barcode' => self::nullableString($row['barcode'] ?? $meta['barcode'] ?? null),
+                'cost' => self::nullableString($row['cost'] ?? $meta['cost'] ?? null),
+                'weight' => self::nullableString($row['weight'] ?? $meta['weight'] ?? null),
+                'status' => $status,
+            ]), static fn ($value) => $value !== null && $value !== '');
 
             $attributes = [
                 'sku' => $generatedSku->sku,
@@ -221,14 +248,7 @@ final class ProductWorkspaceSaveService
                 'compare_at_price' => self::nullableMinorUnits($row['comparePrice'] ?? null),
                 'is_default' => $isDefault,
                 'position' => $position,
-                'meta' => array_filter([
-                    'options' => $options,
-                    'image_media_uuid' => self::nullableString($row['imageMediaUuid'] ?? null),
-                    'barcode' => self::nullableString($row['barcode'] ?? null),
-                    'cost' => self::nullableString($row['cost'] ?? null),
-                    'weight' => self::nullableString($row['weight'] ?? null),
-                    'status' => $status,
-                ], static fn ($value) => $value !== null && $value !== []),
+                'meta' => $meta,
             ];
 
             if ($variant === null) {
@@ -240,7 +260,6 @@ final class ProductWorkspaceSaveService
             }
 
             $keptUuids[] = $variant->uuid;
-            $this->syncVariantAttributeValues($product, $variant, $options);
 
             if (! $data->trackInventory) {
                 continue;
@@ -261,7 +280,7 @@ final class ProductWorkspaceSaveService
             }
         }
 
-        if ($keptUuids !== []) {
+        if ($keptUuids !== [] && ! $data->generateVariants && ! $this->hasPostedIdentities($data)) {
             $product->variants()
                 ->whereNotIn('uuid', $keptUuids)
                 ->each(static fn (ProductVariant $variant) => $variant->delete());
@@ -322,38 +341,6 @@ final class ProductWorkspaceSaveService
     }
 
     /**
-     * @param  array<string, string>  $options
-     */
-    private function syncVariantAttributeValues(Product $product, ProductVariant $variant, array $options): void
-    {
-        ProductAttributeValue::query()
-            ->where('product_id', $product->id)
-            ->where('product_variant_id', $variant->id)
-            ->delete();
-
-        if ($options === []) {
-            return;
-        }
-
-        $attributeMap = $this->variantOptionAttributeProvisioner->resolve($product, array_keys($options));
-
-        foreach ($options as $optionKey => $value) {
-            $attributeId = $attributeMap[strtolower((string) $optionKey)] ?? null;
-
-            if ($attributeId === null || $value === '') {
-                continue;
-            }
-
-            ProductAttributeValue::query()->create([
-                'product_id' => $product->id,
-                'attribute_id' => $attributeId,
-                'product_variant_id' => $variant->id,
-                'value' => (string) $value,
-            ]);
-        }
-    }
-
-    /**
      * @param  array<int, mixed>  $values
      */
     private function syncProductAttributeValues(Product $product, array $values): void
@@ -373,6 +360,330 @@ final class ProductWorkspaceSaveService
                 'value' => $stored,
             ]);
         }
+    }
+
+    private function syncAssignedAttributes(Product $product, SaveProductWorkspaceData $data): void
+    {
+        $product->loadMissing('attributeSet.attributes');
+        $this->productAttributeSetSync->syncProductAttributesFromSet($product);
+
+        if ($data->productAttributes === []) {
+            $this->syncProductAttributeValues($product, $data->attributeValues);
+
+            return;
+        }
+
+        foreach (array_values($data->productAttributes) as $position => $row) {
+            $attributeId = (int) ($row['attributeId'] ?? 0);
+            if ($attributeId <= 0) {
+                continue;
+            }
+
+            $attribute = Attribute::query()->find($attributeId);
+            if ($attribute === null) {
+                continue;
+            }
+
+            $usedForVariations = $data->type === 'simple'
+                ? false
+                : (bool) ($row['usedForVariations'] ?? false);
+
+            if ($usedForVariations && $attribute->type !== 'select') {
+                throw ValidationException::withMessages([
+                    "workspace_payload.productAttributes.{$position}.usedForVariations" => 'Used for variations is only allowed on select attributes.',
+                ]);
+            }
+
+            ProductAttribute::query()->updateOrCreate(
+                [
+                    'product_id' => $product->id,
+                    'attribute_id' => $attributeId,
+                ],
+                [
+                    'used_for_variations' => $usedForVariations,
+                    'position' => (int) ($row['position'] ?? $position),
+                ],
+            );
+
+            $valueIds = array_values(array_unique(array_map(
+                'intval',
+                is_array($row['valueIds'] ?? null) ? $row['valueIds'] : [],
+            )));
+            $valueIds = array_values(array_filter($valueIds, static fn (int $id): bool => $id > 0));
+
+            foreach (is_array($row['newLabels'] ?? null) ? $row['newLabels'] : [] as $label) {
+                $label = trim((string) $label);
+                if ($label === '') {
+                    continue;
+                }
+
+                $value = $this->resolveOrCreateAttributeValue($attribute, $label);
+                if (! in_array($value->id, $valueIds, true)) {
+                    $valueIds[] = $value->id;
+                }
+            }
+
+            $this->syncProductLevelValues($product, $attribute, $valueIds);
+        }
+    }
+
+    /**
+     * @param  list<int>  $valueIds
+     */
+    private function syncProductLevelValues(Product $product, Attribute $attribute, array $valueIds): void
+    {
+        $keepIds = [];
+        foreach ($valueIds as $valueId) {
+            $value = AttributeValue::query()
+                ->where('attribute_id', $attribute->id)
+                ->whereKey($valueId)
+                ->first();
+            if ($value === null) {
+                continue;
+            }
+
+            $keepIds[] = $value->id;
+            $this->upsertProductAttributeValue($product, $attribute->id, $value);
+        }
+
+        $stale = ProductAttributeValue::query()
+            ->where('product_id', $product->id)
+            ->where('attribute_id', $attribute->id)
+            ->whereNull('product_variant_id');
+
+        if ($keepIds === []) {
+            $stale->delete();
+
+            return;
+        }
+
+        $stale->where(function ($query) use ($keepIds): void {
+            $query->whereNotIn('attribute_value_id', $keepIds)
+                ->orWhereNull('attribute_value_id');
+        })->delete();
+    }
+
+    private function upsertProductAttributeValue(Product $product, int $attributeId, AttributeValue $value): void
+    {
+        $existing = ProductAttributeValue::query()
+            ->where('product_id', $product->id)
+            ->where('attribute_id', $attributeId)
+            ->whereNull('product_variant_id')
+            ->where('attribute_value_id', $value->id)
+            ->first();
+
+        if ($existing !== null) {
+            if ($existing->value !== $value->label) {
+                $existing->update(['value' => $value->label]);
+            }
+
+            return;
+        }
+
+        ProductAttributeValue::query()->create([
+            'product_id' => $product->id,
+            'attribute_id' => $attributeId,
+            'product_variant_id' => null,
+            'attribute_value_id' => $value->id,
+            'value' => $value->label,
+        ]);
+    }
+
+    private function resolveOrCreateAttributeValue(Attribute $attribute, string $label): AttributeValue
+    {
+        $existing = AttributeValue::query()
+            ->where('attribute_id', $attribute->id)
+            ->whereRaw('LOWER(label) = ?', [mb_strtolower($label)])
+            ->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $maxPosition = (int) AttributeValue::query()
+            ->where('attribute_id', $attribute->id)
+            ->max('position');
+
+        return AttributeValue::query()->create([
+            'tenant_id' => $attribute->tenant_id,
+            'attribute_id' => $attribute->id,
+            'code' => $this->attributeValueService->allocateCode($attribute->id, $label),
+            'label' => $label,
+            'position' => $maxPosition + 1,
+        ]);
+    }
+
+    private function syncGeneratedMatrix(Product $product, SaveProductWorkspaceData $data): void
+    {
+        if (! $this->shouldGenerate($product, $data)) {
+            return;
+        }
+
+        $result = $this->variantMatrixGenerator->generate($product->fresh());
+        $this->fillGeneratedSkus($product, $data, $result['create']);
+        $this->applyGeneratedDrops($product, $data, $result);
+        $this->ensureDefaultVariant($product);
+    }
+
+    private function shouldGenerate(Product $product, SaveProductWorkspaceData $data): bool
+    {
+        if ($data->type !== 'variable') {
+            return false;
+        }
+
+        $axes = $product->productAttributes()
+            ->where('used_for_variations', true)
+            ->orderBy('position')
+            ->get();
+
+        if ($axes->isEmpty()) {
+            return false;
+        }
+
+        foreach ($axes as $axis) {
+            $hasMembership = ProductAttributeValue::query()
+                ->where('product_id', $product->id)
+                ->where('attribute_id', $axis->attribute_id)
+                ->whereNull('product_variant_id')
+                ->whereNotNull('attribute_value_id')
+                ->exists();
+
+            if (! $hasMembership) {
+                return false;
+            }
+        }
+
+        return $data->generateVariants || $this->hasPostedIdentities($data);
+    }
+
+    private function hasPostedIdentities(SaveProductWorkspaceData $data): bool
+    {
+        foreach ($data->variants as $row) {
+            $ids = $row['valueIds'] ?? $row['attributeValueIds'] ?? [];
+            if (is_array($ids) && $ids !== []) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<string, ProductVariant>  $created
+     */
+    private function fillGeneratedSkus(Product $product, SaveProductWorkspaceData $data, array $created): void
+    {
+        if ($created === []) {
+            return;
+        }
+
+        $allocatedSkus = [];
+        $skuGenerator = new VariantSkuGenerator(function () use ($product, &$allocatedSkus): array {
+            return [
+                ...ProductVariant::query()
+                    ->where('tenant_id', $product->tenant_id)
+                    ->whereNotNull('sku')
+                    ->pluck('sku')
+                    ->all(),
+                ...array_keys($allocatedSkus),
+            ];
+        });
+        $prefix = $this->skuPrefix($data, $product);
+
+        foreach ($created as $variant) {
+            $typedSku = self::nullableString($variant->sku);
+            if ($typedSku !== null) {
+                continue;
+            }
+
+            $codes = $this->axisCodesForVariant($product, $variant);
+            $generated = $skuGenerator->allocate($prefix, $codes, null);
+            $this->assertSkuAvailable($product, $variant, $generated->sku, $allocatedSkus, 0);
+            $allocatedSkus[$generated->sku] = true;
+
+            $variant->update([
+                'sku' => $generated->sku,
+                'sku_is_auto' => $generated->isAuto,
+                'track_inventory' => $data->trackInventory,
+            ]);
+
+            if ($data->trackInventory) {
+                $this->inventoryService->setOnHand($variant->uuid, 0, 'Product workspace');
+            }
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function axisCodesForVariant(Product $product, ProductVariant $variant): array
+    {
+        $axes = $product->productAttributes()
+            ->where('used_for_variations', true)
+            ->orderBy('position')
+            ->get();
+
+        $rows = ProductAttributeValue::query()
+            ->with('attributeValue')
+            ->where('product_id', $product->id)
+            ->where('product_variant_id', $variant->id)
+            ->whereNotNull('attribute_value_id')
+            ->get()
+            ->keyBy('attribute_id');
+
+        $codes = [];
+        foreach ($axes as $axis) {
+            $code = $rows->get($axis->attribute_id)?->attributeValue?->code;
+            if (is_string($code) && $code !== '') {
+                $codes[] = $code;
+            }
+        }
+
+        return $codes;
+    }
+
+    /**
+     * @param  array{keep: array<string, ProductVariant>, create: array<string, ProductVariant>, drop: array<string, ProductVariant>}  $result
+     */
+    private function applyGeneratedDrops(Product $product, SaveProductWorkspaceData $data, array $result): void
+    {
+        if ($data->type === 'simple' || $result['drop'] === []) {
+            return;
+        }
+
+        $dropUuids = [];
+        foreach ($result['drop'] as $key => $variant) {
+            if ($key === '' && $variant->is_default && $data->type === 'simple') {
+                continue;
+            }
+
+            $dropUuids[] = $variant->uuid;
+        }
+
+        if ($dropUuids === []) {
+            return;
+        }
+
+        $keptUuids = $product->variants()
+            ->whereNotIn('uuid', $dropUuids)
+            ->pluck('uuid')
+            ->all();
+
+        $this->productTypeChangeGuard->assertCanBecomeSimple($product, $keptUuids);
+
+        $product->variants()
+            ->whereIn('uuid', $dropUuids)
+            ->each(static fn (ProductVariant $variant) => $variant->delete());
+    }
+
+    private function ensureDefaultVariant(Product $product): void
+    {
+        $remaining = $product->variants()->get();
+        if ($remaining->isEmpty() || $remaining->contains(static fn (ProductVariant $variant): bool => (bool) $variant->is_default)) {
+            return;
+        }
+
+        $remaining->first()?->update(['is_default' => true]);
     }
 
     /**
