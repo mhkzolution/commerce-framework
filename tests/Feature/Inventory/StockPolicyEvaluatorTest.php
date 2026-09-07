@@ -9,6 +9,9 @@ use Commerce\Core\Exceptions\DomainException;
 use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Inventory\Models\InventoryItem;
+use Commerce\Orders\Contracts\OrderServiceInterface;
+use Commerce\Orders\DTO\CreateOrderData;
+use Commerce\Orders\DTO\OrderLineData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesPurchasableProduct;
 use Tests\TestCase;
@@ -91,6 +94,26 @@ final class StockPolicyEvaluatorTest extends TestCase
             'quantity' => -5,
             'on_hand_after' => 0,
         ]);
+    }
+
+    public function test_confirm_sale_consumes_only_its_quantity_from_aggregate_reserved(): void
+    {
+        $variant = $this->createPurchasableProduct(stock: 20);
+        $inventory = app(InventoryServiceInterface::class);
+        $inventory->reserve($variant->uuid, 10);
+        $orders = app(OrderServiceInterface::class);
+        $order = $orders->create(new CreateOrderData(
+            lines: [new OrderLineData(
+                purchasableUuid: $variant->uuid,
+                quantity: 5,
+            )],
+        ));
+
+        $orders->confirm($order->uuid);
+
+        $level = app(InventoryQueryServiceInterface::class)->getStockLevel($variant->uuid);
+        $this->assertSame(15, $level->getOnHand());
+        $this->assertSame(5, $level->getReserved());
     }
 
     public function test_paginate_omits_untracked_inventory_items(): void
