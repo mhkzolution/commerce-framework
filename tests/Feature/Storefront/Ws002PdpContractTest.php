@@ -135,6 +135,32 @@ final class Ws002PdpContractTest extends TestCase
         $this->assertStringContainsString('"in_stock":true', $html);
     }
 
+    public function test_axis_value_stays_enabled_when_any_matching_variant_is_in_stock(): void
+    {
+        $default = $this->createPurchasableProduct(price: 1800, stock: 1, sku: 'PDP-RED-SMALL');
+        app(InventoryServiceInterface::class)->setOnHand($default->uuid, 0);
+        $default->update(['meta' => ['options' => ['Color' => 'Red', 'Size' => 'Small']]]);
+        $sibling = $default->product->variants()->create([
+            'tenant_id' => $default->tenant_id,
+            'sku' => 'PDP-RED-LARGE',
+            'track_inventory' => true,
+            'name' => 'Red Large',
+            'price' => 1800,
+            'is_default' => false,
+            'position' => 1,
+            'meta' => ['options' => ['Color' => 'Red', 'Size' => 'Large']],
+        ]);
+        app(InventoryServiceInterface::class)->receive($sibling->uuid, 3);
+
+        $html = $this->get(route('storefront.products.show', $default->product->slug))
+            ->assertOk()
+            ->getContent();
+
+        $matched = preg_match('/<button[^>]*data-axis-value="Red"[^>]*>/', $html, $button);
+        $this->assertSame(1, $matched);
+        $this->assertStringNotContainsString('disabled', $button[0]);
+    }
+
     public function test_buy_now_redirects_to_checkout(): void
     {
         $variant = $this->createPurchasableProduct(price: 2100, stock: 2, sku: 'PDP-BUY-1');

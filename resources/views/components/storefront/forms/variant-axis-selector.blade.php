@@ -8,19 +8,25 @@
     $selectedVariant = collect($variants)->firstWhere('uuid', $selectedUuid);
     $selectedOptions = is_array($selectedVariant['options'] ?? null) ? $selectedVariant['options'] : [];
 
-    $resolveVariantForValue = static function (array $variants, string $axisKey, string $value): ?array {
+    $variantsForValue = static function (array $variants, string $axisKey, string $value): array {
+        $matches = [];
+
         foreach ($variants as $variant) {
             $options = is_array($variant['options'] ?? null) ? $variant['options'] : [];
 
             foreach ($options as $optionKey => $optionValue) {
                 if (strtolower((string) $optionKey) === strtolower($axisKey) && (string) $optionValue === $value) {
-                    return $variant;
+                    $matches[] = $variant;
+                    break;
                 }
             }
         }
 
-        return null;
+        return $matches;
     };
+
+    $variantIsInStock = static fn (array $variant): bool => $variant['in_stock']
+        ?? (($variant['available'] ?? 0) > 0);
 
     $isColorAxis = static function (array $axis): bool {
         $needle = strtolower(($axis['name'] ?? '').' '.($axis['key'] ?? ''));
@@ -52,10 +58,12 @@
                 <div class="storefront-variant-axes__options {{ $colorAxis ? 'storefront-variant-axes__options--color' : 'storefront-variant-axes__options--text' }}">
                     @foreach ($axis['values'] as $value)
                         @php
-                            $matchVariant = $resolveVariantForValue($variants, $axisKey, $value);
+                            $matchingVariants = $variantsForValue($variants, $axisKey, $value);
+                            $matchVariant = collect($matchingVariants)->first($variantIsInStock)
+                                ?? ($matchingVariants[0] ?? null);
                             $isActive = $selectedValue === $value;
-                            $isDisabled = $matchVariant === null
-                                || ! ($matchVariant['in_stock'] ?? (($matchVariant['available'] ?? 0) > 0));
+                            $isDisabled = $matchingVariants === []
+                                || ! collect($matchingVariants)->contains($variantIsInStock);
                             $thumb = $matchVariant['image_thumbnail'] ?? null;
                         @endphp
 
