@@ -98,7 +98,7 @@ final class StockPolicyEvaluatorTest extends TestCase
 
     public function test_confirm_sale_consumes_only_its_quantity_from_aggregate_reserved(): void
     {
-        $variant = $this->createPurchasableProduct(stock: 20);
+        $variant = $this->createPurchasableProduct(stock: 10);
         $inventory = app(InventoryServiceInterface::class);
         $inventory->reserve($variant->uuid, 10);
         $orders = app(OrderServiceInterface::class);
@@ -112,8 +112,59 @@ final class StockPolicyEvaluatorTest extends TestCase
         $orders->confirm($order->uuid);
 
         $level = app(InventoryQueryServiceInterface::class)->getStockLevel($variant->uuid);
-        $this->assertSame(15, $level->getOnHand());
+        $this->assertSame(5, $level->getOnHand());
         $this->assertSame(5, $level->getReserved());
+    }
+
+    public function test_allow_backorder_can_confirm_fully_reserved_order_at_zero_on_hand(): void
+    {
+        $variant = $this->createPurchasableProduct(stock: 1);
+        $variant->product->update(['backorder_policy' => 'allow']);
+        $inventory = app(InventoryServiceInterface::class);
+        $inventory->setOnHand($variant->uuid, 0);
+        $inventory->reserve($variant->uuid, 5);
+        $orders = app(OrderServiceInterface::class);
+        $order = $orders->create(new CreateOrderData(
+            lines: [new OrderLineData($variant->uuid, 5)],
+        ));
+
+        $confirmed = $orders->confirm($order->uuid);
+
+        $level = app(InventoryQueryServiceInterface::class)->getStockLevel($variant->uuid);
+        $this->assertSame('confirmed', $confirmed->status);
+        $this->assertSame(0, $level->getOnHand());
+        $this->assertSame(0, $level->getReserved());
+    }
+
+    public function test_deny_policy_rejects_confirm_when_on_hand_cannot_cover_quantity(): void
+    {
+        $variant = $this->createPurchasableProduct(stock: 1);
+        app(InventoryServiceInterface::class)->setOnHand($variant->uuid, 0);
+        $orders = app(OrderServiceInterface::class);
+        $order = $orders->create(new CreateOrderData(
+            lines: [new OrderLineData($variant->uuid, 1)],
+        ));
+
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage("Insufficient stock for {$variant->name}.");
+
+        $orders->confirm($order->uuid);
+    }
+
+    public function test_untracked_variant_can_confirm_without_inventory_item(): void
+    {
+        $variant = $this->createPurchasableProduct(stock: 1);
+        $variant->update(['track_inventory' => false]);
+        InventoryItem::query()->where('purchasable_uuid', $variant->uuid)->delete();
+        $orders = app(OrderServiceInterface::class);
+        $order = $orders->create(new CreateOrderData(
+            lines: [new OrderLineData($variant->uuid, 1)],
+        ));
+
+        $confirmed = $orders->confirm($order->uuid);
+
+        $this->assertSame('confirmed', $confirmed->status);
+        $this->assertDatabaseMissing('inventory_items', ['purchasable_uuid' => $variant->uuid]);
     }
 
     public function test_paginate_omits_untracked_inventory_items(): void

@@ -293,7 +293,12 @@ final class InventoryService extends BaseService implements InventoryServiceInte
     {
         $this->findVariant($purchasableUuid);
 
-        return InventoryItem::query()->firstOrCreate(
+        $item = InventoryItem::query()
+            ->where('purchasable_uuid', $purchasableUuid)
+            ->lockForUpdate()
+            ->first();
+
+        return $item ?? InventoryItem::query()->firstOrCreate(
             ['purchasable_uuid' => $purchasableUuid],
             ['on_hand' => 0, 'reserved' => 0],
         );

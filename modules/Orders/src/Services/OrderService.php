@@ -14,6 +14,7 @@ use Commerce\Core\Base\BaseService;
 use Commerce\Core\Exceptions\DomainException;
 use Commerce\Core\Exceptions\EntityNotFoundException;
 use Commerce\Inventory\Contracts\InventoryServiceInterface;
+use Commerce\Inventory\Services\StockPolicyEvaluator;
 use Commerce\Orders\Contracts\OrderServiceInterface;
 use Commerce\Orders\DTO\CreateOrderData;
 use Commerce\Orders\DTO\OrderLineData;
@@ -25,6 +26,8 @@ use Commerce\Orders\Models\Order;
 use Commerce\Orders\Models\OrderEvent;
 use Commerce\Orders\Models\OrderLineItem;
 use Commerce\Orders\Support\OrderNumberGenerator;
+use Commerce\Product\Models\Product;
+use Commerce\Product\Models\ProductVariant;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
@@ -35,6 +38,7 @@ final class OrderService extends BaseService implements OrderServiceInterface
         private readonly ProductQueryServiceInterface $productQueryService,
         private readonly InventoryQueryServiceInterface $inventoryQueryService,
         private readonly InventoryServiceInterface $inventoryService,
+        private readonly StockPolicyEvaluator $stockPolicyEvaluator,
         private readonly OrderEventRecorder $events,
     ) {}
 
@@ -139,7 +143,19 @@ final class OrderService extends BaseService implements OrderServiceInterface
             $order->loadMissing('lineItems');
 
             foreach ($order->lineItems as $line) {
-                if (! $this->inventoryQueryService->isAvailable($line->purchasable_uuid, $line->quantity)) {
+                $variant = $this->productQueryService->findVariantByUuid($line->purchasable_uuid);
+                $level = $this->inventoryQueryService->getStockLevel($line->purchasable_uuid);
+
+                if (
+                    ! $variant instanceof ProductVariant
+                    || ! $variant->product instanceof Product
+                    || ! $this->stockPolicyEvaluator->canConfirm(
+                        $variant->product,
+                        $variant,
+                        $line->quantity,
+                        $level,
+                    )
+                ) {
                     throw new DomainException("Insufficient stock for {$line->name}.");
                 }
             }

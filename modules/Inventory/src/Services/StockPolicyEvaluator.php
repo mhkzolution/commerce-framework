@@ -31,4 +31,21 @@ final class StockPolicyEvaluator
 
         return true;
     }
+
+    public function canConfirm(
+        Product $product,
+        ProductVariant $variant,
+        int $quantity,
+        StockLevelInterface $level,
+    ): bool {
+        if (! $this->shouldTrack($variant)) {
+            return true;
+        }
+
+        if ($product->backorder_policy === 'deny') {
+            return $level->getOnHand() >= $quantity;
+        }
+
+        return true;
+    }
 }
