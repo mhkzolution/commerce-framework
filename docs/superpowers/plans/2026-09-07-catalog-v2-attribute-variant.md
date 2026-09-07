@@ -10,12 +10,14 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-07-catalog-v2-attribute-variant-design.md` (Locked)
 
+**Start gate:** Do not implement this plan until Product Stock V1 is closed (manual workspace smoke test + Task 8 coverage). Both features edit the product workspace; mixing them hides the source of regressions.
+
 ## Global Constraints
 
 - Do not change inventory tables, `setOnHand()`, backorder policy, or SKU uniqueness.
 - Do not infer `products.type` from variant count.
 - Simple products keep exactly one default variant; staff never see a variant builder.
-- Attribute **names** come from Catalog only. Product form may create **values** (`attribute_values`) on an existing attribute.
+- `attribute_values.code` is unique per attribute and **immutable after creation**. Updates may change `label` only. Filter URLs depend on `code`.
 - `is_filterable` and `is_visible` live on `attributes`. Used for Variations lives on `product_attributes`.
 - Variation axes are `select` only. No multiselect axes in Phase 1.
 - After cutover: read path = relation only; write path = relation only. Do not keep a JSON compatibility layer.
@@ -53,7 +55,7 @@
 
 **Interfaces:**
 - Consumes: `attributes.options` JSON list of strings
-- Produces: `AttributeValue` rows (`tenant_id`, `attribute_id`, `code`, `label`, `position`); `AttributeValueService::allocateCode(int $attributeId, string $label, ?int $exceptId = null): string`
+- Produces: `AttributeValue` rows (`tenant_id`, `attribute_id`, `code`, `label`, `position`); `AttributeValueService::allocateCode(int $attributeId, string $label, ?int $exceptId = null): string`; updates must not change `code` (label-only)
 
 - [ ] **Step 1: Write the failing test**
 
@@ -88,7 +90,7 @@ If `migrate` in tests already ran the new file, split: create attribute with opt
 
 - [ ] **Step 3: Implement table + backfill in the same migration after `Schema::create`.** Unique `(tenant_id, attribute_id, code)`. `code` from `Str::slug($label, '_')` with `-2` suffix on collision (hyphen form `red-2` per spec). Never read-time derive code from label.
 
-- [ ] **Step 4: Pass the test. `AttributeValueService::allocateCode` used by later tasks for product-form creates.**
+- [ ] **Step 4: Pass the test.** Also cover `test_updating_label_does_not_change_code` (create `burgundy` / “Burgundy”, update label to “Dark Burgundy”, assert `code` still `burgundy`). `AttributeValueService::allocateCode` is used by later tasks for product-form creates.
 
 - [ ] **Step 5: Commit** `feat: add attribute_values and backfill from options json`
 
@@ -336,6 +338,7 @@ export function variantIdentityKey(valueIds) {
 | Spec | Task |
 |---|---|
 | `attribute_values` + `code` | 1 |
+| `code` immutable after create | 1 |
 | `product_attributes` even without values | 2, 5 |
 | Canonical identity | 4 |
 | Idempotent generate | 4, 6 |

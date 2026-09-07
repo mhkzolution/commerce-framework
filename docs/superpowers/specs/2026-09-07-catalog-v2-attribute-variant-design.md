@@ -48,7 +48,7 @@ Non-goals for Phase 1: search index, CSV format changes, public API redesign, SE
 | New values | Product form may create `attribute_values` on the global attribute immediately. |
 | Flags | `is_filterable` and `is_visible` are on the catalog attribute. **Used for Variations** is per product. |
 | Variant identity | Canonical sorted list of `attribute_value_id` for the variation axes. `Red+M` equals `M+Red`. |
-| Value identity | `attribute_values.code` is canonical (URLs, facets later, CSV later). Labels are display. |
+| Value identity | `attribute_values.code` is canonical (URLs, facets later, CSV later). Labels are display. **`code` is immutable after create**; merchandisers rename via `label` only. |
 | `product_attributes` | “This product uses these attributes”, even when no value is set yet. Not the value store. |
 | Variation vs spec | If `used_for_variations` is true, there is **no product-level specification value**. Selected values are axis membership for generate only. PDP/filter for that attribute use variant rows. |
 | Generate | Explicit button. Idempotent: match by canonical identity; keep UUID, SKU, stock, image. |
@@ -87,7 +87,7 @@ Per tenant, per attribute:
 
 - `id`, `uuid`, `tenant_id` (same tenancy as `attributes`)
 - `attribute_id` (FK)
-- `code` — required, stable, unique with `attribute_id` (and tenant). Lower-snake from the label on create (`burgundy`). Collisions append `-2`, `-3`, … like SKU uniqueness. **Never** derive code from label at read time.
+- `code` — required, unique with `attribute_id` (and tenant). Lower-snake from the label on create (`burgundy`). Collisions append `-2`, `-3`, … like SKU uniqueness. **Never** derive code from label at read time. **Immutable after insert:** updates may change `label` and `position` only. Reject any write that changes `code` (admin, product-form “add value”, API). Existing filter URLs such as `?color=burgundy` stay valid when the label becomes “Dark Burgundy”.
 - `label` — display string; may be renamed without changing `code`
 - `position`
 
