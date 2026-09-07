@@ -6,8 +6,6 @@ namespace Commerce\Inventory\Services;
 
 use Commerce\Contracts\Inventory\InventoryQueryServiceInterface;
 use Commerce\Contracts\Inventory\StockLevelInterface;
-use Commerce\Contracts\Inventory\StockMovementType;
-use Commerce\Contracts\Product\ProductQueryServiceInterface;
 use Commerce\Core\Base\BaseQueryService;
 use Commerce\Inventory\DTO\StockLevel;
 use Commerce\Inventory\Models\InventoryItem;
@@ -46,12 +44,31 @@ final class InventoryQueryService extends BaseQueryService implements InventoryQ
         return $this->getStockLevel($purchasableUuid)->getAvailable();
     }
 
+    public function availabilityForPurchasable(string $purchasableUuid): ?int
+    {
+        $variant = ProductVariant::query()
+            ->where('uuid', $purchasableUuid)
+            ->first();
+
+        if ($variant === null || ! $variant->track_inventory) {
+            return null;
+        }
+
+        return $this->getAvailable($purchasableUuid);
+    }
+
     /**
      * @return LengthAwarePaginator<int, InventoryItem>
      */
     public function paginate(?string $search = null, int $perPage = 25): LengthAwarePaginator
     {
         return InventoryItem::query()
+            ->whereExists(static function ($exists): void {
+                $exists->select(DB::raw(1))
+                    ->from('product_variants')
+                    ->whereColumn('product_variants.uuid', 'inventory_items.purchasable_uuid')
+                    ->where('product_variants.track_inventory', true);
+            })
             ->when($search, static function ($query, string $search): void {
                 $query->where(function ($inner) use ($search): void {
                     $inner->where('purchasable_uuid', 'like', "%{$search}%")
