@@ -7,6 +7,7 @@ namespace Commerce\Catalog\Models;
 use Commerce\Core\Concerns\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Attribute extends Model
 {
@@ -35,6 +36,11 @@ class Attribute extends Model
             'is_visible' => 'boolean',
             'options' => 'array',
         ];
+    }
+
+    public function values(): HasMany
+    {
+        return $this->hasMany(AttributeValue::class)->orderBy('position');
     }
 
     public function attributeSets(): BelongsToMany
