@@ -13,6 +13,7 @@ use Commerce\Product\Contracts\ProductServiceInterface;
 use Commerce\Product\Events\ProductCreated;
 use Commerce\Product\Events\ProductPublished;
 use Commerce\Product\Listeners\SyncProductSearchIndex;
+use Commerce\Product\Services\CatalogVariantRelationMigrator;
 use Commerce\Product\Services\ProductQueryService;
 use Commerce\Product\Services\ProductSearchIndexer;
 use Commerce\Product\Services\ProductService;
@@ -38,6 +39,7 @@ final class ProductServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(ProductWorkspaceSaveService::class);
         $this->app->singleton(ProductWorkspaceStateBuilder::class);
         $this->app->singleton(VariantOptionPresetService::class);
+        $this->app->singleton(CatalogVariantRelationMigrator::class);
 
         $this->app->bind(ProductQueryServiceInterface::class, ProductQueryService::class);
         $this->app->bind(ProductServiceInterface::class, ProductService::class);
