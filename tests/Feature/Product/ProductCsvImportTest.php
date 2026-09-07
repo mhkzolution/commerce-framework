@@ -314,7 +314,9 @@ final class ProductCsvImportTest extends TestCase
 
         $this->assertSame('variable', $product->type);
         $this->assertCount(2, $product->variants);
-        $this->assertSame(['color' => 'Red', 'size' => 'S'], $product->variants->firstWhere('sku', 'HOODIE-RED-S')?->meta['options']);
+        $redS = $product->variants->firstWhere('sku', 'HOODIE-RED-S');
+        $this->assertNotNull($redS);
+        $this->assertArrayNotHasKey('options', $redS->meta ?? []);
     }
 
     public function test_admin_can_export_products_csv(): void

@@ -120,7 +120,7 @@ final class ProductWorkspaceSaveService
         $meta = array_merge($existing?->meta ?? [], $data->meta, [
             'sku_pattern' => $data->skuPattern,
         ]);
-        unset($meta['variant_options']);
+        unset($meta['variant_options'], $meta['specifications']);
 
         if ($data->type === 'variable' && $data->sku !== null && trim($data->sku) !== '') {
             $meta['sku_prefix'] = trim($data->sku);

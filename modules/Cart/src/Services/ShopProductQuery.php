@@ -6,7 +6,6 @@ namespace Commerce\Cart\Services;
 
 use Commerce\Cart\DTO\ShopFilterCatalog;
 use Commerce\Cart\DTO\ShopListingFilters;
-use Commerce\Cart\Support\StorefrontAttributeFilterValue;
 use Commerce\Catalog\Models\Brand;
 use Commerce\Contracts\Search\SearchQueryInterface;
 use Commerce\Product\Models\Product;
@@ -178,13 +177,9 @@ final class ShopProductQuery
      */
     private static function matchAttributeFilterValue(Builder $query, string $value): void
     {
-        $query
-            ->whereHas('attributeValue', static function (Builder $attributeValueQuery) use ($value): void {
-                $attributeValueQuery->where('code', $value);
-            })
-            ->orWhere(static function (Builder $legacyQuery) use ($value): void {
-                StorefrontAttributeFilterValue::applyStoredMatch($legacyQuery, 'value', $value);
-            });
+        $query->whereHas('attributeValue', static function (Builder $attributeValueQuery) use ($value): void {
+            $attributeValueQuery->where('code', $value);
+        });
     }
 
     /**
