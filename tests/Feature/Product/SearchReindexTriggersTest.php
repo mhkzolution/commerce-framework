@@ -9,8 +9,13 @@ use Commerce\Catalog\Models\Attribute;
 use Commerce\Catalog\Models\AttributeValue;
 use Commerce\Catalog\Services\AttributeValueService;
 use Commerce\Core\Models\SearchDocument;
+use Commerce\Iam\Contracts\User\UserServiceInterface;
 use Commerce\Iam\Database\Seeders\IamSeeder;
+use Commerce\Iam\DTO\CreateUserData;
+use Commerce\Iam\Models\Permission;
+use Commerce\Iam\Models\Role;
 use Commerce\Iam\Models\User;
+use Commerce\Iam\Services\AuthorizationService;
 use Commerce\Product\Models\Product;
 use Commerce\Product\Models\ProductAttribute;
 use Commerce\Product\Models\ProductAttributeValue;
@@ -149,6 +154,30 @@ final class SearchReindexTriggersTest extends TestCase
             'index_name' => ProductSearchIndexer::INDEX,
             'document_id' => $product->uuid,
         ]);
+    }
+
+    public function test_user_with_view_permission_can_rebuild_search_index(): void
+    {
+        $role = Role::query()->create([
+            'name' => 'Catalog Viewer',
+            'code' => 'catalog-viewer',
+            'is_system' => false,
+        ]);
+        $role->permissions()->sync(
+            Permission::query()->where('name', 'product.product.view')->pluck('id'),
+        );
+
+        $user = app(UserServiceInterface::class)->create(new CreateUserData(
+            name: 'Viewer',
+            email: 'catalog-viewer@example.test',
+            password: 'password',
+            roleCodes: [$role->code],
+        ));
+        app(AuthorizationService::class)->clearCacheForUser($user->id);
+
+        $this->actingAs($user)
+            ->post(route('admin.products.settings.reindex'))
+            ->assertRedirect(route('admin.products.settings.show'));
     }
 
     private function staleDocument(string $documentId): void
