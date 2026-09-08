@@ -73,6 +73,30 @@
         ];
     }
 
+    foreach ($filters?->attributes ?? [] as $code => $selectedValue) {
+        if (in_array($code, ['size', 'color'], true)) {
+            continue;
+        }
+
+        $label = $selectedValue;
+        foreach ($filterCatalog->facets as $facet) {
+            if ($facet['code'] !== $code) {
+                continue;
+            }
+            foreach ($facet['values'] as $value) {
+                if ($value['code'] === $selectedValue) {
+                    $label = $facet['name'].': '.$value['label'];
+                    break 2;
+                }
+            }
+        }
+
+        $chips[] = [
+            'label' => $label,
+            'url' => route('storefront.shop.index', Arr::except($query, [$code])),
+        ];
+    }
+
     if ($filters?->availability === 'in_stock') {
         $chips[] = [
             'label' => __('storefront::storefront.availability_in_stock'),

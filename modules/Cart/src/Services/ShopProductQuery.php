@@ -43,11 +43,7 @@ final class ShopProductQuery
             $query->whereIn('products.uuid', $discoveryUuids);
         }
 
-        if (is_string($filters->category) && $filters->category !== '') {
-            $query->whereHas('categories', static function (Builder $categoryQuery) use ($filters): void {
-                $categoryQuery->where('slug', $filters->category);
-            });
-        }
+        $this->applyCategory($query, $filters->category);
 
         $this->applyBrand($query, $filters->brand);
         $this->applyPrice($query, $filters);
@@ -67,7 +63,21 @@ final class ShopProductQuery
     /**
      * @param  Builder<Product>  $query
      */
-    private function applyBrand(Builder $query, ?string $brand): void
+    public function applyCategory(Builder $query, ?string $category): void
+    {
+        if ($category === null || $category === '') {
+            return;
+        }
+
+        $query->whereHas('categories', static function (Builder $categoryQuery) use ($category): void {
+            $categoryQuery->where('slug', $category);
+        });
+    }
+
+    /**
+     * @param  Builder<Product>  $query
+     */
+    public function applyBrand(Builder $query, ?string $brand): void
     {
         if ($brand === null || $brand === '' || ! class_exists(Brand::class) || ! Schema::hasTable('brands')) {
             return;
@@ -90,7 +100,7 @@ final class ShopProductQuery
     /**
      * @param  Builder<Product>  $query
      */
-    private function applyPrice(Builder $query, ShopListingFilters $filters): void
+    public function applyPrice(Builder $query, ShopListingFilters $filters): void
     {
         if ($filters->priceMin === null && $filters->priceMax === null) {
             return;
@@ -113,7 +123,7 @@ final class ShopProductQuery
      * @param  Builder<Product>  $query
      * @param  list<int>  $attributeIds
      */
-    private function applyAttributeGroupFilter(Builder $query, array $attributeIds, ?string $value): void
+    public function applyAttributeGroupFilter(Builder $query, array $attributeIds, ?string $value): void
     {
         if ($value === null || $value === '' || $attributeIds === []) {
             return;
@@ -195,7 +205,7 @@ final class ShopProductQuery
     /**
      * @param  Builder<Product>  $query
      */
-    private function constrainInStock(Builder $query): void
+    public function constrainInStock(Builder $query): void
     {
         if (! Schema::hasTable('inventory_items')) {
             return;
