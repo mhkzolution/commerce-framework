@@ -184,6 +184,52 @@ final class ProductDiscoveryQueryTest extends TestCase
         $this->assertSame([$product->uuid], app(ProductDiscoveryQuery::class)->candidateUuids('crimson'));
     }
 
+    public function test_candidate_cap_keeps_rank_prefix_and_drops_the_tail(): void
+    {
+        $ids = [];
+
+        for ($i = 0; $i <= ProductDiscoveryQuery::CANDIDATE_CAP; $i++) {
+            $uuid = sprintf('cap-%03d', $i);
+            $ids[] = $uuid;
+            SearchDocument::query()->create([
+                'index_name' => ProductSearchIndexer::INDEX,
+                'document_id' => $uuid,
+                'title' => sprintf('Cap %03d', $i),
+                'body' => '',
+                'payload' => ['skus' => [], 'attributes' => []],
+            ]);
+        }
+
+        $uuids = app(ProductDiscoveryQuery::class)->candidateUuids('cap');
+
+        $this->assertCount(ProductDiscoveryQuery::CANDIDATE_CAP, $uuids);
+        $this->assertSame(array_slice($ids, 0, ProductDiscoveryQuery::CANDIDATE_CAP), $uuids);
+        $this->assertNotContains(sprintf('cap-%03d', ProductDiscoveryQuery::CANDIDATE_CAP), $uuids);
+    }
+
+    public function test_candidate_cap_does_not_limit_the_sql_scan(): void
+    {
+        SearchDocument::query()->create([
+            'index_name' => ProductSearchIndexer::INDEX,
+            'document_id' => 'cap-sql',
+            'title' => 'Cap',
+            'body' => '',
+            'payload' => ['skus' => [], 'attributes' => []],
+        ]);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        app(ProductDiscoveryQuery::class)->candidateUuids('cap');
+        $sql = array_column(DB::getQueryLog(), 'query');
+
+        $this->assertFalse(
+            collect($sql)->contains(
+                static fn (string $query): bool => str_contains(strtolower($query), 'limit')
+                    && str_contains($query, 'search_documents'),
+            ),
+        );
+    }
+
     private function product(string $name, string $sku, string $description = ''): Product
     {
         $variant = $this->createPurchasableProduct(sku: $sku);

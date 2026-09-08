@@ -9,6 +9,8 @@ use Commerce\Product\Support\SearchNormalizer;
 
 final class ProductDiscoveryQuery
 {
+    public const CANDIDATE_CAP = 500;
+
     public function __construct(
         private readonly SearchSynonymExpander $expander,
     ) {}
@@ -48,6 +50,8 @@ final class ProductDiscoveryQuery
         usort($matches, static function (array $left, array $right): int {
             return [$left['rank'], $left['title']] <=> [$right['rank'], $right['title']];
         });
+
+        $matches = array_slice($matches, 0, self::CANDIDATE_CAP);
 
         return array_values(array_column($matches, 'uuid'));
     }
