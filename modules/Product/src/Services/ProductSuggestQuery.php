@@ -16,6 +16,8 @@ final class ProductSuggestQuery
 {
     private const LIMIT = 5;
 
+    private const PRODUCT_CANDIDATE_LIMIT = 100;
+
     public function __construct(
         private readonly HomepageNavigationQuery $homepageNavigation,
     ) {}
@@ -55,7 +57,9 @@ final class ProductSuggestQuery
             })
             ->select('products.*')
             ->addSelect('suggest_documents.title as suggest_title')
+            ->where('suggest_documents.title', 'like', $prefix.'%')
             ->orderBy('products.id')
+            ->limit(self::PRODUCT_CANDIDATE_LIMIT)
             ->get();
 
         foreach ($products as $product) {

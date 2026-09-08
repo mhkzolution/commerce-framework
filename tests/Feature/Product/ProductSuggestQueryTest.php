@@ -27,10 +27,31 @@ final class ProductSuggestQueryTest extends TestCase
         $this->product('Tee', 'SUGGEST-TEE-1');
         DB::flushQueryLog();
         DB::enableQueryLog();
-        app(ProductSuggestQuery::class)->suggest('t');
+
+        foreach (['', '  ', 't'] as $query) {
+            app(ProductSuggestQuery::class)->suggest($query);
+        }
+
         $this->assertFalse(collect(DB::getQueryLog())->contains(
             static fn (array $entry): bool => str_contains($entry['query'], 'search_documents'),
         ));
+    }
+
+    public function test_product_query_prefilters_search_documents_by_title_prefix(): void
+    {
+        $this->product('Tee', 'SUGGEST-TEE-PREFILTER');
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        app(ProductSuggestQuery::class)->suggest('te');
+
+        $productQuery = collect(DB::getQueryLog())->first(
+            static fn (array $entry): bool => str_contains($entry['query'], 'search_documents'),
+        );
+
+        $this->assertNotNull($productQuery);
+        $this->assertStringContainsString('"suggest_documents"."title" like ?', $productQuery['query']);
+        $this->assertContains('te%', $productQuery['bindings']);
     }
 
     public function test_products_are_title_prefix_only_and_ignore_description(): void
