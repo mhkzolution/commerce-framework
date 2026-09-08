@@ -37,7 +37,7 @@
     {{ $attributes }}
 >
     @if ($filters->search)
-        <input type="hidden" name="search" value="{{ $filters->search }}">
+        <input type="hidden" name="q" value="{{ $filters->search }}">
     @endif
     @if ($filters->sort !== 'latest')
         <input type="hidden" name="sort" value="{{ $filters->sort }}">
@@ -120,23 +120,20 @@
         @endif
     </fieldset>
 
-    @if ($filterCatalog->sizes !== [])
+    @foreach ($filterCatalog->facets as $facet)
+        @php
+            $facetOptions = [];
+            foreach ($facet['values'] as $value) {
+                $facetOptions[$value['code']] = $value['label'];
+            }
+        @endphp
         <x-storefront.shop.filter-chip-group
-            :legend="__('storefront::storefront.filter_size')"
-            name="size"
-            :options="$filterCatalog->sizes"
-            :selected="$filters->size"
+            :legend="$facet['name']"
+            :name="$facet['code']"
+            :options="$facetOptions"
+            :selected="$filters->attributes[$facet['code']] ?? null"
         />
-    @endif
-
-    @if ($filterCatalog->colors !== [])
-        <x-storefront.shop.filter-chip-group
-            :legend="__('storefront::storefront.filter_color')"
-            name="color"
-            :options="$filterCatalog->colors"
-            :selected="$filters->color"
-        />
-    @endif
+    @endforeach
 
     @if (isset($actions))
         </div>

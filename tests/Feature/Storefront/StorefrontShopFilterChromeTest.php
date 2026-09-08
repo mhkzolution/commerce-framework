@@ -98,7 +98,7 @@ final class StorefrontShopFilterChromeTest extends TestCase
 
         $colorAttribute = Attribute::query()->where('code', 'color')->firstOrFail();
 
-        app(AttributeServiceInterface::class)->create(new CreateAttributeData(
+        $languageAttribute = app(AttributeServiceInterface::class)->create(new CreateAttributeData(
             code: 'language',
             name: 'Language',
             type: 'select',
@@ -118,6 +118,7 @@ final class StorefrontShopFilterChromeTest extends TestCase
         ]);
         $this->attachAttributeValue($product, $sizeAttribute, 'M');
         $this->attachAttributeValue($product, $colorAttribute, 'Red');
+        $this->attachAttributeValue($product, $languageAttribute, 'Thai', 'thai');
 
         $html = $this->get(route('storefront.shop.index'))
             ->assertOk()
@@ -126,6 +127,9 @@ final class StorefrontShopFilterChromeTest extends TestCase
             ->assertSee('0 – 500')
             ->assertSee('Acme Brand')
             ->assertSee('value="m"', false)
+            ->assertSee('Language')
+            ->assertSee('name="language"', false)
+            ->assertSee('value="thai"', false)
             ->getContent();
 
         $this->assertStringContainsString('storefront-shop-filters-sidebar', $html);
@@ -133,9 +137,9 @@ final class StorefrontShopFilterChromeTest extends TestCase
         $this->assertStringContainsString('data-filters-sheet', $html);
         $this->assertStringContainsString('storefront-product-grid', $html);
         $this->assertStringContainsString('name="availability"', $html);
+        $this->assertStringContainsString('name="brand"', $html);
         $this->assertStringContainsString('storefront-primary-nav', $html);
         $this->assertStringNotContainsString(__('storefront::storefront.filter_brand_search'), $html);
-        $this->assertStringNotContainsString('>Language<', $html);
     }
 
     public function test_shop_color_filter_matches_attribute_value_code(): void
@@ -180,7 +184,22 @@ final class StorefrontShopFilterChromeTest extends TestCase
             ->getContent();
 
         $this->assertMatchesRegularExpression(
-            '/name="search"[^>]*value="harbor mug"|value="harbor mug"[^>]*name="search"/',
+            '/<input(?=[^>]*type="search")(?=[^>]*name="q")(?=[^>]*value="harbor mug")[^>]*>/',
+            $html,
+        );
+    }
+
+    public function test_header_search_prefers_q_over_legacy_search(): void
+    {
+        $html = $this->get(route('storefront.shop.index', [
+            'q' => 'cotton tee',
+            'search' => 'ignored',
+        ]))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/<input(?=[^>]*type="search")(?=[^>]*name="q")(?=[^>]*value="cotton tee")[^>]*>/',
             $html,
         );
     }

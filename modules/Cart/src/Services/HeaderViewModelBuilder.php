@@ -240,7 +240,8 @@ final class HeaderViewModelBuilder
     private function searchQuery(): string
     {
         try {
-            $search = trim((string) request()->query('search', ''));
+            $q = trim((string) request()->query('q', ''));
+            $search = $q !== '' ? $q : trim((string) request()->query('search', ''));
         } catch (Throwable) {
             return '';
         }

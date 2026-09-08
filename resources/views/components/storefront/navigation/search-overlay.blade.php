@@ -44,7 +44,7 @@
                 <input
                     id="header-search-input"
                     type="search"
-                    name="search"
+                    name="q"
                     value="{{ $search }}"
                     class="storefront-search-overlay__input"
                     placeholder="{{ __('storefront::storefront.search') }}"
@@ -66,7 +66,7 @@
                             @foreach ($popularTerms as $term)
                                 <li>
                                     <a
-                                        href="{{ route('storefront.shop.index', ['search' => $term]) }}"
+                                        href="{{ route('storefront.shop.index', ['q' => $term]) }}"
                                         class="storefront-search-popular__pill"
                                     >{{ $term }}</a>
                                 </li>

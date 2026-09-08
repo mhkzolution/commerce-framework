@@ -74,7 +74,7 @@ final class Ws002ShopListingContractTest extends TestCase
         $product = $variant->product;
         app(ProductSearchIndexer::class)->index($product->fresh(['variants', 'categories']));
 
-        $this->get(route('storefront.shop.index', ['search' => 'SHOP-SEARCH']))
+        $this->get(route('storefront.shop.index', ['search' => 'SHOP-SEARCH-11']))
             ->assertOk()
             ->assertSee($product->name);
     }

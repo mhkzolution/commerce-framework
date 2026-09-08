@@ -16,6 +16,7 @@ Route::middleware('web')->group(function (): void {
 
             Route::middleware('permission:product.product.view')->group(function (): void {
                 Route::get('/settings', [ProductSettingsController::class, 'show'])->name('settings.show');
+                Route::post('/settings/reindex', [ProductSettingsController::class, 'reindex'])->name('settings.reindex');
                 Route::get('/export', [ProductImportController::class, 'export'])->name('export');
             });
 

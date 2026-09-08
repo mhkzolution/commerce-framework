@@ -6,84 +6,81 @@ namespace Commerce\Cart\Services;
 
 use Commerce\Cart\DTO\ShopFilterCatalog;
 use Commerce\Cart\DTO\ShopListingFilters;
+use Commerce\Catalog\Models\Attribute;
 use Commerce\Catalog\Models\Brand;
-use Commerce\Contracts\Search\SearchQueryInterface;
 use Commerce\Product\Models\Product;
-use Commerce\Product\Services\ProductSearchIndexer;
+use Commerce\Product\Services\ProductDiscoveryQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Facades\Schema;
 
 final class ShopProductQuery
 {
     public function __construct(
-        private readonly SearchQueryInterface $searchQuery,
+        private readonly ProductDiscoveryQuery $discovery,
     ) {}
 
     /**
      * @return LengthAwarePaginator<int, Product>
+     *
+     * @param  list<string>|null  $searchUuids
      */
     public function paginate(
         ShopListingFilters $filters,
         ShopFilterCatalog $catalog,
         int $perPage = 24,
+        ?array $searchUuids = null,
     ): LengthAwarePaginator {
         $query = Product::query()
             ->with(['variants', 'media', 'categories', 'tags', 'attributeValues.attribute'])
             ->visibleOnStorefront();
 
-        if (is_string($filters->search) && $filters->search !== '') {
-            $uuids = $this->searchUuids($filters->search);
-            if ($uuids === []) {
+        $discoveryUuids = [];
+        if (is_string($filters->q) && trim($filters->q) !== '') {
+            $discoveryUuids = $searchUuids ?? $this->discovery->candidateUuids($filters->q);
+            if ($discoveryUuids === []) {
                 return new Paginator([], 0, $perPage);
             }
-            $query->whereIn('products.uuid', $uuids);
+            $query->whereIn('products.uuid', $discoveryUuids);
         }
 
-        if (is_string($filters->category) && $filters->category !== '') {
-            $query->whereHas('categories', static function (Builder $categoryQuery) use ($filters): void {
-                $categoryQuery->where('slug', $filters->category);
-            });
-        }
+        $this->applyCategory($query, $filters->category);
 
         $this->applyBrand($query, $filters->brand);
         $this->applyPrice($query, $filters);
         $this->applyAttributeGroupFilter($query, $catalog->sizeAttributeIds, $filters->size);
         $this->applyAttributeGroupFilter($query, $catalog->colorAttributeIds, $filters->color);
+        $this->applyAdditionalAttributeFilters($query, $filters->attributes);
 
         if ($filters->availability === 'in_stock') {
             $this->constrainInStock($query);
         }
 
-        $this->applySort($query, $filters->sort);
+        $this->applySort($query, $filters->sort, $discoveryUuids);
 
         return $query->paginate($perPage);
     }
 
     /**
-     * @return list<string>
+     * @param  Builder<Product>  $query
      */
-    private function searchUuids(string $search): array
+    public function applyCategory(Builder $query, ?string $category): void
     {
-        $result = $this->searchQuery->search(
-            ProductSearchIndexer::INDEX,
-            $search,
-            ['status' => 'published'],
-            1,
-            100,
-        );
+        if ($category === null || $category === '') {
+            return;
+        }
 
-        return array_values(array_filter(array_map(
-            static fn (array $hit): ?string => isset($hit['uuid']) ? (string) $hit['uuid'] : null,
-            $result->getHits(),
-        )));
+        $query->whereHas('categories', static function (Builder $categoryQuery) use ($category): void {
+            $categoryQuery->where('slug', $category);
+        });
     }
 
     /**
      * @param  Builder<Product>  $query
      */
-    private function applyBrand(Builder $query, ?string $brand): void
+    public function applyBrand(Builder $query, ?string $brand): void
     {
         if ($brand === null || $brand === '' || ! class_exists(Brand::class) || ! Schema::hasTable('brands')) {
             return;
@@ -106,7 +103,7 @@ final class ShopProductQuery
     /**
      * @param  Builder<Product>  $query
      */
-    private function applyPrice(Builder $query, ShopListingFilters $filters): void
+    public function applyPrice(Builder $query, ShopListingFilters $filters): void
     {
         if ($filters->priceMin === null && $filters->priceMax === null) {
             return;
@@ -129,7 +126,7 @@ final class ShopProductQuery
      * @param  Builder<Product>  $query
      * @param  list<int>  $attributeIds
      */
-    private function applyAttributeGroupFilter(Builder $query, array $attributeIds, ?string $value): void
+    public function applyAttributeGroupFilter(Builder $query, array $attributeIds, ?string $value): void
     {
         if ($value === null || $value === '' || $attributeIds === []) {
             return;
@@ -173,7 +170,33 @@ final class ShopProductQuery
     }
 
     /**
-     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $query
+     * @param  Builder<Product>  $query
+     * @param  array<string, string>  $attributes
+     */
+    private function applyAdditionalAttributeFilters(Builder $query, array $attributes): void
+    {
+        unset($attributes['size'], $attributes['color']);
+
+        if ($attributes === []) {
+            return;
+        }
+
+        $filterableAttributes = Attribute::query()
+            ->where('is_filterable', true)
+            ->whereIn('code', array_keys($attributes))
+            ->get(['id', 'code']);
+
+        foreach ($filterableAttributes as $attribute) {
+            $this->applyAttributeGroupFilter(
+                $query,
+                [(int) $attribute->id],
+                $attributes[(string) $attribute->code] ?? null,
+            );
+        }
+    }
+
+    /**
+     * @param  Builder<Model>  $query
      */
     private static function matchAttributeFilterValue(Builder $query, string $value): void
     {
@@ -185,7 +208,7 @@ final class ShopProductQuery
     /**
      * @param  Builder<Product>  $query
      */
-    private function constrainInStock(Builder $query): void
+    public function constrainInStock(Builder $query): void
     {
         if (! Schema::hasTable('inventory_items')) {
             return;
@@ -209,7 +232,7 @@ final class ShopProductQuery
     /**
      * @param  Builder<Product>  $query
      */
-    private function applySort(Builder $query, string $sort): void
+    private function applySort(Builder $query, string $sort, array $discoveryUuids = []): void
     {
         if ($sort === 'price_asc' || $sort === 'price_desc') {
             $query
@@ -220,6 +243,19 @@ final class ShopProductQuery
                 })
                 ->orderBy('shop_price_variant.price', $sort === 'price_asc' ? 'asc' : 'desc')
                 ->select('products.*');
+
+            return;
+        }
+
+        if ($discoveryUuids !== []) {
+            $cases = implode(' ', array_map(
+                static fn (int $position): string => 'WHEN ? THEN '.$position,
+                array_keys($discoveryUuids),
+            ));
+            $query->orderByRaw(
+                'CASE products.uuid '.$cases.' ELSE '.count($discoveryUuids).' END',
+                $discoveryUuids,
+            );
 
             return;
         }

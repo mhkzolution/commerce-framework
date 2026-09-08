@@ -52,7 +52,7 @@ function renderRecentSearches(overlay) {
     section.hidden = false;
     list.innerHTML = items.map((term) => `
         <li class="storefront-search-recent__item">
-            <a href="${shopUrl}?search=${encodeURIComponent(term)}" class="storefront-search-recent__link">${escapeHtml(term)}</a>
+            <a href="${shopUrl}?q=${encodeURIComponent(term)}" class="storefront-search-recent__link">${escapeHtml(term)}</a>
             <button type="button" class="storefront-search-recent__remove" data-search-recent-remove="${encodeURIComponent(term)}" aria-label="Remove">×</button>
         </li>
     `).join('');

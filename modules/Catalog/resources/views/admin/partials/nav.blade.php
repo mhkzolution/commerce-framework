@@ -8,6 +8,7 @@
         ['product::workspace.variant_options_nav', 'admin.catalog.variant-options.*'],
         ['catalog::admin.attributes', 'admin.catalog.attributes.*'],
         ['catalog::admin.attribute_sets', 'admin.catalog.attribute-sets.*'],
+        ['catalog::admin.search_synonyms', 'admin.catalog.search-synonyms.*'],
     ] as [$labelKey, $routePattern])
         @php
             $label = __($labelKey);
@@ -20,6 +21,7 @@
                 'product::workspace.variant_options_nav' => route('admin.catalog.variant-options.index'),
                 'catalog::admin.attributes' => route('admin.catalog.attributes.index'),
                 'catalog::admin.attribute_sets' => route('admin.catalog.attribute-sets.index'),
+                'catalog::admin.search_synonyms' => route('admin.catalog.search-synonyms.index'),
             };
         @endphp
         <a

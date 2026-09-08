@@ -237,7 +237,7 @@ Do not rewrite SKUs. Auto SKU rules apply only to **new** variants after cutover
 
 ## 12. Out of scope (later specs)
 
-- Search indexing of attributes
+- Search indexing of attributes → `docs/superpowers/specs/2026-09-08-catalog-v2-search-discovery-design.md`
 - CSV import/export column layout
 - Storefront/Admin HTTP API resource redesign
 - JSON-LD / shopping feeds

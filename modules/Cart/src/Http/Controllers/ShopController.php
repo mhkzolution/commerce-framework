@@ -16,6 +16,7 @@ use Commerce\Contracts\Currency\CurrencyConverterInterface;
 use Commerce\Contracts\Storefront\ProductCardData;
 use Commerce\Contracts\Storefront\ProductDetailData;
 use Commerce\Product\Models\Product;
+use Commerce\Product\Services\ProductDiscoveryQuery;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\View\View;
@@ -26,6 +27,7 @@ final class ShopController extends Controller
         private readonly ShopProductQuery $listing,
         private readonly HomepageNavigationQuery $navigation,
         private readonly ShopFilterCatalogService $filterCatalog,
+        private readonly ProductDiscoveryQuery $discovery,
         private readonly CartServiceInterface $cartService,
         private readonly ProductCardMapper $cards,
         private readonly ProductDetailBuilder $details,
@@ -38,10 +40,18 @@ final class ShopController extends Controller
             ? app(CurrencyConverterInterface::class)
             : null;
         $filters = ShopListingFilters::fromRequest($request);
-        $catalog = $this->filterCatalog->build();
+        $searchUuids = $filters->q !== null
+            ? $this->discovery->candidateUuids($filters->q)
+            : null;
+        $catalog = $this->filterCatalog->buildFor($filters, $searchUuids);
         $categories = $this->navigation->shopFilterOptions();
 
-        $paginator = $this->listing->paginate($filters, $catalog, perPage: 24);
+        $paginator = $this->listing->paginate(
+            $filters,
+            $catalog,
+            perPage: 24,
+            searchUuids: $searchUuids,
+        );
 
         $cards = $paginator->getCollection()
             ->map(fn (Product $product): ?ProductCardData => $this->cards->fromProduct($product))

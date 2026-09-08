@@ -25,7 +25,7 @@ final class Ws002HeaderContractTest extends TestCase
 
         $this->assertStringContainsString('storefront-site-header', $html);
         $this->assertStringContainsString('storefront-page-container', $html);
-        $this->assertStringContainsString('name="search"', $html);
+        $this->assertStringContainsString('name="q"', $html);
         $this->assertDoesNotMatchRegularExpression(
             '/<header[^>]*>[\s\S]*max-w-5xl[\s\S]*<\/header>/',
             $html,
@@ -39,6 +39,6 @@ final class Ws002HeaderContractTest extends TestCase
             ->getContent();
 
         $this->assertStringContainsString('storefront-site-header', $html);
-        $this->assertStringContainsString('name="search"', $html);
+        $this->assertStringContainsString('name="q"', $html);
     }
 }

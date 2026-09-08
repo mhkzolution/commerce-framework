@@ -15,7 +15,7 @@ final class ReindexProductsCommand extends Command
 
     public function handle(ProductSearchIndexer $indexer): int
     {
-        $count = $indexer->reindexAll();
+        $count = $indexer->rebuild();
 
         $this->info("Indexed {$count} products.");
 

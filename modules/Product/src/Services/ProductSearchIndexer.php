@@ -17,19 +17,41 @@ final class ProductSearchIndexer
 
     public function index(Product $product): void
     {
-        $product->loadMissing(['variants', 'categories']);
+        $product->loadMissing(['variants', 'categories', 'brand', 'attributeValues.attributeValue']);
 
-        $sku = $product->defaultVariant()?->sku;
         $description = strip_tags((string) $product->description);
+        $skus = $product->variants
+            ->pluck('sku')
+            ->filter(static fn ($sku): bool => is_string($sku) && trim($sku) !== '')
+            ->values()
+            ->all();
+        $attributes = [];
+
+        foreach ($product->attributeValues as $productAttributeValue) {
+            $attributeValue = $productAttributeValue->attributeValue;
+
+            if ($attributeValue === null) {
+                continue;
+            }
+
+            $attributes[$attributeValue->code] = [
+                'code' => $attributeValue->code,
+                'label' => $attributeValue->label,
+            ];
+        }
 
         $this->searchIndex->index(self::INDEX, $product->uuid, [
             'uuid' => $product->uuid,
             'title' => $product->name,
-            'body' => trim($description . ' ' . ($sku ?? '')),
+            'body' => trim($description.' '.implode(' ', $skus)),
             'slug' => $product->slug,
             'status' => $product->status,
             'sku' => $product->defaultVariant()?->sku,
-            'category' => $product->categories->first()?->name,
+            'skus' => $skus,
+            'brand_name' => $product->brand?->name,
+            'brand_slug' => $product->brand?->slug,
+            'category_names' => $product->categories->pluck('name')->values()->all(),
+            'attributes' => array_values($attributes),
         ]);
     }
 
@@ -38,16 +60,25 @@ final class ProductSearchIndexer
         $this->searchIndex->delete(self::INDEX, $productUuid);
     }
 
+    public function rebuild(): int
+    {
+        $this->searchIndex->flush(self::INDEX);
+
+        return $this->reindexAll();
+    }
+
     public function reindexAll(): int
     {
         $count = 0;
 
-        Product::query()->with(['variants', 'categories'])->chunkById(100, function ($products) use (&$count): void {
-            foreach ($products as $product) {
-                $this->index($product);
-                $count++;
-            }
-        });
+        Product::query()
+            ->with(['variants', 'categories', 'brand', 'attributeValues.attributeValue'])
+            ->chunkById(100, function ($products) use (&$count): void {
+                foreach ($products as $product) {
+                    $this->index($product);
+                    $count++;
+                }
+            });
 
         return $count;
     }

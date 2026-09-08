@@ -19,6 +19,7 @@ use Commerce\Product\Services\ProductSearchIndexer;
 use Commerce\Product\Services\ProductService;
 use Commerce\Product\Services\ProductWorkspaceSaveService;
 use Commerce\Product\Services\ProductWorkspaceStateBuilder;
+use Commerce\Product\Services\SearchSynonymExpander;
 use Commerce\Product\Services\VariantIdentity;
 use Commerce\Product\Services\VariantMatrixGenerator;
 use Commerce\Product\Services\VariantOptionPresetService;
@@ -38,6 +39,7 @@ final class ProductServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(ProductQueryService::class);
         $this->app->singleton(ProductService::class);
         $this->app->singleton(ProductSearchIndexer::class);
+        $this->app->singleton(SearchSynonymExpander::class);
         $this->app->singleton(ProductWorkspaceSaveService::class);
         $this->app->singleton(ProductWorkspaceStateBuilder::class);
         $this->app->singleton(VariantOptionPresetService::class);

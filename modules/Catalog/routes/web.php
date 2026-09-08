@@ -9,6 +9,7 @@ use Commerce\Catalog\Http\Controllers\Admin\CategoryController;
 use Commerce\Catalog\Http\Controllers\Admin\CollectionController;
 use Commerce\Catalog\Http\Controllers\Admin\DashboardController;
 use Commerce\Catalog\Http\Controllers\Admin\TagController;
+use Commerce\Product\Http\Controllers\Admin\SearchSynonymController;
 use Commerce\Product\Http\Controllers\Admin\VariantOptionPresetController;
 use Illuminate\Support\Facades\Route;
 
@@ -103,6 +104,23 @@ Route::middleware('web')->group(function (): void {
                 });
                 Route::delete('/{variant_option}', [VariantOptionPresetController::class, 'destroy'])
                     ->middleware('permission:catalog.attribute.delete')
+                    ->name('destroy');
+            });
+
+            Route::prefix('search-synonyms')->name('search-synonyms.')->group(function (): void {
+                Route::get('/', [SearchSynonymController::class, 'index'])
+                    ->middleware('permission:catalog.attribute.view')
+                    ->name('index');
+                Route::post('/', [SearchSynonymController::class, 'store'])
+                    ->middleware('permission:catalog.attribute.create')
+                    ->name('store');
+                Route::put('/{search_synonym}', [SearchSynonymController::class, 'update'])
+                    ->middleware('permission:catalog.attribute.update')
+                    ->whereNumber('search_synonym')
+                    ->name('update');
+                Route::delete('/{search_synonym}', [SearchSynonymController::class, 'destroy'])
+                    ->middleware('permission:catalog.attribute.delete')
+                    ->whereNumber('search_synonym')
                     ->name('destroy');
             });
 
