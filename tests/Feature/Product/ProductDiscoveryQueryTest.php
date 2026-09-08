@@ -84,6 +84,27 @@ final class ProductDiscoveryQueryTest extends TestCase
         $this->assertContains($nameProduct->uuid, $uuids);
     }
 
+    public function test_sku_words_only_match_as_a_full_sku(): void
+    {
+        $product = $this->product('Widget', 'SKU-DEFAULT-002');
+        $product->update(['type' => 'variable']);
+        app(ProductServiceInterface::class)->addVariant(new CreateVariantData(
+            productUuid: $product->uuid,
+            sku: 'RED COTTON',
+            name: 'Extra',
+            price: 2500,
+            position: 1,
+        ));
+        $this->index($product->fresh());
+
+        $query = app(ProductDiscoveryQuery::class);
+
+        $this->assertNotContains($product->uuid, $query->candidateUuids('red'));
+        $this->assertNotContains($product->uuid, $query->candidateUuids('cotton'));
+        $this->assertContains($product->uuid, $query->candidateUuids('RED COTTON'));
+        $this->assertContains($product->uuid, $query->candidateUuids('red cotton'));
+    }
+
     public function test_partial_tokens_do_not_match(): void
     {
         $product = $this->product('Cotton Tee', 'SKU-COTTON-001');

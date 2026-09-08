@@ -77,6 +77,12 @@ final class ProductDiscoveryQuery
             }
         }
 
+        usort($skus, static fn (string $left, string $right): int => strlen($right) <=> strlen($left));
+
+        foreach ($skus as $sku) {
+            $body = str_replace($sku, ' ', $body);
+        }
+
         return [
             2 => SearchNormalizer::tokenize($title),
             3 => isset($payload['brand_name']) && is_string($payload['brand_name'])
