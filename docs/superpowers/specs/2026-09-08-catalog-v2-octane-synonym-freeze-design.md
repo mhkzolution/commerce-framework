@@ -1,13 +1,13 @@
 # Catalog V2 Follow-up: Octane synonym freeze
 
 **Date:** 2026-09-08  
-**Status:** Draft for review  
+**Status:** Locked  
 **Owner:** Product search (`modules/Product`) — `SearchSynonymExpander`  
 **Related:** `docs/superpowers/specs/2026-09-08-catalog-v2-search-discovery-design.md`
 
 This spec is one implementation unit: **the directed synonym map is loaded once per container/worker lifetime and is never refreshed on the request path or on admin CUD.** Source of truth stays `product_search_synonyms`. It does not add Octane as a Composer dependency, a reload command, request-time version checks, or index/suggest/ranking changes.
 
-It amends Discovery V2 acceptance 10 for long-lived workers.
+It amends the Discovery spec in-place (acceptance 10 and any remaining “next search sees CUD immediately” wording) for long-lived workers.
 
 ---
 
@@ -38,17 +38,17 @@ Non-goals: `search:synonyms:reload`, broadcasting to workers, moving synonyms to
 |---|---|
 | Source of truth | `product_search_synonyms` + existing admin CUD. Do not move to `config/search.php`. |
 | Binding | Keep `SearchSynonymExpander` as a **singleton**. Do not bind it transient. |
-| Load | Constructor is the only place that queries `product_search_synonyms`. It runs **exactly once** per container lifecycle. |
+| Load | Constructor is the only place that queries the synonym store. It may query `product_search_synonyms` **only once** per container lifecycle. It must not query other tables, cache, or config on construct. |
 | `expand()` | Memory only. No DB, no `Cache::remember`, no config rebuild. |
 | CUD | Write DB only. Controllers, model, requests: no `forgetInstance`, no `make()` of a fresh expander, no version bump for search. |
 | php-fpm | New request = new container = constructor runs again = map from DB at that construct. |
 | Octane | A worker does not refresh the map during its lifetime. It observes synonym changes only after that worker/container is recreated (`octane:reload` or a new worker process). |
 | Fleet identity | Do **not** require “all workers always hold identical maps.” Octane may spawn a worker later; that new worker constructs against current DB. Consistency of the whole fleet after a coordinated restart is `octane:reload`, not a runtime invariant. |
 | Eager warm | Octane-only. See §4. |
-| Composer | Do not add `laravel/octane`. |
+| Composer | Do not add `laravel/octane`. Absence of that package must not affect application boot, migrations, tests, or production php-fpm execution. No `use` / import of Octane types in Product production code. |
 | Reload command | None. Manual `php artisan octane:reload` after deploy/ops. |
 | Tests | `forgetInstance` is allowed **only in tests**, as the stand-in for container recreate. Production CUD paths must not call it. |
-| Discovery §7 / acceptance 10 | CUD still does not rewrite `search_documents`. Replace “the next search uses the new expansion” with the php-fpm / Octane wording in §5. Update that sentence in the Discovery spec as part of this unit. |
+| Discovery amendment | Amend the Discovery spec **in-place** in this unit (same PR). CUD still does not rewrite `search_documents`. Replace every passage that implies the live container always sees CUD on the next search. Known sites: §2 goal 7, §10 Synonym CUD row, §12 acceptance 10. After the edit, no conflicting wording remains elsewhere in that document. Replacement wording is §5.1. |
 
 ---
 
@@ -68,6 +68,8 @@ Listen to `Laravel\Octane\Events\WorkerStarting` only behind `class_exists`. The
 Do not warm from `ProductServiceProvider::boot()` / `register()` without that guard. Unconditional `make()` breaks `migrate` and `RefreshDatabase` (table missing at boot).
 
 Until Octane is installed, `class_exists` is false: php-fpm stays “construct on first resolve in this request,” which is still once per container.
+
+Absence of `laravel/octane` must not affect application boot, migrations, tests, or production php-fpm execution. Product production PHP must not `use` / import Octane classes; the listener is registered only after `class_exists` on the FQCN string. Composer must not need Octane types at autoload or parse time.
 
 ---
 
@@ -91,6 +93,24 @@ worker/container recreated
   → new map
 ```
 
+### 5.1 Discovery replacement wording
+
+Write these into the Discovery spec in-place. Do not leave the old “next search / next query uses the new map” claim in another section.
+
+**§12 acceptance 10:**
+
+```text
+Changing a synonym does not rewrite search_documents.
+php-fpm: a new request is a new container, so the constructor
+loads the current table.
+Octane: a worker already holding the expander does not see CUD
+until that worker/container is recreated (octane:reload).
+```
+
+**§10 Synonym CUD row:** no reindex; expansion uses the in-memory map of the current container; a live Octane worker does not pick up CUD until process recreate.
+
+**§2 goal 7:** keep “synonym CUD does not reindex.” Drop any reading that query-time expansion means the already-constructed worker map refreshes.
+
 ---
 
 ## 6. Tests (acceptance)
@@ -99,11 +119,12 @@ Keep existing directed-replace, unique `from_term`, admin CUD, and “CUD does n
 
 Add:
 
-1. **Constructor once per container.** Resolve `SearchSynonymExpander` twice, then call `expand()`. Query log: first resolve queries `product_search_synonyms`; second resolve does not; `expand()` does not. Proves the singleton freeze and that the binding did not become transient.
+1. **Constructor once per container, that table only.** Resolve `SearchSynonymExpander` twice, then call `expand()`. Across that container lifecycle the query log may show `product_search_synonyms` **only once** (first resolve). The constructor must not query any other table, cache, or config. Second resolve and `expand()` issue no queries. Proves the singleton freeze stayed simple: one table, one load.
 2. **CUD does not refresh a live expander.** Resolve expander (empty or old map) → create/update a synonym → `expand()` on the **same** instance/container **without** `forgetInstance` → still the old mapping. Then `forgetInstance` + resolve → new mapping. This is the freeze acceptance without running Octane.
 3. **Production CUD does not invalidate.** Grep `modules/Product` PHP excluding `tests/`: no `forgetInstance(SearchSynonymExpander` (and no `forgetInstance` of that class via FQCN). Admin store/update/destroy stay write-DB-only.
-4. **No unconditional boot warm.** `ProductServiceProvider` (and other Product providers) do not call `make(SearchSynonymExpander::class)` / `app(SearchSynonymExpander::class)` in `register` or `boot` except inside an Octane `WorkerStarting` listener gated by `class_exists`.
+4. **No unconditional boot warm, no Octane hard dependency.** `ProductServiceProvider` (and other Product providers) do not call `make(SearchSynonymExpander::class)` / `app(SearchSynonymExpander::class)` in `register` or `boot` except inside an Octane `WorkerStarting` listener gated by `class_exists`. Product production PHP has no `use Laravel\Octane\…`. `composer.json` / `composer.lock` do not require `laravel/octane`. With Octane absent, `php artisan migrate`, the existing PHPUnit suite, and php-fpm boot still succeed.
 5. Existing HTTP/admin synonym tests and Discovery synonym tests stay green.
+6. **Discovery V2 acceptance 10 is updated in-place and no conflicting wording remains elsewhere in the Discovery document.** Apply §5.1. Scan the whole Discovery spec (not only acceptance 10) for “next search”, “next query expands”, or “take effect at query time” read as live-map refresh.
 
 Do not add an Octane integration suite in this spec (package is not required).
 
@@ -129,7 +150,7 @@ Do not add an Octane integration suite in this spec (package is not required).
 
 ```text
 Wave 1  Singleton freeze tests + Octane-only WorkerStarting warm
-        Amend Discovery acceptance 10
+        Amend Discovery spec in-place (acceptance 10 + remaining next-search wording)
         Regression: synonym expander + admin CUD + no-reindex
 ```
 
