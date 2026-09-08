@@ -1,7 +1,7 @@
 # Catalog V2 Phase 3: Storefront Suggest
 
 **Date:** 2026-09-08  
-**Status:** Draft  
+**Status:** Locked  
 **Owner:** Storefront shop (`modules/Cart`) + product search read model (`modules/Product`)  
 **Related:** `docs/superpowers/specs/2026-09-08-catalog-v2-search-discovery-design.md`
 
@@ -40,11 +40,11 @@ Non-goals: synonym expansion in suggest, query-log autocomplete, SKU completion 
 | Min length | Trim then `SearchNormalizer::textNormalize`. Length **< 2** → empty groups, no index read. Whitespace-only is empty. |
 | Match | Case-insensitive **prefix** (`normalized LIKE 'prefix%'`). Not contains. Not exact-token listing. |
 | Synonyms | **Off** for suggest V1. Directed replace stays listing-only. |
-| Completions source | Distinct strings from product names, brand names, and category names that prefix-match. No query log. No SKU strings. |
-| Products | `search_documents.title` prefix + product `visibleOnStorefront()`. Link = PDP (`storefront.products.show` / `/products/{slug}`). |
+| Completions source | Distinct strings from product names, brand names, and category names that prefix-match. Distinct after `SearchNormalizer::textNormalize()` (so `TEE` / `Tee` / `tee` is one row). Keep the first label after the group sort below. No query log. No SKU strings. |
+| Products | `search_documents.title` prefix + product `visibleOnStorefront()`. **Title only:** description, attributes, categories, and brand matches do **not** create product rows. Link = PDP (`storefront.products.show` / `/products/{slug}`). |
 | Brands | `brands` relation, `is_active`, prefix on `name`. URL = `/shop?brand={slug}`. |
-| Categories | Same set as shop filter nav (`HomepageNavigationQuery` / current shop category options). Prefix on `name`. URL = `/shop?category={slug}`. |
-| Cap | **5** items per group. Deterministic order: matching name ascending. |
+| Categories | Same query/service that populates storefront shop category navigation: `HomepageNavigationQuery::shopFilterOptions()`. Prefix on `name`. URL = `/shop?category={slug}`. |
+| Cap | **5** items per group. Deterministic order: **shorter matching names first, then alphabetical** (`ORDER BY CHAR_LENGTH(name), name` / `mb_strlen` then name). Example: `te` → `Tee`, `Tee Shirt`, `Team Jersey`. |
 | Overlay empty state | `q` empty or `< 2` chars: keep today’s popular config pills + recent (localStorage). Hide those when suggest groups are shown. |
 | Submit | Overlay form `GET /shop` with `name="q"` unchanged. |
 | Duplicate rows | A name may appear as both a completion and an entity (e.g. product “Tee” in Completions and Products). That is allowed. |
@@ -58,7 +58,7 @@ Suggest reads
 ─────────────
 products via search_documents.title + visibleOnStorefront
 brands table (active)
-categories via existing shop-nav query
+categories via HomepageNavigationQuery::shopFilterOptions()
 ```
 
 Facet/filter identity stays Phase 2 (`attribute_values.code`, brand slug, category slug). Suggest does not invent new URL params.
@@ -74,14 +74,17 @@ normalize(q)
 if length < 2 → empty payload, return
 prefix = normalized q
 
-completions ← distinct matching names (product title, brand name, category name), cap 5
+completions ← distinct matching names (product title, brand name, category name),
+             unique by textNormalize, shorter then alphabetical, cap 5
 products   ← storefront-visible products whose search_documents.title prefixes, cap 5
+             (title only; ignore description / attributes / brand / category text)
 brands     ← active brands whose name prefixes, cap 5
-categories ← shop-nav categories whose name prefixes, cap 5
+categories ← HomepageNavigationQuery::shopFilterOptions() whose name prefixes, cap 5
 ```
 
 - Do not tokenize. Do not expand synonyms. Do not score with Phase 2 field ranks.
 - Do not scan `payload.skus`, description, or attribute labels for suggest V1.
+- Do not call `ProductDiscoveryQuery`.
 - Alias `search` is not required on the suggest endpoint; overlay already sends `q`.
 
 ---
@@ -110,11 +113,12 @@ JS: debounce input (≈200ms). `< 2` chars → show hints, clear suggest. `>= 2`
 ## 7. Tests (acceptance)
 
 1. `q` empty, `"  "`, or one character: suggest handler does not query `search_documents`.
-2. `q=te` returns a product named `Tee` and does **not** return a product named `Parka` whose description or attributes contain `tee`.
-3. Prefix is case-insensitive (`TE` finds `Tee`).
+2. `q=te` returns a product named `Tee` and does **not** return a product named `Parka` whose description or attributes contain `tee`. Description, attributes, categories, and brand matches do not create product rows.
+3. Prefix is case-insensitive (`TE` finds `Tee`). Completions for `TEE` / `Tee` / `tee` are a single row after `textNormalize`.
 4. Completion click target is `/shop?q=` + that label. Brand/category use slug params. Product uses PDP URL.
 5. `GET /shop?q=te` listing still uses Phase 2 exact-token (does not start matching `cotton` from `cot` via this work).
-6. Cap: a sixth prefix-matching product is omitted.
+6. Cap: a sixth prefix-matching product is omitted. Completions for `te` order `Tee` before `Tee Shirt` before `Team Jersey`.
+7. Suggest endpoint never invokes `ProductDiscoveryQuery` (bind a throwing fake in the HTTP test).
 
 ---
 
