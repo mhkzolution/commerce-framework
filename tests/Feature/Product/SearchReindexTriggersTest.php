@@ -8,7 +8,9 @@ use Carbon\CarbonImmutable;
 use Commerce\Catalog\Models\Attribute;
 use Commerce\Catalog\Models\AttributeValue;
 use Commerce\Catalog\Services\AttributeValueService;
+use Commerce\Contracts\Search\SearchIndexInterface;
 use Commerce\Core\Models\SearchDocument;
+use Commerce\Core\Search\DatabaseSearchIndex;
 use Commerce\Iam\Contracts\User\UserServiceInterface;
 use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\DTO\CreateUserData;
@@ -16,14 +18,17 @@ use Commerce\Iam\Models\Permission;
 use Commerce\Iam\Models\Role;
 use Commerce\Iam\Models\User;
 use Commerce\Iam\Services\AuthorizationService;
-use Commerce\Product\Models\Product;
 use Commerce\Product\Models\ProductAttribute;
 use Commerce\Product\Models\ProductAttributeValue;
 use Commerce\Product\Models\SearchSynonym;
 use Commerce\Product\Services\ProductDiscoveryQuery;
 use Commerce\Product\Services\ProductSearchIndexer;
 use Commerce\Settings\Database\Seeders\SettingsSeeder;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use RuntimeException;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\BufferedOutput;
 use Tests\Concerns\CreatesPurchasableProduct;
 use Tests\TestCase;
 
@@ -180,6 +185,83 @@ final class SearchReindexTriggersTest extends TestCase
             ->assertRedirect(route('admin.products.settings.show'));
     }
 
+    public function test_rebuild_abort_keeps_documents_indexed_before_the_exception(): void
+    {
+        $first = $this->createPurchasableProduct(sku: 'REBUILD-KEEP')->product;
+        $second = $this->createPurchasableProduct(sku: 'REBUILD-SKIP')->product;
+        app(ProductSearchIndexer::class)->index($first);
+        app(ProductSearchIndexer::class)->index($second);
+        $this->staleDocument('stale-abort');
+
+        $this->bindThrowAfterFirstIndex();
+
+        try {
+            app(ProductSearchIndexer::class)->rebuild();
+            $this->fail('Expected rebuild to throw.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('rebuild aborted', $exception->getMessage());
+        }
+
+        $this->assertDatabaseMissing('search_documents', [
+            'index_name' => ProductSearchIndexer::INDEX,
+            'document_id' => 'stale-abort',
+        ]);
+        $this->assertDatabaseHas('search_documents', [
+            'index_name' => ProductSearchIndexer::INDEX,
+            'document_id' => $first->uuid,
+        ]);
+        $this->assertDatabaseMissing('search_documents', [
+            'index_name' => ProductSearchIndexer::INDEX,
+            'document_id' => $second->uuid,
+        ]);
+    }
+
+    public function test_reindex_command_exits_nonzero_when_rebuild_throws(): void
+    {
+        $this->createPurchasableProduct(sku: 'CLI-KEEP');
+        $this->createPurchasableProduct(sku: 'CLI-SKIP');
+        $this->bindThrowAfterFirstIndex();
+
+        $output = new BufferedOutput;
+        $exitCode = app(Kernel::class)->handle(
+            new ArrayInput(['command' => 'product:reindex']),
+            $output,
+        );
+        $consoleOutput = $output->fetch();
+
+        $this->assertNotSame(0, $exitCode);
+        $this->assertStringContainsString('rebuild aborted', $consoleOutput);
+        $this->assertStringNotContainsString('Indexed 2 products.', $consoleOutput);
+    }
+
+    public function test_admin_rebuild_does_not_flash_success_when_rebuild_throws(): void
+    {
+        $this->createPurchasableProduct(sku: 'HTTP-KEEP');
+        $this->createPurchasableProduct(sku: 'HTTP-SKIP');
+        $this->bindThrowAfterFirstIndex();
+
+        $this->withoutExceptionHandling();
+
+        try {
+            $this->actingAs(User::query()->firstOrFail())
+                ->post(route('admin.products.settings.reindex'));
+            $this->fail('Expected rebuild to throw.');
+        } catch (RuntimeException) {
+            // uncaught is the failure response
+        }
+
+        $this->assertNull(session('status'));
+    }
+
+    private function bindThrowAfterFirstIndex(): void
+    {
+        $this->app->forgetInstance(ProductSearchIndexer::class);
+        $this->app->bind(
+            SearchIndexInterface::class,
+            static fn (): SearchIndexInterface => new ThrowsAfterFirstIndex(new DatabaseSearchIndex),
+        );
+    }
+
     private function staleDocument(string $documentId): void
     {
         SearchDocument::query()->create([
@@ -189,5 +271,34 @@ final class SearchReindexTriggersTest extends TestCase
             'body' => '',
             'payload' => [],
         ]);
+    }
+}
+
+final class ThrowsAfterFirstIndex implements SearchIndexInterface
+{
+    public function __construct(
+        private readonly SearchIndexInterface $inner,
+        private int $indexCalls = 0,
+    ) {}
+
+    public function index(string $index, string $id, array $document): void
+    {
+        $this->indexCalls++;
+
+        if ($this->indexCalls > 1) {
+            throw new RuntimeException('rebuild aborted');
+        }
+
+        $this->inner->index($index, $id, $document);
+    }
+
+    public function delete(string $index, string $id): void
+    {
+        $this->inner->delete($index, $id);
+    }
+
+    public function flush(string $index): void
+    {
+        $this->inner->flush($index);
     }
 }

@@ -45,6 +45,7 @@ Non-goals: suggest/autocomplete, popular searches, merchandising rules, redirect
 | Split | Index: text, ranking, synonyms, candidate ids. Relations: facets, attribute/category/brand filters. |
 | Attribute search | Index `attribute_values.code` **and** `label`. Filter/URL/identity remain `code` only. |
 | Ranking | **Highest matched field, not cumulative.** Document rank = the single best (lowest number) field that matched at least one token. Matching name **and** description still ranks as name, not name+description. Tie-break: `title` ascending. |
+| Candidate cap | After rank (highest field, then title), `ProductDiscoveryQuery` returns at most 500 uuids. Facets for non-empty `q` use that same list. Not SQL LIMIT. Empty `q` does not query the index. |
 | Exact SKU | Whole-query match, **NFC** + trim + uppercase both sides, full string equality. Not contains/prefix/hyphen-stripped. Wins over all text hits. Other hits may follow. |
 | Multi-term | Whitespace tokens. AND across tokens. OR across fields. |
 | Token match | Exact token only after shared **text** normalization. `cot` ≠ `cotton`. `tee` ≠ `t-shirt` unless a synonym maps them. |
@@ -223,7 +224,7 @@ Not in V1: synonym groups, automatic reverse mapping, weights, OR expansion, mul
 
 ## 8. Facets and filters
 
-After the index returns candidate product ids (or the full published catalog when `q` is empty):
+When `q` is non-empty, listing and facet aggregation use the same post-rank capped candidate set from `ProductDiscoveryQuery` (at most 500 uuids). When `q` is empty, skip the index; browse + facets run on the published catalog:
 
 1. Apply relation filters: category, brand, price, `availability`, each filterable attribute code.  
 2. Attribute match rules **stay Phase 1**:  
@@ -272,7 +273,7 @@ Reserved: `q`, `category`, `brand`, `sort`, `availability`, `price_min`, `price_
 | Synonym CUD | No reindex; expansion uses the in-memory map of the current container; a live Octane worker does not pick up CUD until process recreate |
 | Product delete | Delete that search document |
 | Product unpublish / visibility change | Reindex that product (`payload.status`); storefront still uses `visibleOnStorefront()` |
-| Admin “Rebuild Search Index” | Flush + rebuild all product documents |
+| Admin “Rebuild Search Index” | Flush + rebuild all product documents. After flush, an aborted rebuild leaves empty or partial documents; documents indexed before the exception remain; no rollback. CLI exits non-zero; admin does not flash success. Operator re-runs. |
 
 Save-path indexing stays **synchronous** in V1 (same as today’s indexer). No new queue topology.
 
@@ -310,6 +311,8 @@ Do not merge Wave 3 storefront chrome with Wave 1 indexer. Do not change PDP or 
 13. Two Red variants on one product produce a **single** `attributes[]` entry `{ code: red, label: Red }`.  
 14. Product matching query tokens in name **and** description ranks with name-only products that also match (highest field = name), above a product that matches only in description.  
 15. Empty or whitespace `q` does not query `search_documents`; listing is relation browse only.
+16. After a thrown full rebuild, documents already indexed in that run remain; pre-flush stale rows that were flushed stay gone; the pre-flush index is not restored.
+17. `candidateUuids` returns at most 500 uuids in Discovery rank order. Facets for that `q` use the same list.
 
 ---
 
