@@ -51,8 +51,29 @@ final class ProductSuggestQueryTest extends TestCase
         );
 
         $this->assertNotNull($productQuery);
-        $this->assertStringContainsString('"suggest_documents"."title" like ?', $productQuery['query']);
+        $this->assertStringContainsString('suggest_documents.title like ? escape \'!\'', $productQuery['query']);
         $this->assertContains('te%', $productQuery['bindings']);
+    }
+
+    public function test_product_query_escapes_like_wildcards_in_title_prefix(): void
+    {
+        $this->product('\%_ Tee', 'SUGGEST-LIKE-WILDCARDS');
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $result = app(ProductSuggestQuery::class)->suggest('\%_');
+
+        $productQuery = collect(DB::getQueryLog())->first(
+            static fn (array $entry): bool => str_contains($entry['query'], 'search_documents'),
+        );
+
+        $this->assertNotNull($productQuery);
+        $this->assertStringContainsString('suggest_documents.title like ? escape \'!\'', $productQuery['query']);
+        $this->assertContains('!\\!%!_%', $productQuery['bindings']);
+        $this->assertSame(['\%_ Tee'], array_map(
+            static fn (SuggestHit $hit): string => $hit->label,
+            $result->products,
+        ));
     }
 
     public function test_product_query_accepts_nfd_indexed_title_for_nfc_query(): void

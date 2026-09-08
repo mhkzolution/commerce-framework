@@ -61,8 +61,11 @@ final class ProductSuggestQuery
             ->addSelect('suggest_documents.title as suggest_title')
             ->where(function ($query) use ($titlePatterns): void {
                 foreach ($titlePatterns as $index => $pattern) {
-                    $method = $index === 0 ? 'where' : 'orWhere';
-                    $query->{$method}('suggest_documents.title', 'like', $pattern);
+                    $method = $index === 0 ? 'whereRaw' : 'orWhereRaw';
+                    $query->{$method}(
+                        'suggest_documents.title like ? escape \'!\'',
+                        [$pattern],
+                    );
                 }
             })
             ->orderBy('products.id')
@@ -98,7 +101,11 @@ final class ProductSuggestQuery
         }
 
         return array_map(
-            static fn (string $candidate): string => $candidate.'%',
+            static fn (string $candidate): string => str_replace(
+                ['!', '\\', '%', '_'],
+                ['!!', '!\\', '!%', '!_'],
+                $candidate,
+            ).'%',
             array_values(array_unique($prefixes)),
         );
     }
