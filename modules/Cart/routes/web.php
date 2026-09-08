@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Commerce\Cart\Http\Controllers\HomeController;
 use Commerce\Cart\Http\Controllers\ShopController;
 use Commerce\Cart\Http\Controllers\StorefrontCartController;
+use Commerce\Cart\Http\Controllers\SuggestController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('web')->group(function (): void {
@@ -12,6 +13,7 @@ Route::middleware('web')->group(function (): void {
     Route::get('/home/arrivals', [HomeController::class, 'arrivals'])->name('storefront.home.arrivals');
 
     Route::get('/shop', [ShopController::class, 'index'])->name('storefront.shop.index');
+    Route::get('/shop/suggest', SuggestController::class)->name('storefront.suggest');
     Route::get('/products/{slug}', [ShopController::class, 'show'])->name('storefront.products.show');
 
     Route::get('/cart', [StorefrontCartController::class, 'index'])->name('storefront.cart.index');

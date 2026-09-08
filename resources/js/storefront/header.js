@@ -322,7 +322,7 @@ function bindSearchAutocomplete() {
         return;
     }
 
-    const endpoint = overlay.dataset.searchUrl;
+    const endpoint = overlay.dataset.suggestUrl;
     const input = overlay.querySelector('#header-search-input');
     const results = overlay.querySelector('[data-search-results]');
     const hints = overlay.querySelector('[data-search-hints]');
@@ -335,12 +335,10 @@ function bindSearchAutocomplete() {
     let activeController = null;
 
     const labels = {
+        completions: overlay.dataset.searchLabelCompletions || 'Suggestions',
         products: overlay.dataset.searchLabelProducts || 'Products',
         categories: overlay.dataset.searchLabelCategories || 'Categories',
-        collections: overlay.dataset.searchLabelCollections || 'Collections',
         brands: overlay.dataset.searchLabelBrands || 'Brands',
-        viewAll: overlay.dataset.searchLabelViewAll || 'View all results',
-        empty: overlay.dataset.searchLabelEmpty || 'No matches found',
     };
 
     const resetResults = () => {
@@ -349,62 +347,53 @@ function bindSearchAutocomplete() {
         hints?.removeAttribute('hidden');
     };
 
-    const renderSection = (title, items, renderItem) => {
-        if (!items?.length) {
+    const renderSection = (title, items) => {
+        if (!Array.isArray(items) || items.length === 0) {
             return '';
         }
 
-        const links = items.map(renderItem).join('');
+        const links = items
+            .filter((item) => typeof item?.label === 'string' && typeof item?.url === 'string')
+            .map((item) => `
+                <li>
+                    <a href="${escapeHtml(item.url)}" class="storefront-search-results__link">${escapeHtml(item.label)}</a>
+                </li>
+            `)
+            .join('');
+
+        if (!links) {
+            return '';
+        }
 
         return `
             <section class="storefront-search-results__section">
-                <h3 class="storefront-search-results__title">${title}</h3>
+                <h3 class="storefront-search-results__title">${escapeHtml(title)}</h3>
                 <ul class="storefront-search-results__list">${links}</ul>
             </section>
         `;
     };
 
-    const renderResults = (payload, query) => {
-        const productSection = renderSection(labels.products, payload.products, (item) => `
-            <li>
-                <a href="${item.url}" class="storefront-search-results__product">
-                    ${item.image_url ? `<img src="${item.image_url}" alt="" class="storefront-search-results__thumb" loading="lazy"${item.image_srcset ? ` srcset="${item.image_srcset}" sizes="48px"` : ''}>` : '<span class="storefront-search-results__thumb storefront-search-results__thumb--placeholder"></span>'}
-                    <span class="storefront-search-results__copy">
-                        <span class="storefront-search-results__name">${item.name}</span>
-                        <span class="storefront-search-results__price">${item.price_label}</span>
-                    </span>
-                </a>
-            </li>
-        `);
-
-        const catalogLink = (item) => `
-            <li>
-                <a href="${item.url}" class="storefront-search-results__link">${item.name}</a>
-            </li>
-        `;
-
+    const renderResults = (payload) => {
         const html = [
-            productSection,
-            renderSection(labels.categories, payload.categories, catalogLink),
-            renderSection(labels.collections, payload.collections, catalogLink),
-            renderSection(labels.brands, payload.brands, catalogLink),
+            renderSection(labels.completions, payload.completions),
+            renderSection(labels.products, payload.products),
+            renderSection(labels.brands, payload.brands),
+            renderSection(labels.categories, payload.categories),
         ].join('');
 
         if (!html) {
-            results.innerHTML = `<p class="storefront-search-results__empty">${labels.empty}</p>`;
-        } else {
-            results.innerHTML = `
-                ${html}
-                <a href="${payload.shop_url}" class="storefront-search-results__view-all">${labels.viewAll} →</a>
-            `;
+            resetResults();
+            return;
         }
 
+        results.innerHTML = html;
         hints?.setAttribute('hidden', '');
         results.hidden = false;
     };
 
     const fetchSuggestions = async (query) => {
         if (query.length < 2) {
+            activeController?.abort();
             resetResults();
             return;
         }
@@ -412,7 +401,7 @@ function bindSearchAutocomplete() {
         activeController?.abort();
         activeController = new AbortController();
 
-        const params = new URLSearchParams({ q: query, limit: '8' });
+        const params = new URLSearchParams({ q: query });
 
         try {
             const response = await fetch(`${endpoint}?${params.toString()}`, {
@@ -421,11 +410,12 @@ function bindSearchAutocomplete() {
             });
 
             if (!response.ok) {
+                resetResults();
                 return;
             }
 
             const json = await response.json();
-            renderResults(json.data ?? {}, query);
+            renderResults(json);
         } catch (error) {
             if (error.name !== 'AbortError') {
                 resetResults();

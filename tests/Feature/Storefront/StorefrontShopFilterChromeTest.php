@@ -42,6 +42,11 @@ final class StorefrontShopFilterChromeTest extends TestCase
         $this->assertStringContainsString('storefront-primary-nav', $html);
         $this->assertStringContainsString('data-search-open', $html);
         $this->assertStringContainsString('storefront-search-overlay', $html);
+        $this->assertStringContainsString(
+            'data-suggest-url="'.route('storefront.suggest').'"',
+            $html,
+        );
+        $this->assertStringContainsString('data-search-results', $html);
         $this->assertStringContainsString('storefront-header-actions', $html);
         $this->assertStringContainsString('data-drawer-open="wishlist"', $html);
         $this->assertStringContainsString('data-drawer-open="cart"', $html);
