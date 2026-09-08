@@ -74,6 +74,20 @@ final readonly class ProductCsvImportResult
         );
     }
 
+    public function withMessage(string $message): self
+    {
+        return new self(
+            created: $this->created,
+            updated: $this->updated,
+            skipped: $this->skipped,
+            duplicates: $this->duplicates,
+            linkedImages: $this->linkedImages,
+            messages: [...$this->messages, $message],
+            duplicateSkus: $this->duplicateSkus,
+            errors: $this->errors,
+        );
+    }
+
     public function withLinkedImages(int $count): self
     {
         return new self(
