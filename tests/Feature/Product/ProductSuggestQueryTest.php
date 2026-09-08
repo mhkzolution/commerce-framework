@@ -16,6 +16,7 @@ use Commerce\Product\Services\ProductSearchIndexer;
 use Commerce\Product\Services\ProductSuggestQuery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Normalizer;
 use Tests\TestCase;
 
 final class ProductSuggestQueryTest extends TestCase
@@ -52,6 +53,24 @@ final class ProductSuggestQueryTest extends TestCase
         $this->assertNotNull($productQuery);
         $this->assertStringContainsString('"suggest_documents"."title" like ?', $productQuery['query']);
         $this->assertContains('te%', $productQuery['bindings']);
+    }
+
+    public function test_product_query_accepts_nfd_indexed_title_for_nfc_query(): void
+    {
+        $product = $this->product('Été', 'SUGGEST-ETE-NFD');
+        $nfdTitle = Normalizer::normalize('Été', Normalizer::FORM_D);
+        $this->assertIsString($nfdTitle);
+        DB::table('search_documents')
+            ->where('document_id', $product->uuid)
+            ->where('index_name', ProductSearchIndexer::INDEX)
+            ->update(['title' => $nfdTitle]);
+
+        $labels = array_map(
+            static fn (SuggestHit $hit): string => $hit->label,
+            app(ProductSuggestQuery::class)->suggest('ét')->products,
+        );
+
+        $this->assertContains($nfdTitle, $labels);
     }
 
     public function test_products_are_title_prefix_only_and_ignore_description(): void

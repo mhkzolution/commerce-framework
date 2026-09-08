@@ -11,6 +11,7 @@ use Commerce\Product\DTO\SuggestResult;
 use Commerce\Product\Models\Product;
 use Commerce\Product\Support\SearchNormalizer;
 use Illuminate\Database\Query\JoinClause;
+use Normalizer;
 
 final class ProductSuggestQuery
 {
@@ -49,6 +50,7 @@ final class ProductSuggestQuery
     private function productCandidates(string $prefix): array
     {
         $candidates = [];
+        $titlePatterns = $this->titlePrefilterPatterns($prefix);
         $products = Product::query()
             ->visibleOnStorefront()
             ->join('search_documents as suggest_documents', function (JoinClause $join): void {
@@ -57,7 +59,12 @@ final class ProductSuggestQuery
             })
             ->select('products.*')
             ->addSelect('suggest_documents.title as suggest_title')
-            ->where('suggest_documents.title', 'like', $prefix.'%')
+            ->where(function ($query) use ($titlePatterns): void {
+                foreach ($titlePatterns as $index => $pattern) {
+                    $method = $index === 0 ? 'where' : 'orWhere';
+                    $query->{$method}('suggest_documents.title', 'like', $pattern);
+                }
+            })
             ->orderBy('products.id')
             ->limit(self::PRODUCT_CANDIDATE_LIMIT)
             ->get();
@@ -76,6 +83,24 @@ final class ProductSuggestQuery
         }
 
         return $this->sortCandidates($candidates);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function titlePrefilterPatterns(string $prefix): array
+    {
+        $nfdPrefix = Normalizer::normalize($prefix, Normalizer::FORM_D);
+        $prefixes = [$prefix];
+
+        if (is_string($nfdPrefix)) {
+            $prefixes[] = mb_strtolower($nfdPrefix);
+        }
+
+        return array_map(
+            static fn (string $candidate): string => $candidate.'%',
+            array_values(array_unique($prefixes)),
+        );
     }
 
     /**
