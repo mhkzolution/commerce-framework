@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Commerce\Product\Models;
 
 use Commerce\Catalog\Models\AttributeSet;
+use Commerce\Catalog\Models\Brand;
 use Commerce\Catalog\Models\Category;
 use Commerce\Catalog\Models\Collection;
 use Commerce\Catalog\Models\Tag;
@@ -71,6 +72,11 @@ class Product extends Model
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class, 'product_categories');
+    }
+
+    public function brand(): BelongsTo
+    {
+        return $this->belongsTo(Brand::class, 'brand_uuid', 'uuid');
     }
 
     public function tags(): BelongsToMany
