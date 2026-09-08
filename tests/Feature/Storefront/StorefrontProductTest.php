@@ -47,7 +47,7 @@ final class StorefrontProductTest extends TestCase
 
         app(ProductSearchIndexer::class)->index($product->fresh(['variants', 'categories']));
 
-        $this->get(route('storefront.shop.index', ['search' => 'SHOP-SEARCH']))
+        $this->get(route('storefront.shop.index', ['search' => 'SHOP-SEARCH-99']))
             ->assertOk()
             ->assertSee($product->name);
     }
