@@ -1,7 +1,7 @@
 # Catalog V2 Follow-up: Reserved-code hardening at create
 
 **Date:** 2026-09-08  
-**Status:** Draft  
+**Status:** Locked  
 **Owner:** Catalog (`modules/Catalog`) — `AttributeService::create`  
 **Related:** `docs/superpowers/specs/2026-09-08-catalog-v2-search-discovery-design.md`, `docs/superpowers/specs/2026-09-08-catalog-v2-attribute-code-lock-design.md`
 
@@ -39,8 +39,9 @@ Non-goals: suffixing reserved codes, importer skip/log, model `creating` hook, F
 | Topic | Decision |
 |---|---|
 | Choke point | `AttributeService::create` only. |
-| Order | `$code = Str::slug($data->code, '_');` then `in_array($code, SearchReservedParams::KEYS, true)`. |
+| Order | `$code = Str::slug($data->code, '_');` then `in_array($code, SearchReservedParams::KEYS, true)`. The reserved check is performed against the slugged code that would otherwise be persisted. `Brand`, `brand`, `BRAND`, `price-min`, and `price_min` are the same reserved identity. |
 | Reject | `DomainException` with message `Attribute code is reserved.` Do not persist. |
+| Exception type | `AttributeService::create` continues to throw `DomainException`. F2 does not introduce validation-error mapping at the service layer. HTTP remains `422` via FormRequest; service callers receive `DomainException`. |
 | Keys | Current `SearchReservedParams::KEYS` only. F2 does not add keys. |
 | HTTP | Leave `notIn` on both store requests. Dual layer is intentional. |
 | Presets | `VariantOptionPresetService::create` is unchanged; it already calls `AttributeService::create`. |
@@ -55,7 +56,7 @@ Non-goals: suffixing reserved codes, importer skip/log, model `creating` hook, F
 
 ```text
 AttributeService::create:
-  code = Str::slug(input, '_')
+  code = Str::slug(input, '_')   // this is the value that would be persisted
   if code in SearchReservedParams::KEYS → DomainException (no insert)
   insert
 
@@ -71,8 +72,8 @@ VariantOptionPresetService::create / importer / tests / seeders:
 
 ## 5. Tests (acceptance)
 
-1. `AttributeService::create(code: 'brand')` throws `DomainException` (`Attribute code is reserved.`). No `attributes` row with `code = brand`.
-2. `AttributeService::create(code: 'price-min')` throws (slugs to `price_min`). No row with `code = price_min`.
+1. `AttributeService::create(code: 'brand')` throws `DomainException` (`Attribute code is reserved.`). No `attributes` row with `code = brand`. The same holds for `Brand` and `BRAND` (check is against the slugged code).
+2. `AttributeService::create(code: 'price-min')` and `code: 'price_min'` throw (both slug to `price_min`). No row with `code = price_min`.
 3. `AttributeService::create(code: 'Color')` persists `color`.
 4. Existing HTTP reserved-create tests stay green (`AttributeReservedCodeTest`, `VariantOptionReservedCodeTest` store cases) — still `assertInvalid('code')`, not 500.
 5. `VariantOptionPresetService::create(code: 'brand', ...)` throws the same `DomainException` and does not persist.
@@ -100,4 +101,4 @@ Wave 1  Reject reserved codes in AttributeService::create
         Regression: existing HTTP reserved-create tests
 ```
 
-Human gate after the wave. One small PR. Do not start implementation until this spec is Locked and an implementation plan is written.
+Human gate after the wave. One small PR.
