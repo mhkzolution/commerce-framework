@@ -23,6 +23,7 @@
                 ['Variant options', 'Reusable option names and values', route('admin.catalog.variant-options.index'), 'cube'],
                 ['Attributes', 'Define product properties', route('admin.catalog.attributes.index'), 'cube'],
                 ['Attribute Sets', 'Group attributes for products', route('admin.catalog.attribute-sets.index'), 'cube'],
+                [__('catalog::admin.search_synonyms'), 'Map equivalent product search terms', route('admin.catalog.search-synonyms.index'), 'tag'],
             ] as [$title, $description, $url, $icon])
                 <a href="{{ $url }}" class="rounded-xl border border-border bg-card p-6 shadow-sm transition hover:border-primary">
                     <div class="flex items-center gap-3">

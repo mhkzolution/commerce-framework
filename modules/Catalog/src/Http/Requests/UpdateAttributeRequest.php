@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Commerce\Catalog\Http\Requests;
 
 use Commerce\Catalog\Models\Attribute;
+use Commerce\Product\Support\SearchReservedParams;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,6 +25,7 @@ final class UpdateAttributeRequest extends FormRequest
                 'required',
                 'string',
                 'max:100',
+                Rule::notIn(SearchReservedParams::KEYS),
                 Rule::unique('attributes', 'code')->ignore($attribute?->id),
             ],
             'name' => ['required', 'string', 'max:255'],

@@ -33,6 +33,7 @@ final class CatalogAdminTest extends TestCase
             __('product::workspace.variant_options_nav'),
             __('catalog::admin.attributes'),
             __('catalog::admin.attribute_sets'),
+            __('catalog::admin.search_synonyms'),
         ];
 
         $pages = [
@@ -44,6 +45,7 @@ final class CatalogAdminTest extends TestCase
             route('admin.catalog.variant-options.index'),
             route('admin.catalog.attributes.index'),
             route('admin.catalog.attribute-sets.index'),
+            route('admin.catalog.search-synonyms.index'),
         ];
 
         foreach ($pages as $url) {

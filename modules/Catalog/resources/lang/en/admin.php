@@ -12,6 +12,7 @@ return [
     'tags' => 'Tags',
     'attributes' => 'Attributes',
     'attribute_sets' => 'Attribute sets',
+    'search_synonyms' => 'Search synonyms',
     'create' => 'Create',
     'edit' => 'Edit',
     'delete' => 'Delete',

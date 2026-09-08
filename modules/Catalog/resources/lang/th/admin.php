@@ -12,6 +12,7 @@ return [
     'tags' => 'แท็ก',
     'attributes' => 'คุณสมบัติ',
     'attribute_sets' => 'ชุดคุณสมบัติ',
+    'search_synonyms' => 'คำพ้องสำหรับการค้นหา',
     'create' => 'สร้าง',
     'edit' => 'แก้ไข',
     'delete' => 'ลบ',
