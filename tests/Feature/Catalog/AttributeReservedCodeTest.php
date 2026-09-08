@@ -34,6 +34,24 @@ final class AttributeReservedCodeTest extends TestCase
         $this->assertDatabaseMissing('attributes', ['code' => 'brand']);
     }
 
+    public function test_slug_normalized_reserved_code_cannot_be_used_when_creating_an_attribute(): void
+    {
+        foreach ([
+            'Brand' => 'brand',
+            'price-min' => 'price_min',
+        ] as $submittedCode => $persistedCode) {
+            $this->actingAs(User::query()->first())
+                ->post(route('admin.catalog.attributes.store'), [
+                    'code' => $submittedCode,
+                    'name' => 'Reserved attribute',
+                    'type' => 'text',
+                ])
+                ->assertInvalid('code');
+
+            $this->assertDatabaseMissing('attributes', ['code' => $persistedCode]);
+        }
+    }
+
     public function test_reserved_code_cannot_be_used_when_updating_an_attribute(): void
     {
         $attribute = Attribute::query()->create([

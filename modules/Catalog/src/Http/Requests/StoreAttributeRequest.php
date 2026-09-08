@@ -6,10 +6,20 @@ namespace Commerce\Catalog\Http\Requests;
 
 use Commerce\Product\Support\SearchReservedParams;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 final class StoreAttributeRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $code = $this->input('code');
+
+        if (is_string($code)) {
+            $this->merge(['code' => Str::slug($code, '_')]);
+        }
+    }
+
     public function authorize(): bool
     {
         return true;
