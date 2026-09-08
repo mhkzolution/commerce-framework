@@ -1,7 +1,7 @@
 # Catalog V2 Follow-up: Shop filter facet universe
 
 **Date:** 2026-09-08  
-**Status:** Draft  
+**Status:** Locked  
 **Owner:** Storefront shop (`modules/Cart`)  
 **Related:** `docs/superpowers/specs/2026-09-08-catalog-v2-search-discovery-design.md`, `docs/superpowers/specs/2026-09-07-catalog-v2-attribute-variant-design.md`
 
@@ -50,7 +50,7 @@ Non-goals: merging size attributes into one merchandising facet, multi-select, c
 | Group config | Listing and facet SQL **must not** read `cart.storefront.filters.groups` or `sizeAttributeIds` / `colorAttributeIds`. `exclude_codes` is not expanded in this spec (it never hid facets). |
 | Match | Still Phase 1: `attribute_values.code` only. Non-axis = product-level PAV; axis = any variant. |
 | Chrome | Keep per-code facet chip groups. Do not restore a combined Size/Color group UI. |
-| DTO | `ShopProductQuery::paginate` must not use `ShopFilterCatalog::$sizeAttributeIds` / `$colorAttributeIds` for filtering. Removing those fields (and unused `$sizes` / `$colors`) in the same change is allowed. |
+| DTO | After this change, listing and facet logic must not depend on `sizeAttributeIds` / `colorAttributeIds`. The fields may be removed if no remaining storefront consumer exists. Same for unused `$sizes` / `$colors` (Blade already reads `$facets`, not those maps). |
 
 ---
 
@@ -63,7 +63,17 @@ for each (code, value) in attributes:
   applyAttributeGroupFilter(query, [that id], value)
 ```
 
-Unknown or non-filterable codes stay ignored (today’s `filterableAttributes()` allowlist).
+Unknown or non-filterable codes stay ignored (today’s `filterableAttributes()` allowlist). They do **not** abort the request. Resolve with an existence check (`whereIn` / `first`), never `firstOrFail()`.
+
+These requests must not create an attribute predicate:
+
+```text
+GET /shop?foo=bar      unknown param, not a filterable attribute code
+GET /shop?brand=red    reserved brand filter (slug), not attributes.code
+GET /shop?page=2       reserved pagination, not an attribute
+```
+
+`200` with the usual listing. `brand=red` may empty the grid when no brand slug is `red`; that is still a brand predicate, not an attribute miss.
 
 Do not `unset($attributes['size'], $attributes['color'])` before the loop. Do not also apply `$filters->size` / `$filters->color` through a second id list.
 
@@ -73,9 +83,11 @@ Do not `unset($attributes['size'], $attributes['color'])` before the loop. Do no
 
 1. Two filterable attributes `size` and `shoe_size`, both with value code `s`. Product A has apparel size `s` only. Product B has shoe size `s` only. `GET /shop?size=s` sees A, not B. `GET /shop?shoe_size=s` sees B, not A.
 2. Size facet counts for `s` do not include Product B. Shoe size facet counts for `s` do not include Product A.
-3. Phase 1 semantics: a variable product with a Red variant is included when the request param is **that attribute’s code** and the value is `red`. `GET /shop?color=red` remains the production bookmark **only when** `attributes.code` is exactly `color` (`ShopAttributeFilterTest` already uses that code). Tests that created `code = color-p1-{uniqid}` with name Color and called `?color=red` relied on group substring matching; they must call `?{actualCode}=red` instead.
+3. Phase 1 semantics: a variable product with a Red variant is included when the request param is **that attribute’s code** and the value is `red`. Production URL examples continue to use `?color=` only when the actual attribute code is `color`. Tests that created `code = color-p1-{uniqid}` with name Color and called `?color=red` relied on group substring matching; they must call `?{actualCode}=red` instead. (`ShopAttributeFilterTest` already uses code `color`.)
 4. Direct `ShopProductQuery` tests that stuffed a non-color attribute into `colorAttributeIds` (material cotton) must filter by that attribute’s **code** in `$filters->attributes`, not via the color group slot.
 5. `CatalogV2SearchDiscoveryRegressionTest` stays green (self-excluding facets, empty `q`, discovery once).
+6. `GET /shop?foo=bar` and `GET /shop?page=2` return `200` and do not throw. They do not apply an attribute filter. `GET /shop?brand=red` is the reserved brand filter, not `firstOrFail` on an attribute named brand.
+6. `GET /shop?foo=bar`, `GET /shop?page=2` return `200` and do not throw. They do not apply an attribute filter. `GET /shop?brand=red` is the reserved brand filter, not `firstOrFail` on an attribute named brand.
 
 ---
 
