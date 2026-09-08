@@ -39,6 +39,19 @@ final class ShopFacetUniverseTest extends TestCase
             ->assertDontSee($apparel->name);
     }
 
+    public function test_size_param_is_ignored_when_size_attribute_does_not_exist(): void
+    {
+        $visible = $this->product('Visible Product', 'FACET-NO-SIZE');
+        $shoeSize = $this->attribute('shoe_size', 'Shoe size');
+        $unrelated = $this->product('Shoe Size Small', 'FACET-SHOE-ONLY');
+
+        $this->attachAttributeValue($unrelated, $shoeSize, 'Small', 's');
+
+        $this->get(route('storefront.shop.index', ['size' => 's']))
+            ->assertOk()
+            ->assertSee($visible->name);
+    }
+
     public function test_size_and_shoe_size_facets_do_not_share_counts(): void
     {
         [$apparel, $shoe] = $this->sizeAndShoeProducts();

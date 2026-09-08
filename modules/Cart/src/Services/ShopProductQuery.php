@@ -180,6 +180,8 @@ final class ShopProductQuery
         $filterableAttributes = Attribute::query()
             ->where('is_filterable', true)
             ->whereIn('code', array_keys($attributes))
+            ->orderBy('position')
+            ->orderBy('id')
             ->get(['id', 'code'])
             ->keyBy('code');
 
