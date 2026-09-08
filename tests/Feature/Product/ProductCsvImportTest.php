@@ -524,14 +524,28 @@ final class ProductCsvImportTest extends TestCase
                 'ID' => '16',
                 'SKU' => 'CSV-RSV-006',
                 'Name' => 'Fabric Clash Tee',
-                'Attribute 1 name' => 'Fabric',
-                'Attribute 1 value(s)' => 'Cotton',
+                'Attribute 1 name' => 'Brand',
+                'Attribute 1 value(s)' => 'Nike',
+                'Attribute 2 name' => 'Fabric',
+                'Attribute 2 value(s)' => 'Cotton',
+            ]),
+            $this->csvRow([
+                'ID' => '17',
+                'SKU' => 'CSV-RSV-CLEAN',
+                'Name' => 'Clean Tee',
+                'Attribute 1 name' => 'สี',
+                'Attribute 1 value(s)' => 'Blue',
             ]),
         ]));
 
-        $this->assertSame(0, $result['created']);
+        $this->assertSame(1, $result['created']);
         $this->assertNotSame([], $result['errors']);
         $this->assertNull(ProductVariant::query()->where('sku', 'CSV-RSV-006')->first());
+        $this->assertNotNull(ProductVariant::query()->where('sku', 'CSV-RSV-CLEAN')->first());
+
+        foreach ($result['messages'] as $message) {
+            $this->assertStringNotContainsString('skipped reserved attribute column', $message);
+        }
     }
 
     public function test_import_skips_reserved_column_on_variable_parent(): void
