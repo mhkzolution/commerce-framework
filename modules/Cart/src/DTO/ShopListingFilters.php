@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Commerce\Cart\DTO;
 
 use Commerce\Catalog\Models\Attribute;
-use Commerce\Product\Support\SearchReservedParams;
+use Commerce\Support\SearchReservedParams;
 use Illuminate\Http\Request;
 
 final readonly class ShopListingFilters

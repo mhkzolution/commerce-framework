@@ -10,6 +10,7 @@
         "commerce/core": "*",
         "commerce/media": "*",
         "commerce/module-manager": "*",
+        "commerce/support": "*",
         "illuminate/support": "^13.0",
         "illuminate/http": "^13.0"
     },

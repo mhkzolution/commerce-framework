@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Commerce\Product\Support;
+namespace Commerce\Support;
 
 final class SearchReservedParams
 {

@@ -11,7 +11,7 @@ use Commerce\Catalog\Models\Attribute;
 use Commerce\Core\Base\BaseService;
 use Commerce\Core\Exceptions\DomainException;
 use Commerce\Core\Exceptions\EntityNotFoundException;
-use Commerce\Product\Support\SearchReservedParams;
+use Commerce\Support\SearchReservedParams;
 use Illuminate\Support\Str;
 
 final class AttributeService extends BaseService implements AttributeServiceInterface

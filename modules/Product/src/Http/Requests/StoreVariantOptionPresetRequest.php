@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Commerce\Product\Http\Requests;
 
-use Commerce\Product\Support\SearchReservedParams;
+use Commerce\Support\SearchReservedParams;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
