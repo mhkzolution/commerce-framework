@@ -28,6 +28,7 @@ use Commerce\Product\Models\ProductVariant;
 use Commerce\Product\Services\ProductWorkspaceSaveService;
 use Commerce\Product\Support\ProductCsvSellerResolver;
 use Commerce\Product\Support\ProductPrice;
+use Commerce\Support\SearchReservedParams;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Str;
 
@@ -47,6 +48,9 @@ final class WooCommerceProductImporter
 
     /** @var array<string, string> */
     private array $brandCache = [];
+
+    /** @var list<string> */
+    private array $pendingAttributeWarnings = [];
 
     private ?int $attributeSetId = null;
 
@@ -156,11 +160,13 @@ final class WooCommerceProductImporter
             }
 
             $product = $this->importRow($row);
+            $this->applyPendingAttributeWarningsToCli($output);
             $linked = $this->linkProductImages($product, $row);
             $stats['linked_images'] += $linked;
             $stats['imported']++;
             $output->writeln("Imported: {$product->name} ({$product->uuid})");
         } catch (\Throwable $exception) {
+            $this->pullPendingAttributeWarnings();
             $stats['errors']++;
             $output->writeln('<error>Row '.$this->rowId($row).': '.$exception->getMessage().'</error>');
         }
@@ -201,11 +207,13 @@ final class WooCommerceProductImporter
 
             $existing = $this->findImportedProduct($parentRow);
             $product = $this->upsertVariableRow($parentRow, $variationRows, $existing);
+            $this->applyPendingAttributeWarningsToCli($output);
             $linked = $this->linkProductImages($product, $parentRow);
             $stats['linked_images'] += $linked;
             $stats['imported']++;
             $output->writeln("Imported variable product: {$product->name} ({$product->uuid}, {$product->variants()->count()} variant(s))");
         } catch (\Throwable $exception) {
+            $this->pullPendingAttributeWarnings();
             $stats['errors']++;
             $output->writeln('<error>Row '.$this->rowId($parentRow).': '.$exception->getMessage().'</error>');
         }
@@ -277,8 +285,12 @@ final class WooCommerceProductImporter
                 $result = $result->withUpdated("Updated: {$product->name} (SKU: {$sku})");
             }
 
+            $result = $this->applyPendingAttributeWarningsToResult($result);
+
             return $result->withLinkedImages($product->media()->count());
         } catch (\Throwable $exception) {
+            $this->pullPendingAttributeWarnings();
+
             return $this->appendError($result, 'Row '.$this->rowId($row).': '.$exception->getMessage());
         }
     }
@@ -310,8 +322,12 @@ final class WooCommerceProductImporter
                 ? $result->withCreated("Created variable product: {$product->name} ({$label})")
                 : $result->withUpdated("Updated variable product: {$product->name} ({$label})");
 
+            $result = $this->applyPendingAttributeWarningsToResult($result);
+
             return $result->withLinkedImages($product->media()->count());
         } catch (\Throwable $exception) {
+            $this->pullPendingAttributeWarnings();
+
             return $this->appendError($result, 'Row '.$this->rowId($parentRow).': '.$exception->getMessage());
         }
     }
@@ -733,11 +749,19 @@ final class WooCommerceProductImporter
                 continue;
             }
 
+            $code = $this->attributeCode($name);
+
+            if (in_array($code, SearchReservedParams::KEYS, true)) {
+                $this->recordReservedAttributeSkip($row, $name, $code);
+
+                continue;
+            }
+
             $attributeId = $this->attributeCache[$name] ?? null;
 
             if ($attributeId === null) {
                 $attribute = $this->attributeService->create(new CreateAttributeData(
-                    code: $this->attributeCode($name),
+                    code: $code,
                     name: $name,
                     type: 'text',
                     isFilterable: true,
@@ -765,6 +789,38 @@ final class WooCommerceProductImporter
         }
 
         return $values;
+    }
+
+    private function recordReservedAttributeSkip(array $row, string $name, string $code): void
+    {
+        $this->pendingAttributeWarnings[] = 'Row '.$this->rowId($row).': skipped reserved attribute column "'.$name.'" (code "'.$code.'").';
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function pullPendingAttributeWarnings(): array
+    {
+        $warnings = $this->pendingAttributeWarnings;
+        $this->pendingAttributeWarnings = [];
+
+        return $warnings;
+    }
+
+    private function applyPendingAttributeWarningsToCli(OutputStyle $output): void
+    {
+        foreach ($this->pullPendingAttributeWarnings() as $message) {
+            $output->writeln('<comment>'.$message.'</comment>');
+        }
+    }
+
+    private function applyPendingAttributeWarningsToResult(ProductCsvImportResult $result): ProductCsvImportResult
+    {
+        foreach ($this->pullPendingAttributeWarnings() as $message) {
+            $result = $result->withMessage($message);
+        }
+
+        return $result;
     }
 
     /**

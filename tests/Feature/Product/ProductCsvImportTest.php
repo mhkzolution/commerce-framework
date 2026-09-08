@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Product;
 
+use Commerce\Catalog\Models\Attribute;
+use Commerce\Catalog\Models\AttributeSet;
 use Commerce\Catalog\Models\Category;
 use Commerce\Catalog\Models\Tag;
 use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
 use Commerce\Marketplace\Models\Seller;
 use Commerce\Product\Models\Product;
+use Commerce\Product\Models\ProductAttributeValue;
 use Commerce\Product\Models\ProductVariant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -343,6 +346,283 @@ final class ProductCsvImportTest extends TestCase
         $this->assertStringContainsString('Exportable Product', $content);
         $this->assertStringContainsString('Short description here', $content);
         $this->assertStringContainsString('150', $content);
+    }
+
+    public function test_import_skips_reserved_brand_column_and_keeps_other_attributes(): void
+    {
+        $result = $this->importCsv($this->makeCsv([
+            $this->csvRow([
+                'ID' => '11',
+                'SKU' => 'CSV-RSV-001',
+                'Name' => 'Reserved Brand Tee',
+                'Attribute 1 name' => 'Brand',
+                'Attribute 1 value(s)' => 'Nike',
+                'Attribute 2 name' => 'สี',
+                'Attribute 2 value(s)' => 'Blue',
+            ]),
+        ]));
+
+        $this->assertSame(1, $result['created']);
+        $this->assertSame(0, $result['skipped']);
+        $this->assertSame([], $result['errors']);
+        $this->assertContains(
+            'Row 11: skipped reserved attribute column "Brand" (code "brand").',
+            $result['messages'],
+        );
+
+        $product = ProductVariant::query()->where('sku', 'CSV-RSV-001')->first()?->product;
+        $this->assertNotNull($product);
+        $this->assertDatabaseMissing('attributes', ['code' => 'brand']);
+        $this->assertHasAttributeValue($product, 'color', 'Blue');
+        $this->assertMissingAttributeCode($product, 'brand');
+    }
+
+    public function test_import_skips_price_min_slugged_attribute_column(): void
+    {
+        $result = $this->importCsv($this->makeCsv([
+            $this->csvRow([
+                'ID' => '12',
+                'SKU' => 'CSV-RSV-002',
+                'Name' => 'Price Min Tee',
+                'Attribute 1 name' => 'Price Min',
+                'Attribute 1 value(s)' => '100',
+            ]),
+        ]));
+
+        $this->assertSame(1, $result['created']);
+        $this->assertSame([], $result['errors']);
+        $this->assertContains(
+            'Row 12: skipped reserved attribute column "Price Min" (code "price_min").',
+            $result['messages'],
+        );
+        $this->assertDatabaseMissing('attributes', ['code' => 'price_min']);
+
+        $product = ProductVariant::query()->where('sku', 'CSV-RSV-002')->first()?->product;
+        $this->assertNotNull($product);
+        $this->assertMissingAttributeCode($product, 'price_min');
+    }
+
+    public function test_import_still_attaches_non_reserved_color_attribute(): void
+    {
+        $result = $this->importCsv($this->makeCsv([
+            $this->csvRow([
+                'ID' => '13',
+                'SKU' => 'CSV-RSV-003',
+                'Name' => 'Color Only Tee',
+                'Attribute 1 name' => 'สี',
+                'Attribute 1 value(s)' => 'Red',
+            ]),
+        ]));
+
+        $this->assertSame(1, $result['created']);
+        $this->assertSame([], $result['errors']);
+        $this->assertFalse(
+            collect($result['messages'])->contains(
+                fn (string $message): bool => str_contains($message, 'skipped reserved attribute column'),
+            ),
+        );
+
+        $product = ProductVariant::query()->where('sku', 'CSV-RSV-003')->first()?->product;
+        $this->assertNotNull($product);
+        $this->assertHasAttributeValue($product, 'color', 'Red');
+    }
+
+    public function test_import_creates_product_when_only_reserved_attribute_column_is_present(): void
+    {
+        $result = $this->importCsv($this->makeCsv([
+            $this->csvRow([
+                'ID' => '14',
+                'SKU' => 'CSV-RSV-004',
+                'Name' => 'Brand Only Tee',
+                'Attribute 1 name' => 'Brand',
+                'Attribute 1 value(s)' => 'Nike',
+            ]),
+        ]));
+
+        $this->assertSame(1, $result['created']);
+        $this->assertSame([], $result['errors']);
+        $this->assertContains(
+            'Row 14: skipped reserved attribute column "Brand" (code "brand").',
+            $result['messages'],
+        );
+        $this->assertNotNull(ProductVariant::query()->where('sku', 'CSV-RSV-004')->first());
+    }
+
+    public function test_import_skips_reserved_column_even_when_attribute_is_preloaded_in_cache(): void
+    {
+        $brand = Attribute::query()->create([
+            'code' => 'brand',
+            'name' => 'Brand',
+            'type' => 'text',
+            'is_filterable' => true,
+            'is_visible' => true,
+        ]);
+        $color = Attribute::query()->create([
+            'code' => 'color',
+            'name' => 'สี',
+            'type' => 'text',
+            'is_filterable' => true,
+            'is_visible' => true,
+        ]);
+
+        $set = AttributeSet::query()->create([
+            'code' => (string) config('product.import.woocommerce.attribute_set_code', 'woocommerce_default'),
+            'name' => (string) config('product.import.woocommerce.attribute_set_name', 'WooCommerce Default'),
+        ]);
+        $set->attributes()->attach($brand->id, ['position' => 0, 'is_required' => false]);
+        $set->attributes()->attach($color->id, ['position' => 1, 'is_required' => false]);
+
+        $this->assertTrue(
+            $set->fresh()->load('attributes')->attributes->contains(
+                fn (Attribute $attribute): bool => $attribute->id === $brand->id,
+            ),
+            'Precondition: Brand must be on the WooCommerce set so importer cache-preloads it by name.',
+        );
+
+        $result = $this->importCsv($this->makeCsv([
+            $this->csvRow([
+                'ID' => '15',
+                'SKU' => 'CSV-RSV-005',
+                'Name' => 'Legacy Brand Tee',
+                'Attribute 1 name' => 'Brand',
+                'Attribute 1 value(s)' => 'Nike',
+                'Attribute 2 name' => 'สี',
+                'Attribute 2 value(s)' => 'Green',
+            ]),
+        ]));
+
+        $this->assertSame(1, $result['created']);
+        $this->assertSame([], $result['errors']);
+        $this->assertContains(
+            'Row 15: skipped reserved attribute column "Brand" (code "brand").',
+            $result['messages'],
+        );
+
+        $product = ProductVariant::query()->where('sku', 'CSV-RSV-005')->first()?->product;
+        $this->assertNotNull($product);
+        $this->assertDatabaseHas('attributes', ['id' => $brand->id, 'code' => 'brand']);
+        $this->assertSame(
+            0,
+            ProductAttributeValue::query()
+                ->where('product_id', $product->id)
+                ->where('attribute_id', $brand->id)
+                ->count(),
+        );
+        $this->assertHasAttributeValue($product, 'color', 'Green');
+    }
+
+    public function test_import_still_fails_the_row_on_non_reserved_create_failure(): void
+    {
+        Attribute::creating(function (Attribute $attribute): void {
+            if ($attribute->code === 'fabric') {
+                throw new \RuntimeException('database exception');
+            }
+        });
+
+        $result = $this->importCsv($this->makeCsv([
+            $this->csvRow([
+                'ID' => '16',
+                'SKU' => 'CSV-RSV-006',
+                'Name' => 'Fabric Clash Tee',
+                'Attribute 1 name' => 'Fabric',
+                'Attribute 1 value(s)' => 'Cotton',
+            ]),
+        ]));
+
+        $this->assertSame(0, $result['created']);
+        $this->assertNotSame([], $result['errors']);
+        $this->assertNull(ProductVariant::query()->where('sku', 'CSV-RSV-006')->first());
+    }
+
+    public function test_import_skips_reserved_column_on_variable_parent(): void
+    {
+        $result = $this->importCsv($this->makeCsv([
+            $this->csvRow([
+                'ID' => '17',
+                'Type' => 'variable',
+                'SKU' => 'CSV-RSV-VAR',
+                'Name' => 'Variable Reserved Tee',
+                'Attribute 1 name' => 'Brand',
+                'Attribute 1 value(s)' => 'Nike',
+                'Attribute 2 name' => 'สี',
+                'Attribute 2 value(s)' => 'Blue',
+            ]),
+        ]));
+
+        $this->assertSame(1, $result['created']);
+        $this->assertSame([], $result['errors']);
+        $this->assertContains(
+            'Row 17: skipped reserved attribute column "Brand" (code "brand").',
+            $result['messages'],
+        );
+    }
+
+    public function test_cli_import_writes_reserved_column_comment_and_still_imports(): void
+    {
+        $csv = $this->makeCsv([
+            $this->csvRow([
+                'ID' => '18',
+                'SKU' => 'CSV-RSV-CLI',
+                'Name' => 'CLI Brand Tee',
+                'Attribute 1 name' => 'Brand',
+                'Attribute 1 value(s)' => 'Nike',
+            ]),
+        ]);
+
+        $path = sys_get_temp_dir().'/wc-import-reserved-'.uniqid('', true).'.csv';
+        file_put_contents($path, $csv);
+
+        try {
+            $this->artisan('product:import-woocommerce', ['file' => $path, '--force' => true])
+                ->expectsOutputToContain('Row 18: skipped reserved attribute column "Brand" (code "brand").')
+                ->assertSuccessful();
+        } finally {
+            @unlink($path);
+        }
+
+        $this->assertNotNull(ProductVariant::query()->where('sku', 'CSV-RSV-CLI')->first());
+        $this->assertDatabaseMissing('attributes', ['code' => 'brand']);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function importCsv(string $csv): array
+    {
+        $response = $this->actingAs(User::query()->first())
+            ->post(route('admin.products.import.store'), [
+                'csv' => UploadedFile::fake()->createWithContent('products.csv', $csv),
+            ])
+            ->assertRedirect(route('admin.products.import.show'));
+
+        $result = $response->getSession()->get('import_result');
+        $this->assertIsArray($result);
+
+        return $result;
+    }
+
+    private function assertHasAttributeValue(Product $product, string $attributeCode, string $value): void
+    {
+        $product->load('attributeValues.attribute');
+
+        $this->assertTrue(
+            $product->attributeValues->contains(
+                fn ($row): bool => $row->attribute?->code === $attributeCode && $row->value === $value,
+            ),
+            "Expected attribute [{$attributeCode}] = [{$value}].",
+        );
+    }
+
+    private function assertMissingAttributeCode(Product $product, string $attributeCode): void
+    {
+        $product->load('attributeValues.attribute');
+
+        $this->assertFalse(
+            $product->attributeValues->contains(
+                fn ($row): bool => $row->attribute?->code === $attributeCode,
+            ),
+            "Did not expect attribute [{$attributeCode}] on the product.",
+        );
     }
 
     /**
