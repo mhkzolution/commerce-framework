@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Commerce\Cart\Http\Controllers;
 
+use Commerce\Cart\Services\HomepageNavigationQuery;
 use Commerce\Product\DTO\SuggestHit;
 use Commerce\Product\Services\ProductSuggestQuery;
 use Illuminate\Http\JsonResponse;
@@ -14,12 +15,16 @@ final class SuggestController extends Controller
 {
     public function __construct(
         private readonly ProductSuggestQuery $suggestions,
+        private readonly HomepageNavigationQuery $navigation,
     ) {}
 
     public function __invoke(Request $request): JsonResponse
     {
         $query = $request->query('q', '');
-        $result = $this->suggestions->suggest(is_string($query) ? $query : '');
+        $result = $this->suggestions->suggest(
+            is_string($query) ? $query : '',
+            $this->navigation->shopFilterOptions(),
+        );
 
         return response()->json([
             'completions' => $this->serializeHits($result->completions),

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Commerce\Product\Services;
 
-use Commerce\Cart\Services\HomepageNavigationQuery;
 use Commerce\Catalog\Models\Brand;
 use Commerce\Product\DTO\SuggestHit;
 use Commerce\Product\DTO\SuggestResult;
@@ -19,11 +18,7 @@ final class ProductSuggestQuery
 
     private const PRODUCT_CANDIDATE_LIMIT = 100;
 
-    public function __construct(
-        private readonly HomepageNavigationQuery $homepageNavigation,
-    ) {}
-
-    public function suggest(string $q): SuggestResult
+    public function suggest(string $q, iterable $categories = []): SuggestResult
     {
         $prefix = SearchNormalizer::textNormalize($q);
 
@@ -33,19 +28,19 @@ final class ProductSuggestQuery
 
         $products = $this->productCandidates($prefix);
         $brands = $this->brandCandidates($prefix);
-        $categories = $this->categoryCandidates($prefix);
-        $completionCandidates = array_merge($products, $brands, $categories);
+        $categoryCandidates = $this->categoryCandidates($prefix, $categories);
+        $completionCandidates = array_merge($products, $brands, $categoryCandidates);
 
         return new SuggestResult(
             completions: $this->completionHits($completionCandidates),
             products: $this->hits($products),
             brands: $this->hits($brands),
-            categories: $this->hits($categories),
+            categories: $this->hits($categoryCandidates),
         );
     }
 
     /**
-     * @return list<array{label: string, url: string}>
+     * @return list<array{label: string, url: string, rank: int}>
      */
     private function productCandidates(string $prefix): array
     {
@@ -68,7 +63,8 @@ final class ProductSuggestQuery
                     );
                 }
             })
-            ->orderBy('products.id')
+            ->orderByRaw('length(suggest_documents.title)')
+            ->orderBy('suggest_documents.title')
             ->limit(self::PRODUCT_CANDIDATE_LIMIT)
             ->get();
 
@@ -82,6 +78,7 @@ final class ProductSuggestQuery
             $candidates[] = [
                 'label' => $title,
                 'url' => route('storefront.products.show', (string) $product->slug),
+                'rank' => (int) $product->id,
             ];
         }
 
@@ -137,11 +134,11 @@ final class ProductSuggestQuery
     /**
      * @return list<array{label: string, url: string}>
      */
-    private function categoryCandidates(string $prefix): array
+    private function categoryCandidates(string $prefix, iterable $categories): array
     {
         $candidates = [];
 
-        foreach ($this->homepageNavigation->shopFilterOptions() as $category) {
+        foreach ($categories as $category) {
             if (! $this->hasPrefix($category->name, $prefix)) {
                 continue;
             }
@@ -161,22 +158,30 @@ final class ProductSuggestQuery
     }
 
     /**
-     * @param  list<array{label: string, url: string}>  $candidates
-     * @return list<array{label: string, url: string}>
+     * @param  list<array{label: string, url: string, rank?: int}>  $candidates
+     * @return list<array{label: string, url: string, rank?: int}>
      */
     private function sortCandidates(array $candidates): array
     {
         usort($candidates, static function (array $left, array $right): int {
             $length = mb_strlen($left['label']) <=> mb_strlen($right['label']);
 
-            return $length !== 0 ? $length : strnatcasecmp($left['label'], $right['label']);
+            if ($length !== 0) {
+                return $length;
+            }
+
+            $natural = strnatcasecmp($left['label'], $right['label']);
+
+            return $natural !== 0
+                ? $natural
+                : ($left['rank'] ?? PHP_INT_MAX) <=> ($right['rank'] ?? PHP_INT_MAX);
         });
 
         return $candidates;
     }
 
     /**
-     * @param  list<array{label: string, url: string}>  $candidates
+     * @param  list<array{label: string, url: string, rank?: int}>  $candidates
      * @return list<SuggestHit>
      */
     private function hits(array $candidates): array
@@ -188,7 +193,7 @@ final class ProductSuggestQuery
     }
 
     /**
-     * @param  list<array{label: string, url: string}>  $candidates
+     * @param  list<array{label: string, url: string, rank?: int}>  $candidates
      * @return list<SuggestHit>
      */
     private function completionHits(array $candidates): array

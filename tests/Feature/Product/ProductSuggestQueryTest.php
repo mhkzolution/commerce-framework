@@ -7,6 +7,7 @@ namespace Tests\Feature\Product;
 use Commerce\Catalog\DTO\CreateBrandData;
 use Commerce\Catalog\Models\Category;
 use Commerce\Catalog\Services\BrandService;
+use Commerce\Cart\Services\HomepageNavigationQuery;
 use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Product\Contracts\ProductServiceInterface;
 use Commerce\Product\DTO\CreateProductData;
@@ -36,6 +37,13 @@ final class ProductSuggestQueryTest extends TestCase
         $this->assertFalse(collect(DB::getQueryLog())->contains(
             static fn (array $entry): bool => str_contains($entry['query'], 'search_documents'),
         ));
+    }
+
+    public function test_product_suggest_query_has_no_cart_service_dependency(): void
+    {
+        $constructor = (new \ReflectionClass(ProductSuggestQuery::class))->getConstructor();
+
+        $this->assertTrue($constructor === null || $constructor->getNumberOfRequiredParameters() === 0);
     }
 
     public function test_product_query_prefilters_search_documents_by_title_prefix(): void
@@ -125,6 +133,21 @@ final class ProductSuggestQueryTest extends TestCase
         $this->assertCount(5, app(ProductSuggestQuery::class)->suggest('te')->products);
     }
 
+    public function test_product_candidate_window_keeps_shorter_higher_id_title(): void
+    {
+        foreach (range(1, 100) as $i) {
+            $this->product('Team Jersey '.$i, 'SUGGEST-WINDOW-'.$i);
+        }
+        $this->product('Tee', 'SUGGEST-WINDOW-TEE');
+
+        $labels = array_map(
+            static fn (SuggestHit $hit): string => $hit->label,
+            app(ProductSuggestQuery::class)->suggest('te')->products,
+        );
+
+        $this->assertContains('Tee', $labels);
+    }
+
     public function test_product_hit_uses_pdp_url_and_excludes_non_storefront_product(): void
     {
         $visible = $this->product('Tent', 'SUGGEST-TENT');
@@ -179,7 +202,8 @@ final class ProductSuggestQueryTest extends TestCase
             'is_active' => true,
         ]);
 
-        $result = app(ProductSuggestQuery::class)->suggest('ac');
+        $categories = app(HomepageNavigationQuery::class)->shopFilterOptions();
+        $result = app(ProductSuggestQuery::class)->suggest('ac', $categories);
 
         $this->assertSame(
             [['Accessories', route('storefront.shop.index', ['category' => 'accessories'])]],
