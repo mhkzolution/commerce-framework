@@ -105,6 +105,18 @@ final class ProductDiscoveryQueryTest extends TestCase
         $this->assertContains($product->uuid, $query->candidateUuids('red cotton'));
     }
 
+    public function test_sku_text_in_description_remains_searchable(): void
+    {
+        $product = $this->product('Widget', 'RED', 'RED finish');
+        $multiwordSkuProduct = $this->product('Bundle', 'RED COTTON', 'RED COTTON finish');
+        $this->index($product, $multiwordSkuProduct);
+
+        $query = app(ProductDiscoveryQuery::class);
+
+        $this->assertContains($product->uuid, $query->candidateUuids('red finish'));
+        $this->assertContains($multiwordSkuProduct->uuid, $query->candidateUuids('red cotton finish'));
+    }
+
     public function test_partial_tokens_do_not_match(): void
     {
         $product = $this->product('Cotton Tee', 'SKU-COTTON-001');

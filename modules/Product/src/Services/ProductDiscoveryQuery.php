@@ -77,11 +77,10 @@ final class ProductDiscoveryQuery
             }
         }
 
-        usort($skus, static fn (string $left, string $right): int => strlen($right) <=> strlen($left));
-
-        foreach ($skus as $sku) {
-            $body = str_replace($sku, ' ', $body);
-        }
+        $skuTail = implode(' ', $skus);
+        $description = $skuTail !== '' && str_ends_with($body, $skuTail)
+            ? trim(substr($body, 0, -strlen($skuTail)))
+            : $body;
 
         return [
             2 => SearchNormalizer::tokenize($title),
@@ -91,7 +90,7 @@ final class ProductDiscoveryQuery
             4 => $categoryTokens,
             5 => $attributeTokens,
             6 => array_merge(
-                SearchNormalizer::tokenize($body),
+                SearchNormalizer::tokenize($description),
                 array_map(
                     static fn (string $sku): string => SearchNormalizer::textNormalize($sku),
                     $skus,
