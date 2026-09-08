@@ -24,11 +24,14 @@ final class ShopProductQuery
 
     /**
      * @return LengthAwarePaginator<int, Product>
+     *
+     * @param  list<string>|null  $searchUuids
      */
     public function paginate(
         ShopListingFilters $filters,
         ShopFilterCatalog $catalog,
         int $perPage = 24,
+        ?array $searchUuids = null,
     ): LengthAwarePaginator {
         $query = Product::query()
             ->with(['variants', 'media', 'categories', 'tags', 'attributeValues.attribute'])
@@ -36,7 +39,7 @@ final class ShopProductQuery
 
         $discoveryUuids = [];
         if (is_string($filters->q) && trim($filters->q) !== '') {
-            $discoveryUuids = $this->discovery->candidateUuids($filters->q);
+            $discoveryUuids = $searchUuids ?? $this->discovery->candidateUuids($filters->q);
             if ($discoveryUuids === []) {
                 return new Paginator([], 0, $perPage);
             }

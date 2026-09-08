@@ -46,7 +46,12 @@ final class ShopController extends Controller
         $catalog = $this->filterCatalog->buildFor($filters, $searchUuids);
         $categories = $this->navigation->shopFilterOptions();
 
-        $paginator = $this->listing->paginate($filters, $catalog, perPage: 24);
+        $paginator = $this->listing->paginate(
+            $filters,
+            $catalog,
+            perPage: 24,
+            searchUuids: $searchUuids,
+        );
 
         $cards = $paginator->getCollection()
             ->map(fn (Product $product): ?ProductCardData => $this->cards->fromProduct($product))
