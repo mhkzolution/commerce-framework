@@ -91,13 +91,39 @@ final class SearchSynonymAdminTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->postJson(route('admin.catalog.search-synonyms.store'), [
+            ->post(route('admin.catalog.search-synonyms.store'), [
                 'from_term' => '  COTTON  ',
                 'to_term' => 'fabric',
             ])
-            ->assertUnprocessable()
             ->assertInvalid('from_term');
 
+        $this->assertSame(1, SearchSynonym::query()->count());
+    }
+
+    public function test_non_string_terms_are_rejected_without_type_coercion(): void
+    {
+        $user = User::query()->firstOrFail();
+        $synonym = SearchSynonym::query()->create([
+            'from_term' => 'cotton',
+            'to_term' => 'ผ้าฝ้าย',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('admin.catalog.search-synonyms.store'), [
+                'from_term' => ['cotton'],
+                'to_term' => ['fabric'],
+            ])
+            ->assertInvalid(['from_term', 'to_term']);
+
+        $this->actingAs($user)
+            ->put(route('admin.catalog.search-synonyms.update', $synonym->id), [
+                'from_term' => ['linen'],
+                'to_term' => ['fabric'],
+            ])
+            ->assertInvalid(['from_term', 'to_term']);
+
+        $this->assertSame('cotton', $synonym->fresh()->from_term);
+        $this->assertSame('ผ้าฝ้าย', $synonym->to_term);
         $this->assertSame(1, SearchSynonym::query()->count());
     }
 }

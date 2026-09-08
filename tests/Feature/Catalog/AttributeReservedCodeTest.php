@@ -24,12 +24,11 @@ final class AttributeReservedCodeTest extends TestCase
     public function test_reserved_code_cannot_be_used_when_creating_an_attribute(): void
     {
         $this->actingAs(User::query()->first())
-            ->postJson(route('admin.catalog.attributes.store'), [
+            ->post(route('admin.catalog.attributes.store'), [
                 'code' => 'brand',
                 'name' => 'Brand',
                 'type' => 'text',
             ])
-            ->assertUnprocessable()
             ->assertInvalid('code');
 
         $this->assertDatabaseMissing('attributes', ['code' => 'brand']);
@@ -45,12 +44,11 @@ final class AttributeReservedCodeTest extends TestCase
 
         foreach (['q', 'page'] as $reservedCode) {
             $this->actingAs(User::query()->first())
-                ->putJson(route('admin.catalog.attributes.update', $attribute->uuid), [
+                ->put(route('admin.catalog.attributes.update', $attribute->uuid), [
                     'code' => $reservedCode,
                     'name' => 'Material',
                     'type' => 'text',
                 ])
-                ->assertUnprocessable()
                 ->assertInvalid('code');
         }
 
