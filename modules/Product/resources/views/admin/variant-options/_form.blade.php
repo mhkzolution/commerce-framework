@@ -10,7 +10,7 @@
 </div>
 <div>
     <label class="block text-sm font-medium text-text" for="code">{{ __('product::workspace.variant_option_code') }}</label>
-    <input id="code" name="code" value="{{ old('code', $option?->code ?? ($suggestedCode ?? '')) }}" required class="cf-input mt-1 font-mono text-sm">
+    <input id="code" name="code" value="{{ old('code', $option?->code ?? ($suggestedCode ?? '')) }}" @readonly($option !== null) required class="cf-input mt-1 font-mono text-sm">
     <p class="mt-1 text-xs text-muted">{{ __('product::workspace.variant_option_code_hint') }}</p>
 </div>
 <div>

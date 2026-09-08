@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Commerce\Catalog\Models;
 
 use Commerce\Core\Concerns\HasUuid;
+use Commerce\Core\Exceptions\DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -27,6 +28,15 @@ class Attribute extends Model
         'position',
         'options',
     ];
+
+    protected static function booted(): void
+    {
+        static::updating(function (Attribute $attribute): void {
+            if ($attribute->isDirty('code')) {
+                throw new DomainException('Attribute code is immutable.');
+            }
+        });
+    }
 
     protected function casts(): array
     {

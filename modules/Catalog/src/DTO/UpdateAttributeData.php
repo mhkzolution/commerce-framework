@@ -12,7 +12,6 @@ final readonly class UpdateAttributeData extends DataTransferObject
      * @param  list<string>|null  $options
      */
     public function __construct(
-        public string $code,
         public string $name,
         public string $type = 'text',
         public bool $isFilterable = false,

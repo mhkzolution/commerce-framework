@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Catalog;
 
+use Commerce\Catalog\DTO\UpdateAttributeData;
 use Commerce\Catalog\Models\Attribute;
+use Commerce\Catalog\Services\AttributeService;
+use Commerce\Core\Exceptions\DomainException;
 use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -79,5 +82,47 @@ final class AttributeCodeLockTest extends TestCase
             $this->assertSame('shoe_size', $fresh->code);
             $this->assertSame('Footwear size', $fresh->name);
         }
+    }
+
+    public function test_model_rejects_dirty_code_after_persistence(): void
+    {
+        $attribute = Attribute::query()->create([
+            'code' => 'material',
+            'name' => 'Material',
+            'type' => 'text',
+        ]);
+
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('Attribute code is immutable.');
+
+        $attribute->update(['code' => 'fabric']);
+    }
+
+    public function test_create_is_not_blocked_by_immutability(): void
+    {
+        $attribute = Attribute::query()->create([
+            'code' => 'brand_fit',
+            'name' => 'Brand fit',
+            'type' => 'text',
+        ]);
+
+        $this->assertSame('brand_fit', $attribute->code);
+    }
+
+    public function test_service_update_preserves_code(): void
+    {
+        $attribute = Attribute::query()->create([
+            'code' => 'material',
+            'name' => 'Material',
+            'type' => 'text',
+        ]);
+
+        $updated = app(AttributeService::class)->update($attribute->uuid, new UpdateAttributeData(
+            name: 'Fabric',
+            type: 'text',
+        ));
+
+        $this->assertSame('material', $updated->code);
+        $this->assertSame('Fabric', $updated->name);
     }
 }

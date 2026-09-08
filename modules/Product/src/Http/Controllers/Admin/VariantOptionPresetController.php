@@ -66,7 +66,6 @@ final class VariantOptionPresetController extends Controller
         $this->presetService->update(
             attribute: $model,
             name: $request->validated('name'),
-            code: $request->validated('code'),
             options: array_values($request->validated('options')),
             position: (int) $request->validated('position', 0),
         );

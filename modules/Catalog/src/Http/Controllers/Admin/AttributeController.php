@@ -66,7 +66,6 @@ final class AttributeController extends Controller
     public function update(UpdateAttributeRequest $request, string $attribute): RedirectResponse
     {
         $this->attributeService->update($attribute, new UpdateAttributeData(
-            code: $request->validated('code'),
             name: $request->validated('name'),
             type: $request->validated('type'),
             isFilterable: (bool) $request->validated('is_filterable', false),

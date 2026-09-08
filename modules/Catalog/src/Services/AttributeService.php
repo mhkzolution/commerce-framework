@@ -33,7 +33,6 @@ final class AttributeService extends BaseService implements AttributeServiceInte
         $attribute = $this->findOrFail($uuid);
 
         $attribute->update([
-            'code' => Str::slug($data->code, '_'),
             'name' => $data->name,
             'type' => $data->type,
             'is_filterable' => $data->isFilterable,

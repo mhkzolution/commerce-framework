@@ -125,10 +125,9 @@ final class VariantOptionPresetService
     /**
      * @param  list<string>  $options
      */
-    public function update(Attribute $attribute, string $name, string $code, array $options, int $position): Attribute
+    public function update(Attribute $attribute, string $name, array $options, int $position): Attribute
     {
         $this->attributeService->update($attribute->uuid, new UpdateAttributeData(
-            code: $code,
             name: $name,
             type: 'select',
             isFilterable: true,

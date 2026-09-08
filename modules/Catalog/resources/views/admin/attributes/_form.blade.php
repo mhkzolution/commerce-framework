@@ -1,6 +1,6 @@
 <div>
     <label class="block text-sm font-medium text-text" for="code">Code</label>
-    <input id="code" name="code" value="{{ old('code', $attribute?->code) }}" required class="cf-input mt-1">
+    <input id="code" name="code" value="{{ old('code', $attribute?->code) }}" @readonly($attribute !== null) required class="cf-input mt-1">
 </div>
 <div>
     <label class="block text-sm font-medium text-text" for="name">Name</label>
