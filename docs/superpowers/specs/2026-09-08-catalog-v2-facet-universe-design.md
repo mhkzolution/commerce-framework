@@ -30,7 +30,7 @@ So `?size=s` matches apparel `size=s` **and** `shoe_size=s`. Facet counts for `s
 ## 2. Goals
 
 1. `GET /shop?{code}={value}` filters only the attribute whose `code` equals `{code}`.
-2. Reserved `size` / `color` remain aliases for those **exact** codes (bookmarks and Phase 1 `?color=red` keep working).
+2. Reserved `size` / `color` remain aliases for those **exact** codes. `?color=red` keeps working when the attribute code is `color`. It does not match an attribute whose **name** is Color but whose code is something else.
 3. Facet self-exclusion and listing share that same mapping. A Size chip and a Shoe size chip do not steal each other’s products.
 4. Phase 2 discovery (`q`), brand, category, price, availability, and suggest stay unchanged.
 
