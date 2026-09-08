@@ -50,9 +50,7 @@ final class ShopProductQuery
 
         $this->applyBrand($query, $filters->brand);
         $this->applyPrice($query, $filters);
-        $this->applyAttributeGroupFilter($query, $catalog->sizeAttributeIds, $filters->size);
-        $this->applyAttributeGroupFilter($query, $catalog->colorAttributeIds, $filters->color);
-        $this->applyAdditionalAttributeFilters($query, $filters->attributes);
+        $this->applyAttributeFilters($query, $filters->attributes);
 
         if ($filters->availability === 'in_stock') {
             $this->constrainInStock($query);
@@ -173,10 +171,8 @@ final class ShopProductQuery
      * @param  Builder<Product>  $query
      * @param  array<string, string>  $attributes
      */
-    private function applyAdditionalAttributeFilters(Builder $query, array $attributes): void
+    private function applyAttributeFilters(Builder $query, array $attributes): void
     {
-        unset($attributes['size'], $attributes['color']);
-
         if ($attributes === []) {
             return;
         }
@@ -184,13 +180,21 @@ final class ShopProductQuery
         $filterableAttributes = Attribute::query()
             ->where('is_filterable', true)
             ->whereIn('code', array_keys($attributes))
-            ->get(['id', 'code']);
+            ->orderBy('position')
+            ->orderBy('id')
+            ->get(['id', 'code'])
+            ->keyBy('code');
 
-        foreach ($filterableAttributes as $attribute) {
+        foreach ($attributes as $code => $value) {
+            $attribute = $filterableAttributes->get($code);
+            if ($attribute === null) {
+                continue;
+            }
+
             $this->applyAttributeGroupFilter(
                 $query,
                 [(int) $attribute->id],
-                $attributes[(string) $attribute->code] ?? null,
+                $value,
             );
         }
     }

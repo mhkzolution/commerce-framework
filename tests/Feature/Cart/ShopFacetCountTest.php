@@ -26,6 +26,13 @@ final class ShopFacetCountTest extends TestCase
     use CreatesPurchasableProduct;
     use RefreshDatabase;
 
+    public function test_filter_catalog_exposes_only_current_filter_collections(): void
+    {
+        $catalog = new ShopFilterCatalog;
+
+        $this->assertSame(['brands', 'pricePresets', 'facets'], array_keys(get_object_vars($catalog)));
+    }
+
     public function test_color_self_excludes_while_size_keeps_the_color_filter_in_the_search_set(): void
     {
         $color = $this->attribute('color', 'Color');
@@ -195,7 +202,7 @@ final class ShopFacetCountTest extends TestCase
         $this->assertSame([], $catalog->brands);
     }
 
-    public function test_legacy_colors_include_values_from_grouped_colour_attribute(): void
+    public function test_colour_attribute_has_an_independent_facet(): void
     {
         $colour = $this->attribute('colour', 'Colour');
         $navy = $this->value($colour, 'navy', 'Navy');
@@ -204,7 +211,7 @@ final class ShopFacetCountTest extends TestCase
 
         $catalog = $this->build(new ShopListingFilters, null);
 
-        $this->assertSame(['navy' => 'Navy'], $catalog->colors);
+        $this->assertSame(['navy' => 1], $this->facetCounts($catalog, 'colour'));
     }
 
     private function build(ShopListingFilters $filters, ?array $searchUuids): ShopFilterCatalog

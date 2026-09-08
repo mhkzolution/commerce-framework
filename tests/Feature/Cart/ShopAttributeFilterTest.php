@@ -47,8 +47,10 @@ final class ShopAttributeFilterTest extends TestCase
         $setup = $this->simpleProductWithMaterialCotton();
 
         $results = app(ShopProductQuery::class)->paginate(
-            new ShopListingFilters(color: 'cotton'),
-            new ShopFilterCatalog(colorAttributeIds: [$setup['material']->id]),
+            new ShopListingFilters(attributes: [
+                $setup['material']->code => $setup['cotton']->code,
+            ]),
+            new ShopFilterCatalog,
         );
 
         $this->assertTrue(
@@ -147,7 +149,7 @@ final class ShopAttributeFilterTest extends TestCase
     }
 
     /**
-     * @return array{product: Product, material: Attribute}
+     * @return array{product: Product, material: Attribute, cotton: AttributeValue}
      */
     private function simpleProductWithMaterialCotton(): array
     {
@@ -183,6 +185,7 @@ final class ShopAttributeFilterTest extends TestCase
         return [
             'product' => $product->fresh(),
             'material' => $material,
+            'cotton' => $cotton,
         ];
     }
 

@@ -73,8 +73,10 @@ final class CatalogV2Phase1RegressionTest extends TestCase
         $this->assertSame(1, $product->variants()->count());
 
         $results = app(ShopProductQuery::class)->paginate(
-            new ShopListingFilters(color: 'cotton'),
-            new ShopFilterCatalog(colorAttributeIds: [$material->id]),
+            new ShopListingFilters(attributes: [
+                $material->code => $cotton->code,
+            ]),
+            new ShopFilterCatalog,
         );
         $this->assertTrue(
             $results->getCollection()->contains(
@@ -203,10 +205,10 @@ final class CatalogV2Phase1RegressionTest extends TestCase
         $this->assertContains('Blue', $pdpColors);
         $this->assertNotContains('Green', $pdpColors);
 
-        $this->get(route('storefront.shop.index', ['color' => 'red']))
+        $this->get(route('storefront.shop.index', [$color->code => 'red']))
             ->assertOk()
             ->assertSee($product->name);
-        $this->get(route('storefront.shop.index', ['color' => 'green']))
+        $this->get(route('storefront.shop.index', [$color->code => 'green']))
             ->assertOk()
             ->assertDontSee($product->name);
 
@@ -238,7 +240,7 @@ final class CatalogV2Phase1RegressionTest extends TestCase
         $this->assertSame('Red', $scheduledState['variants'][0]['options']['Color'] ?? null);
 
         $this->assertNull(app(ProductDetailBuilder::class)->fromSlug($scheduled->slug));
-        $this->get(route('storefront.shop.index', ['color' => 'red']))
+        $this->get(route('storefront.shop.index', [$color->code => 'red']))
             ->assertOk()
             ->assertDontSee($scheduled->name);
 
@@ -248,7 +250,7 @@ final class CatalogV2Phase1RegressionTest extends TestCase
         $this->assertSame('published', $scheduled->status);
 
         $this->assertNotNull(app(ProductDetailBuilder::class)->fromSlug($scheduled->slug));
-        $this->get(route('storefront.shop.index', ['color' => 'red']))
+        $this->get(route('storefront.shop.index', [$color->code => 'red']))
             ->assertOk()
             ->assertSee($scheduled->name);
     }
