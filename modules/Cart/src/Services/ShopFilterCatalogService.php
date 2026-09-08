@@ -12,6 +12,7 @@ use Commerce\Catalog\Models\Brand;
 use Commerce\Product\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Throwable;
@@ -52,8 +53,8 @@ final class ShopFilterCatalogService
         return new ShopFilterCatalog(
             brands: $this->brands($filters, $searchUuids, $attributeIdsByCode),
             pricePresets: $this->pricePresets(),
-            sizes: $this->legacyOptions($facets, 'size'),
-            colors: $this->legacyOptions($facets, 'color'),
+            sizes: $this->legacyOptions($facets, $grouped['size']),
+            colors: $this->legacyOptions($facets, $grouped['color']),
             sizeAttributeIds: $grouped['size']->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all(),
             colorAttributeIds: $grouped['color']->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all(),
             facets: $facets,
@@ -81,6 +82,16 @@ final class ShopFilterCatalogService
                 $attributeIdsByCode,
                 ignoreBrand: true,
             );
+            $counts = DB::query()
+                ->fromSub(
+                    (clone $base)->select(['products.id', 'products.brand_uuid'])->distinct(),
+                    'filtered_products',
+                )
+                ->whereNotNull('filtered_products.brand_uuid')
+                ->groupBy('filtered_products.brand_uuid')
+                ->select('filtered_products.brand_uuid')
+                ->selectRaw('COUNT(DISTINCT filtered_products.id) as aggregate')
+                ->pluck('aggregate', 'brand_uuid');
 
             return Brand::query()
                 ->where('is_active', true)
@@ -89,10 +100,7 @@ final class ShopFilterCatalogService
                 ->map(static fn (Brand $brand): array => [
                     'name' => (string) $brand->name,
                     'slug' => (string) $brand->slug,
-                    'count' => (clone $base)
-                        ->where('products.brand_uuid', $brand->uuid)
-                        ->distinct()
-                        ->count('products.id'),
+                    'count' => (int) $counts->get((string) $brand->uuid, 0),
                 ])
                 ->filter(static fn (array $brand): bool => $brand['slug'] !== '' && $brand['count'] > 0)
                 ->values()
@@ -221,24 +229,57 @@ final class ShopFilterCatalogService
             $attributeIdsByCode,
             ignoredAttributeCode: (string) $attribute->code,
         );
+        $counts = DB::query()
+            ->fromSub(
+                (clone $base)->select('products.id')->distinct(),
+                'filtered_products',
+            )
+            ->join('product_attribute_values as facet_pav', 'facet_pav.product_id', '=', 'filtered_products.id')
+            ->join('attribute_values as facet_value', function ($join): void {
+                $join->on('facet_value.id', '=', 'facet_pav.attribute_value_id')
+                    ->on('facet_value.attribute_id', '=', 'facet_pav.attribute_id');
+            })
+            ->where('facet_pav.attribute_id', $attribute->id)
+            ->where(function ($match) use ($attribute): void {
+                $match
+                    ->where(function ($nonAxis) use ($attribute): void {
+                        $nonAxis
+                            ->whereNull('facet_pav.product_variant_id')
+                            ->whereNotExists(function ($axis) use ($attribute): void {
+                                $axis->selectRaw('1')
+                                    ->from('product_attributes as facet_axis')
+                                    ->whereColumn('facet_axis.product_id', 'filtered_products.id')
+                                    ->where('facet_axis.attribute_id', $attribute->id)
+                                    ->where('facet_axis.used_for_variations', true);
+                            });
+                    })
+                    ->orWhere(function ($axisMatch) use ($attribute): void {
+                        $axisMatch
+                            ->whereNotNull('facet_pav.product_variant_id')
+                            ->whereExists(function ($axis) use ($attribute): void {
+                                $axis->selectRaw('1')
+                                    ->from('product_attributes as facet_axis')
+                                    ->whereColumn('facet_axis.product_id', 'filtered_products.id')
+                                    ->where('facet_axis.attribute_id', $attribute->id)
+                                    ->where('facet_axis.used_for_variations', true);
+                            });
+                    });
+            })
+            ->groupBy('facet_value.code')
+            ->select('facet_value.code')
+            ->selectRaw('COUNT(DISTINCT filtered_products.id) as aggregate')
+            ->pluck('aggregate', 'code');
 
         $values = AttributeValue::query()
             ->where('attribute_id', $attribute->id)
             ->orderBy('position')
             ->orderBy('label')
             ->get(['code', 'label'])
-            ->map(function (AttributeValue $value) use ($base, $attribute): array {
-                $query = clone $base;
-                $this->productFilters->applyAttributeGroupFilter(
-                    $query,
-                    [(int) $attribute->id],
-                    (string) $value->code,
-                );
-
+            ->map(function (AttributeValue $value) use ($counts): array {
                 return [
                     'code' => (string) $value->code,
                     'label' => (string) $value->label,
-                    'count' => $query->distinct()->count('products.id'),
+                    'count' => (int) $counts->get((string) $value->code, 0),
                 ];
             })
             ->filter(static fn (array $value): bool => $value['code'] !== '' && $value['count'] > 0)
@@ -297,20 +338,19 @@ final class ShopFilterCatalogService
 
     /**
      * @param  list<array{code: string, name: string, values: list<array{code: string, label: string, count: int}>}>  $facets
+     * @param  Collection<int, Attribute>  $attributes
      * @return array<string, string>
      */
-    private function legacyOptions(array $facets, string $code): array
+    private function legacyOptions(array $facets, Collection $attributes): array
     {
-        foreach ($facets as $facet) {
-            if ($facet['code'] !== $code) {
-                continue;
-            }
+        $codes = $attributes
+            ->pluck('code')
+            ->map(static fn (mixed $code): string => (string) $code);
 
-            return collect($facet['values'])
-                ->mapWithKeys(static fn (array $value): array => [$value['code'] => $value['label']])
-                ->all();
-        }
-
-        return [];
+        return collect($facets)
+            ->whereIn('code', $codes)
+            ->flatMap(static fn (array $facet): array => $facet['values'])
+            ->mapWithKeys(static fn (array $value): array => [$value['code'] => $value['label']])
+            ->all();
     }
 }

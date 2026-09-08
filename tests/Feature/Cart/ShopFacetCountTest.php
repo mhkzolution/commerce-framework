@@ -195,6 +195,18 @@ final class ShopFacetCountTest extends TestCase
         $this->assertSame([], $catalog->brands);
     }
 
+    public function test_legacy_colors_include_values_from_grouped_colour_attribute(): void
+    {
+        $colour = $this->attribute('colour', 'Colour');
+        $navy = $this->value($colour, 'navy', 'Navy');
+        $product = $this->product('Navy Shirt', 'COLOUR-NAVY');
+        $this->attachValue($product, $colour, $navy);
+
+        $catalog = $this->build(new ShopListingFilters, null);
+
+        $this->assertSame(['navy' => 'Navy'], $catalog->colors);
+    }
+
     private function build(ShopListingFilters $filters, ?array $searchUuids): ShopFilterCatalog
     {
         return app(ShopFilterCatalogService::class)->buildFor($filters, $searchUuids);
