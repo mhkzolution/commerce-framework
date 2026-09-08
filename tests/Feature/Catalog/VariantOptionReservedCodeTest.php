@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Catalog;
 
+use Commerce\Core\Exceptions\DomainException;
 use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
 use Commerce\Product\Services\VariantOptionPresetService;
@@ -19,6 +20,37 @@ final class VariantOptionReservedCodeTest extends TestCase
         parent::setUp();
 
         $this->seed(IamSeeder::class);
+    }
+
+    public function test_preset_service_create_rejects_reserved_code(): void
+    {
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('Attribute code is reserved.');
+
+        app(VariantOptionPresetService::class)->create(
+            name: 'Brand',
+            code: 'brand',
+            options: ['Nike'],
+            position: 0,
+        );
+    }
+
+    public function test_preset_service_create_does_not_persist_reserved_code(): void
+    {
+        try {
+            app(VariantOptionPresetService::class)->create(
+                name: 'Brand',
+                code: 'brand',
+                options: ['Nike'],
+                position: 0,
+            );
+        } catch (DomainException) {
+            $this->assertDatabaseMissing('attributes', ['code' => 'brand']);
+
+            return;
+        }
+
+        $this->fail('Expected DomainException.');
     }
 
     public function test_reserved_code_cannot_be_used_when_creating_a_variant_option(): void

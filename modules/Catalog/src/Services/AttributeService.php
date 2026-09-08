@@ -9,15 +9,23 @@ use Commerce\Catalog\DTO\CreateAttributeData;
 use Commerce\Catalog\DTO\UpdateAttributeData;
 use Commerce\Catalog\Models\Attribute;
 use Commerce\Core\Base\BaseService;
+use Commerce\Core\Exceptions\DomainException;
 use Commerce\Core\Exceptions\EntityNotFoundException;
+use Commerce\Product\Support\SearchReservedParams;
 use Illuminate\Support\Str;
 
 final class AttributeService extends BaseService implements AttributeServiceInterface
 {
     public function create(CreateAttributeData $data): Attribute
     {
+        $code = Str::slug($data->code, '_');
+
+        if (in_array($code, SearchReservedParams::KEYS, true)) {
+            throw new DomainException('Attribute code is reserved.');
+        }
+
         return Attribute::query()->create([
-            'code' => Str::slug($data->code, '_'),
+            'code' => $code,
             'name' => $data->name,
             'type' => $data->type,
             'is_filterable' => $data->isFilterable,
