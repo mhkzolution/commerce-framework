@@ -54,6 +54,60 @@ final class SearchSynonymFreezeIsolationTest extends TestCase
         $this->assertStringContainsString("pluck('to_term', 'from_term')", $contents);
     }
 
+    public function test_product_production_php_does_not_import_octane(): void
+    {
+        $hits = [];
+
+        foreach ($this->productProductionPhp() as $path) {
+            $contents = file_get_contents($path);
+            $this->assertNotFalse($contents, $path);
+
+            if (preg_match('/^use Laravel\\\\Octane\\\\/m', $contents) === 1
+                || str_contains($contents, 'use Laravel\\Octane\\')) {
+                $hits[] = $path;
+            }
+        }
+
+        $this->assertSame([], $hits, implode("\n", $hits));
+    }
+
+    public function test_worker_starting_warm_is_gated_by_class_exists_string(): void
+    {
+        $path = $this->repoRoot().'/modules/Product/src/ProductServiceProvider.php';
+        $contents = file_get_contents($path);
+        $this->assertNotFalse($contents);
+
+        $this->assertStringContainsString(
+            "class_exists('Laravel\\\\Octane\\\\Events\\\\WorkerStarting')",
+            $contents,
+        );
+        $this->assertStringContainsString(
+            "Event::listen('Laravel\\\\Octane\\\\Events\\\\WorkerStarting'",
+            $contents,
+        );
+        $this->assertStringContainsString(
+            'make(SearchSynonymExpander::class)',
+            $contents,
+        );
+        $this->assertStringNotContainsString(
+            'use Laravel\\Octane\\',
+            $contents,
+        );
+    }
+
+    public function test_composer_does_not_require_octane(): void
+    {
+        foreach ([
+            $this->repoRoot().'/composer.json',
+            $this->repoRoot().'/composer.lock',
+            $this->repoRoot().'/modules/Product/composer.json',
+        ] as $path) {
+            $contents = file_get_contents($path);
+            $this->assertNotFalse($contents, $path);
+            $this->assertStringNotContainsString('laravel/octane', $contents, $path);
+        }
+    }
+
     /**
      * @return list<string>
      */

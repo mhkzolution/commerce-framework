@@ -29,7 +29,7 @@ Phase 1 already made shop **filters** relation-only (`attribute_values.code`, an
 4. Ranking uses the **highest matched field only** (not a sum of fields). No merchandising, popularity, or manual boosts.
 5. Facet counts are SQL on relations, self-excluding, scoped to the current search result set.
 6. Filter URLs use `attributes.code` = `attribute_values.code`, one value per attribute. Reserved system params do not collide with attribute codes.
-7. Reindex is event-driven. Synonym edits take effect at query time without a full rebuild.
+7. Reindex is event-driven. Synonym CUD does not reindex. Expansion uses the in-memory map of the current container.
 
 Non-goals: suggest/autocomplete, popular searches, merchandising rules, redirect keywords, typo tolerance, prefix/substring tokens, multi-select facets, category path, collections, tags, SEO keywords, CSV/API/feeds, listing cards per variant, Stock V1 refactor.
 
@@ -269,7 +269,7 @@ Reserved: `q`, `category`, `brand`, `sort`, `availability`, `price_min`, `price_
 | Product brand / categories / attribute values change | Reindex that product document |
 | `attribute_values.label` change | Reindex products that reference that `attribute_value_id` |
 | `attribute_values.code` | Immutable; no rename path |
-| Synonym CUD | No reindex; next query expands with the new map |
+| Synonym CUD | No reindex; expansion uses the in-memory map of the current container; a live Octane worker does not pick up CUD until process recreate |
 | Product delete | Delete that search document |
 | Product unpublish / visibility change | Reindex that product (`payload.status`); storefront still uses `visibleOnStorefront()` |
 | Admin “Rebuild Search Index” | Flush + rebuild all product documents |
@@ -304,7 +304,7 @@ Do not merge Wave 3 storefront chrome with Wave 1 indexer. Do not change PDP or 
 7. Facet: with `q=tee&color=red`, Color facet still shows a non-zero count for `blue` if a tee with a Blue variant exists in the search set; Size counts are restricted to red tees.  
 8. `?material=cotton` filters via relations (not leftover `product_attribute_values.value` text).  
 9. Creating an attribute with `code=brand` (or another reserved key) is rejected.  
-10. Changing a synonym does not rewrite `search_documents`. The next search uses the new expansion.  
+10. Changing a synonym does not rewrite `search_documents`. php-fpm: a new request is a new container, so the constructor loads the current table. Octane: a worker already holding the expander does not see CUD until that worker/container is recreated (`octane:reload`).  
 11. `availability=in_stock` still uses `constrainInStock()` (untracked / allow / notify at 0 remain visible per stock spec).  
 12. Indexer never reads `meta.variant_options` / `meta.options` / `meta.specifications`.  
 13. Two Red variants on one product produce a **single** `attributes[]` entry `{ code: red, label: Red }`.  

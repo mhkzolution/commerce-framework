@@ -69,5 +69,11 @@ final class ProductServiceProvider extends BaseModuleServiceProvider
 
         Event::listen(ProductCreated::class, SyncProductSearchIndex::class);
         Event::listen(ProductPublished::class, SyncProductSearchIndex::class);
+
+        if (class_exists('Laravel\\Octane\\Events\\WorkerStarting')) {
+            Event::listen('Laravel\\Octane\\Events\\WorkerStarting', function (): void {
+                $this->app->make(SearchSynonymExpander::class);
+            });
+        }
     }
 }
