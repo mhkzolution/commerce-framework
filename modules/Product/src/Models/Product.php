@@ -32,6 +32,7 @@ class Product extends Model
         'slug',
         'description',
         'type',
+        'backorder_policy',
         'status',
         'visibility',
         'brand_uuid',
@@ -85,6 +86,11 @@ class Product extends Model
     public function attributeValues(): HasMany
     {
         return $this->hasMany(ProductAttributeValue::class);
+    }
+
+    public function productAttributes(): HasMany
+    {
+        return $this->hasMany(ProductAttribute::class)->orderBy('position');
     }
 
     public function attributeSet(): BelongsTo

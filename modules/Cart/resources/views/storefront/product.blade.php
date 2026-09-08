@@ -81,8 +81,8 @@
                             class="storefront-buy-box__variants"
                         />
 
-                        @if ($product->inStock)
-                            <form method="POST" action="{{ route('storefront.cart.items.store') }}" class="storefront-buy-box__form" data-buy-form>
+                        @if ($product->variants !== [])
+                            <form method="POST" action="{{ route('storefront.cart.items.store') }}" class="storefront-buy-box__form" data-buy-form @if (! $product->inStock) hidden @endif>
                                 @csrf
                                 <input type="hidden" name="purchasable_uuid" value="{{ $product->variantUuid }}" data-buy-variant-input>
 
@@ -95,7 +95,7 @@
                                             name="quantity"
                                             value="1"
                                             min="1"
-                                            @if ($product->available !== null) max="{{ $product->available }}" @endif
+                                            @if ($product->available !== null && $product->available > 0) max="{{ $product->available }}" @endif
                                             class="storefront-qty-stepper__input"
                                             data-buy-quantity
                                             aria-label="{{ __('storefront::storefront.quantity') }}"
@@ -122,8 +122,7 @@
                                     </button>
                                 </div>
                             </form>
-                        @else
-                            <p class="storefront-buy-box__unavailable">{{ __('storefront::storefront.out_of_stock') }}</p>
+                            <p class="storefront-buy-box__unavailable" data-buy-unavailable @if ($product->inStock) hidden @endif>{{ __('storefront::storefront.out_of_stock') }}</p>
                         @endif
                     </aside>
                 </section>
@@ -213,8 +212,8 @@
                 </section>
             @endif
 
-            @if ($product->inStock)
-                <div class="storefront-mobile-buy-bar storefront-mobile-buy-bar--market" data-mobile-buy-bar>
+            @if ($product->variants !== [])
+                <div class="storefront-mobile-buy-bar storefront-mobile-buy-bar--market" data-mobile-buy-bar @if (! $product->inStock) hidden @endif>
                     <div class="storefront-mobile-buy-bar__price" data-mobile-buy-price>{{ $formatMoney($product->price) }}</div>
                     <button type="button" class="storefront-mobile-buy-bar__button storefront-mobile-buy-bar__button--cart" data-mobile-buy-trigger="cart">
                         {{ __('storefront::storefront.add_to_cart') }}

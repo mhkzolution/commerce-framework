@@ -31,6 +31,95 @@ final class ProductWorkspaceApiTest extends TestCase
             ->assertSee('workspace_payload', false);
     }
 
+    public function test_create_page_shows_type_and_track_controls(): void
+    {
+        $response = $this->actingAs(User::query()->first())
+            ->get(route('admin.products.create'))
+            ->assertOk()
+            ->assertSee('data-workspace-type', false)
+            ->assertSee('data-workspace-track-inventory', false)
+            ->assertSee('data-simple-stock', false)
+            ->assertSee('data-workspace-variants-tab', false)
+            ->assertSee('data-workspace-sku', false)
+            ->assertSee('data-workspace-sku-prefix-hint', false);
+
+        $html = $response->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/<button[^>]*data-workspace-tab="variants"[^>]*hidden[^>]*>/s',
+            $html,
+        );
+        $this->assertDoesNotMatchRegularExpression(
+            '/data-simple-product-fields[\s\S]*data-workspace-sku/s',
+            $html,
+        );
+    }
+
+    public function test_variable_workspace_shows_generate_and_variation_toggle(): void
+    {
+        $html = $this->actingAs(User::query()->first())
+            ->get(route('admin.products.create'))
+            ->assertOk()
+            ->assertSee('data-generate-variants', false)
+            ->assertSee('data-used-for-variations', false)
+            ->getContent();
+
+        $this->assertStringContainsString(__('product::workspace.used_for_variations'), $html);
+        $this->assertMatchesRegularExpression(
+            '/<button[^>]*data-generate-variants[^>]*>/s',
+            $html,
+        );
+    }
+
+    public function test_variable_edit_page_shows_sku_prefix_not_variant_sku(): void
+    {
+        $this->actingAs(User::query()->first())
+            ->postJson(route('api.v1.admin.products.workspace.store'), [
+                'name' => 'Prefix Shirt',
+                'status' => 'published',
+                'visibility' => 'public',
+                'workspace_payload' => [
+                    'product' => [
+                        'name' => 'Prefix Shirt',
+                        'status' => 'published',
+                        'visibility' => 'public',
+                        'type' => 'variable',
+                        'trackInventory' => false,
+                        'sku' => 'TSHIRT',
+                    ],
+                    'options' => [],
+                    'variants' => [[
+                        'name' => 'Red',
+                        'sku' => '',
+                        'price' => '10',
+                        'status' => 'active',
+                        'options' => ['Color' => 'Red'],
+                        'isDefault' => true,
+                    ]],
+                    'media' => ['productUuids' => []],
+                ],
+            ])
+            ->assertCreated();
+
+        $product = Product::query()->where('name', 'Prefix Shirt')->firstOrFail();
+        $this->assertSame('TSHIRT-RED', $product->defaultVariant()?->sku);
+
+        $html = $this->actingAs(User::query()->first())
+            ->get(route('admin.products.edit', $product))
+            ->assertOk()
+            ->assertSee('data-workspace-sku', false)
+            ->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/data-workspace-sku[^>]*value="TSHIRT"|value="TSHIRT"[^>]*data-workspace-sku/s',
+            $html,
+        );
+        $this->assertDoesNotMatchRegularExpression(
+            '/data-workspace-sku[^>]*value="TSHIRT-RED"|value="TSHIRT-RED"[^>]*data-workspace-sku/s',
+            $html,
+        );
+    }
+
     public function test_admin_can_fetch_product_workspace_via_api(): void
     {
         $variant = $this->createPurchasableProduct(price: 4500, sku: 'API-WS-001');
@@ -41,7 +130,15 @@ final class ProductWorkspaceApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.uuid', $product->uuid)
             ->assertJsonPath('data.workspace.product.name', $product->name)
-            ->assertJsonPath('data.workspace.variants.0.sku', 'API-WS-001');
+            ->assertJsonPath('data.workspace.product.type', $product->type)
+            ->assertJsonPath('data.workspace.product.backorderPolicy', 'deny')
+            ->assertJsonPath('data.workspace.product.trackInventory', (bool) $variant->track_inventory)
+            ->assertJsonPath('data.workspace.variants.0.sku', 'API-WS-001')
+            ->assertJsonPath('data.workspace.variants.0.trackInventory', (bool) $variant->track_inventory)
+            ->assertJsonPath('data.workspace.variants.0.skuIsAuto', false)
+            ->assertJsonPath('data.workspace.variants.0.stock.onHand', 100)
+            ->assertJsonPath('data.workspace.variants.0.stock.reserved', 0)
+            ->assertJsonPath('data.workspace.variants.0.stock.available', 100);
     }
 
     public function test_admin_can_create_product_via_workspace_api(): void
@@ -56,6 +153,7 @@ final class ProductWorkspaceApiTest extends TestCase
                         'name' => 'API Workspace Product',
                         'status' => 'published',
                         'visibility' => 'public',
+                        'trackInventory' => false,
                     ],
                     'options' => [],
                     'variants' => [[

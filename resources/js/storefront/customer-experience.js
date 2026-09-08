@@ -31,6 +31,14 @@ function show(path, config) {
 
 function renderQuickView(product, config, i18n) {
     const price = product.sale_price && config.showSalePrice ? product.sale_price : product.price;
+    const variantInStock = (variant) => variant.in_stock ?? product.in_stock;
+    const productVariants = Array.isArray(product.variants) ? product.variants : [];
+    const defaultVariant = productVariants.find((variant) => variant.uuid === product.default_variant_uuid);
+    const selectedVariant = variantInStock(defaultVariant)
+        ? defaultVariant
+        : productVariants.find(variantInStock) ?? defaultVariant;
+    const selectedVariantUuid = selectedVariant?.uuid ?? product.default_variant_uuid ?? '';
+    const hasPurchasableVariant = product.in_stock || productVariants.some(variantInStock);
     const images = (product.images || []).filter(Boolean);
     const imageHtml = show('showImages', config) && images.length
         ? `<div class="cx-store-qv__images">${images.map((src, index) => `<img src="${escapeHtml(src)}" alt="${escapeHtml(product.name)}" ${index === 0 ? '' : 'loading="lazy"'}>`).join('')}</div>`
@@ -60,17 +68,22 @@ function renderQuickView(product, config, i18n) {
     const tags = show('showTags', config) && Array.isArray(product.tags)
         ? `<div class="cx-store-qv__tags">${product.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</div>`
         : '';
-    const stockBits = [];
-    if (show('showStockStatus', config)) {
-        stockBits.push(product.in_stock ? i18n.inStock : i18n.outOfStock);
-    }
-    if (show('showRemainingStock', config) && product.in_stock) {
-        stockBits.push(i18n.remaining.replace(':count', String(product.remaining_stock)));
-    }
-    const variants = show('showVariants', config) && Array.isArray(product.variants) && product.variants.length > 1
+    const selectedInStock = variantInStock(selectedVariant);
+    const selectedAvailable = selectedVariant ? selectedVariant.available : product.remaining_stock;
+    const stockStatus = show('showStockStatus', config)
+        ? `<span data-qv-stock-status>${escapeHtml(selectedInStock ? i18n.inStock : i18n.outOfStock)}</span>`
+        : '';
+    const showRemaining = selectedInStock && typeof selectedAvailable === 'number';
+    const remainingStock = show('showRemainingStock', config)
+        ? `<span data-qv-stock-remaining${showRemaining ? '' : ' hidden'}>${stockStatus ? ' · ' : ''}${escapeHtml(i18n.remaining.replace(':count', String(selectedAvailable)))}</span>`
+        : '';
+    const stockCopy = stockStatus || remainingStock
+        ? `<p class="cx-store-qv__stock">${stockStatus}${remainingStock}</p>`
+        : '';
+    const variants = show('showVariants', config) && productVariants.length > 1
         ? `<div class="cx-store-qv__variants" data-qv-variants>
-                ${product.variants.map((variant) => `
-                    <button type="button" class="cx-store-qv__chip${variant.uuid === product.default_variant_uuid ? ' is-active' : ''}" data-qv-variant="${escapeHtml(variant.uuid)}" data-available="${variant.available ?? 0}">
+                ${productVariants.map((variant) => `
+                    <button type="button" class="cx-store-qv__chip${variant.uuid === selectedVariantUuid ? ' is-active' : ''}" data-qv-variant="${escapeHtml(variant.uuid)}" data-in-stock="${variantInStock(variant) ? '1' : '0'}">
                         ${escapeHtml(variant.name)}
                     </button>
                 `).join('')}
@@ -94,7 +107,7 @@ function renderQuickView(product, config, i18n) {
     const actions = `
         <form method="POST" action="" data-qv-form>
             <input type="hidden" name="_token" value="${escapeHtml(csrfToken())}">
-            <input type="hidden" name="purchasable_uuid" value="${escapeHtml(product.default_variant_uuid || '')}" data-qv-variant-input>
+            <input type="hidden" name="purchasable_uuid" value="${escapeHtml(selectedVariantUuid)}" data-qv-variant-input>
             <input type="hidden" name="quantity" value="1" data-qv-qty-hidden>
             ${qty}
             <div class="cx-store-qv__actions">
@@ -102,6 +115,8 @@ function renderQuickView(product, config, i18n) {
                 ${show('showBuyNow', config) ? `<button type="submit" class="cx-store-qv__btn cx-store-qv__btn--buy" name="redirect_to" value="checkout">${escapeHtml(i18n.buyNow)}</button>` : ''}
             </div>
         </form>`;
+
+    const unavailable = `<p class="cx-store-qv__unavailable">${escapeHtml(i18n.unavailable)}</p>`;
 
     return {
         body: `
@@ -114,12 +129,14 @@ function renderQuickView(product, config, i18n) {
                 ${fullDesc}
                 ${meta.length ? `<p class="cx-store-qv__meta">${escapeHtml(meta.join(' · '))}</p>` : ''}
                 ${tags}
-                ${stockBits.length ? `<p class="cx-store-qv__stock">${escapeHtml(stockBits.join(' · '))}</p>` : ''}
+                ${stockCopy}
                 ${variants}
                 ${wishlist}
                 ${detail}
             </div>`,
-        sticky: product.in_stock ? actions : `<p class="cx-store-qv__unavailable">${escapeHtml(i18n.unavailable)}</p>`,
+        actions,
+        unavailable,
+        sticky: hasPurchasableVariant ? actions : unavailable,
     };
 }
 
@@ -143,33 +160,59 @@ function initQuickView() {
         lockBody(false);
     };
 
-    const bindPanel = (product) => {
-        sticky.querySelector('[data-qv-form]')?.setAttribute('action', cartUrl);
+    const bindPanel = (product, rendered) => {
+        const syncStockCopy = (variant) => {
+            const inStock = variant?.in_stock ?? product.in_stock;
+            const status = body.querySelector('[data-qv-stock-status]');
+            const remaining = body.querySelector('[data-qv-stock-remaining]');
 
-        sticky.querySelectorAll('[data-qv-qty-step]').forEach((button) => {
-            button.addEventListener('click', () => {
-                const input = sticky.querySelector('[data-qv-qty-input]');
-                const hidden = sticky.querySelector('[data-qv-qty-hidden]');
-                const next = Math.max(1, Number(input?.value || 1) + Number(button.dataset.qvQtyStep));
-                if (input) {
-                    input.value = String(next);
+            if (status) {
+                status.textContent = inStock ? i18n.inStock : i18n.outOfStock;
+            }
+            if (remaining) {
+                const showRemaining = inStock && typeof variant?.available === 'number';
+                remaining.hidden = !showRemaining;
+                if (showRemaining) {
+                    const prefix = status ? ' · ' : '';
+                    remaining.textContent = `${prefix}${i18n.remaining.replace(':count', String(variant.available))}`;
                 }
+            }
+        };
+
+        const bindStickyControls = () => {
+            sticky.querySelector('[data-qv-form]')?.setAttribute('action', cartUrl);
+
+            sticky.querySelectorAll('[data-qv-qty-step]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const input = sticky.querySelector('[data-qv-qty-input]');
+                    const hidden = sticky.querySelector('[data-qv-qty-hidden]');
+                    const next = Math.max(1, Number(input?.value || 1) + Number(button.dataset.qvQtyStep));
+                    if (input) {
+                        input.value = String(next);
+                    }
+                    if (hidden) {
+                        hidden.value = String(next);
+                    }
+                });
+            });
+
+            sticky.querySelector('[data-qv-qty-input]')?.addEventListener('input', (event) => {
+                const hidden = sticky.querySelector('[data-qv-qty-hidden]');
                 if (hidden) {
-                    hidden.value = String(next);
+                    hidden.value = event.target.value;
                 }
             });
-        });
-
-        sticky.querySelector('[data-qv-qty-input]')?.addEventListener('input', (event) => {
-            const hidden = sticky.querySelector('[data-qv-qty-hidden]');
-            if (hidden) {
-                hidden.value = event.target.value;
-            }
-        });
+        };
 
         body.querySelectorAll('[data-qv-variant]').forEach((button) => {
             button.addEventListener('click', () => {
                 body.querySelectorAll('[data-qv-variant]').forEach((node) => node.classList.toggle('is-active', node === button));
+                const variant = product.variants.find((item) => item.uuid === button.dataset.qvVariant);
+                syncStockCopy(variant);
+                sticky.innerHTML = (variant?.in_stock ?? product.in_stock)
+                    ? rendered.actions
+                    : rendered.unavailable;
+                bindStickyControls();
                 const input = sticky.querySelector('[data-qv-variant-input]');
                 if (input) {
                     input.value = button.dataset.qvVariant;
@@ -177,6 +220,7 @@ function initQuickView() {
             });
         });
 
+        bindStickyControls();
         initWishlistScope(root);
         syncWishlistButtons(root);
     };
@@ -203,7 +247,7 @@ function initQuickView() {
             const rendered = renderQuickView(cache.get(uuid), config, i18n);
             body.innerHTML = rendered.body;
             sticky.innerHTML = rendered.sticky;
-            bindPanel(cache.get(uuid));
+            bindPanel(cache.get(uuid), rendered);
         } catch {
             body.innerHTML = `<p class="cx-store-qv__unavailable">${escapeHtml(i18n.unavailable || 'Unavailable')}</p>`;
         }

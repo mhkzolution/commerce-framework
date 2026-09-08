@@ -8,11 +8,14 @@ use Commerce\Catalog\Contracts\AttributeServiceInterface;
 use Commerce\Catalog\DTO\CreateAttributeData;
 use Commerce\Catalog\DTO\CreateBrandData;
 use Commerce\Catalog\Models\Attribute;
+use Commerce\Catalog\Models\AttributeValue;
+use Commerce\Catalog\Services\AttributeValueService;
 use Commerce\Catalog\Services\BrandService;
 use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Product\Contracts\ProductServiceInterface;
 use Commerce\Product\DTO\CreateProductData;
 use Commerce\Product\Models\Product;
+use Commerce\Product\Models\ProductAttributeValue;
 use Commerce\Product\Services\ProductSearchIndexer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesPurchasableProduct;
@@ -67,7 +70,7 @@ final class StorefrontShopFilterChromeTest extends TestCase
         $this->get(route('storefront.shop.index', [
             'price_min' => 500,
             'price_max' => 1000,
-            'size' => 'S',
+            'size' => 's',
         ]))
             ->assertOk()
             ->assertSee($matching->name)
@@ -113,14 +116,8 @@ final class StorefrontShopFilterChromeTest extends TestCase
         $product->update([
             'brand_uuid' => $brand->uuid,
         ]);
-        $product->attributeValues()->create([
-            'attribute_id' => $sizeAttribute->id,
-            'value' => 'M',
-        ]);
-        $product->attributeValues()->create([
-            'attribute_id' => $colorAttribute->id,
-            'value' => 'Red',
-        ]);
+        $this->attachAttributeValue($product, $sizeAttribute, 'M');
+        $this->attachAttributeValue($product, $colorAttribute, 'Red');
 
         $html = $this->get(route('storefront.shop.index'))
             ->assertOk()
@@ -128,7 +125,7 @@ final class StorefrontShopFilterChromeTest extends TestCase
             ->assertSee(__('storefront::storefront.filter_color'))
             ->assertSee('0 – 500')
             ->assertSee('Acme Brand')
-            ->assertSee('M')
+            ->assertSee('value="m"', false)
             ->getContent();
 
         $this->assertStringContainsString('storefront-shop-filters-sidebar', $html);
@@ -141,7 +138,7 @@ final class StorefrontShopFilterChromeTest extends TestCase
         $this->assertStringNotContainsString('>Language<', $html);
     }
 
-    public function test_shop_color_filter_displays_multiselect_json_values(): void
+    public function test_shop_color_filter_matches_attribute_value_code(): void
     {
         $colorAttribute = app(AttributeServiceInterface::class)->create(new CreateAttributeData(
             code: 'color',
@@ -152,17 +149,14 @@ final class StorefrontShopFilterChromeTest extends TestCase
         ));
 
         $product = $this->createPurchasableProduct(price: 50000, stock: 3, sku: 'COLOR-JSON-1')->product;
-        $product->attributeValues()->create([
-            'attribute_id' => $colorAttribute->id,
-            'value' => json_encode(['เหลือง'], JSON_UNESCAPED_UNICODE),
-        ]);
+        $yellow = $this->attachAttributeValue($product, $colorAttribute, 'เหลือง', 'yellow');
 
         $this->get(route('storefront.shop.index'))
             ->assertOk()
-            ->assertSee('เหลือง', false)
+            ->assertSee('value="yellow"', false)
             ->assertDontSee('["เหลือง"]', false);
 
-        $this->get(route('storefront.shop.index', ['color' => 'เหลือง']))
+        $this->get(route('storefront.shop.index', ['color' => $yellow->code]))
             ->assertOk()
             ->assertSee($product->name);
     }
@@ -245,10 +239,10 @@ final class StorefrontShopFilterChromeTest extends TestCase
             visibility: 'public',
             sku: strtoupper(substr(md5($name), 0, 8)),
             price: $price,
-            attributeValues: [
-                $attributeId => $values[0],
-            ],
         ));
+
+        $attribute = Attribute::query()->findOrFail($attributeId);
+        $this->attachAttributeValue($product, $attribute, $values[0]);
 
         $variant = $product->defaultVariant();
         $this->assertNotNull($variant);
@@ -256,5 +250,29 @@ final class StorefrontShopFilterChromeTest extends TestCase
         app(ProductSearchIndexer::class)->index($product->fresh(['variants', 'categories']));
 
         return $product;
+    }
+
+    private function attachAttributeValue(
+        Product $product,
+        Attribute $attribute,
+        string $label,
+        ?string $code = null,
+    ): AttributeValue {
+        $value = AttributeValue::query()->create([
+            'tenant_id' => $attribute->tenant_id,
+            'attribute_id' => $attribute->id,
+            'code' => $code ?? app(AttributeValueService::class)->allocateCode($attribute->id, $label),
+            'label' => $label,
+            'position' => (int) AttributeValue::query()->where('attribute_id', $attribute->id)->max('position') + 1,
+        ]);
+
+        ProductAttributeValue::query()->create([
+            'product_id' => $product->id,
+            'attribute_id' => $attribute->id,
+            'attribute_value_id' => $value->id,
+            'value' => $value->label,
+        ]);
+
+        return $value;
     }
 }

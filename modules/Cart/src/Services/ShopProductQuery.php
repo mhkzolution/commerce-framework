@@ -6,7 +6,6 @@ namespace Commerce\Cart\Services;
 
 use Commerce\Cart\DTO\ShopFilterCatalog;
 use Commerce\Cart\DTO\ShopListingFilters;
-use Commerce\Cart\Support\StorefrontAttributeFilterValue;
 use Commerce\Catalog\Models\Brand;
 use Commerce\Contracts\Search\SearchQueryInterface;
 use Commerce\Product\Models\Product;
@@ -136,12 +135,50 @@ final class ShopProductQuery
             return;
         }
 
-        $query->whereHas('attributeValues', static function (Builder $valueQuery) use ($attributeIds, $value): void {
-            $valueQuery
-                ->whereIn('attribute_id', $attributeIds)
-                ->where(static function (Builder $matchQuery) use ($value): void {
-                    StorefrontAttributeFilterValue::applyStoredMatch($matchQuery, 'value', $value);
+        $query->where(function (Builder $groupQuery) use ($attributeIds, $value): void {
+            $groupQuery
+                ->where(function (Builder $nonAxisQuery) use ($attributeIds, $value): void {
+                    $nonAxisQuery
+                        ->whereDoesntHave('productAttributes', static function (Builder $axisQuery) use ($attributeIds): void {
+                            $axisQuery
+                                ->whereIn('attribute_id', $attributeIds)
+                                ->where('used_for_variations', true);
+                        })
+                        ->whereHas('attributeValues', static function (Builder $valueQuery) use ($attributeIds, $value): void {
+                            $valueQuery
+                                ->whereIn('attribute_id', $attributeIds)
+                                ->whereNull('product_variant_id')
+                                ->where(static function (Builder $matchQuery) use ($value): void {
+                                    self::matchAttributeFilterValue($matchQuery, $value);
+                                });
+                        });
+                })
+                ->orWhere(function (Builder $axisQuery) use ($attributeIds, $value): void {
+                    $axisQuery
+                        ->whereHas('productAttributes', static function (Builder $productAttributeQuery) use ($attributeIds): void {
+                            $productAttributeQuery
+                                ->whereIn('attribute_id', $attributeIds)
+                                ->where('used_for_variations', true);
+                        })
+                        ->whereHas('attributeValues', static function (Builder $valueQuery) use ($attributeIds, $value): void {
+                            $valueQuery
+                                ->whereIn('attribute_id', $attributeIds)
+                                ->whereNotNull('product_variant_id')
+                                ->where(static function (Builder $matchQuery) use ($value): void {
+                                    self::matchAttributeFilterValue($matchQuery, $value);
+                                });
+                        });
                 });
+        });
+    }
+
+    /**
+     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $query
+     */
+    private static function matchAttributeFilterValue(Builder $query, string $value): void
+    {
+        $query->whereHas('attributeValue', static function (Builder $attributeValueQuery) use ($value): void {
+            $attributeValueQuery->where('code', $value);
         });
     }
 
@@ -155,11 +192,16 @@ final class ShopProductQuery
         }
 
         $query->whereHas('variants', static function (Builder $variantQuery): void {
-            $variantQuery->whereExists(static function ($sub): void {
-                $sub->selectRaw('1')
-                    ->from('inventory_items')
-                    ->whereColumn('inventory_items.purchasable_uuid', 'product_variants.uuid')
-                    ->whereRaw('(on_hand - reserved) > 0');
+            $variantQuery->where(static function (Builder $stockQuery): void {
+                $stockQuery
+                    ->where('product_variants.track_inventory', false)
+                    ->orWhereIn('products.backorder_policy', ['notify', 'allow'])
+                    ->orWhereExists(static function ($sub): void {
+                        $sub->selectRaw('1')
+                            ->from('inventory_items')
+                            ->whereColumn('inventory_items.purchasable_uuid', 'product_variants.uuid')
+                            ->whereRaw('(on_hand - reserved) > 0');
+                    });
             });
         });
     }

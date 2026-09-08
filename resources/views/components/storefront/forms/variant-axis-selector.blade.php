@@ -8,18 +8,54 @@
     $selectedVariant = collect($variants)->firstWhere('uuid', $selectedUuid);
     $selectedOptions = is_array($selectedVariant['options'] ?? null) ? $selectedVariant['options'] : [];
 
-    $resolveVariantForValue = static function (array $variants, string $axisKey, string $value): ?array {
+    $variantsForValue = static function (array $variants, string $axisKey, string $value): array {
+        $matches = [];
+
         foreach ($variants as $variant) {
             $options = is_array($variant['options'] ?? null) ? $variant['options'] : [];
 
             foreach ($options as $optionKey => $optionValue) {
                 if (strtolower((string) $optionKey) === strtolower($axisKey) && (string) $optionValue === $value) {
-                    return $variant;
+                    $matches[] = $variant;
+                    break;
                 }
             }
         }
 
+        return $matches;
+    };
+
+    $variantIsInStock = static fn (array $variant): bool => $variant['in_stock']
+        ?? (($variant['available'] ?? 0) > 0);
+
+    $optionValue = static function (array $options, string $axisKey): ?string {
+        foreach ($options as $optionKey => $optionValue) {
+            if (strtolower((string) $optionKey) === strtolower($axisKey)) {
+                return (string) $optionValue;
+            }
+        }
+
         return null;
+    };
+
+    $combinationExists = static function (array $variants, array $selections) use ($optionValue): bool {
+        foreach ($variants as $variant) {
+            $options = is_array($variant['options'] ?? null) ? $variant['options'] : [];
+            $matches = true;
+
+            foreach ($selections as $key => $value) {
+                if ($optionValue($options, (string) $key) !== (string) $value) {
+                    $matches = false;
+                    break;
+                }
+            }
+
+            if ($matches) {
+                return true;
+            }
+        }
+
+        return false;
     };
 
     $isColorAxis = static function (array $axis): bool {
@@ -34,15 +70,7 @@
         @foreach ($axes as $axis)
             @php
                 $axisKey = $axis['key'];
-                $selectedValue = null;
-
-                foreach ($selectedOptions as $optionKey => $optionValue) {
-                    if (strtolower((string) $optionKey) === strtolower($axisKey)) {
-                        $selectedValue = (string) $optionValue;
-                        break;
-                    }
-                }
-
+                $selectedValue = $optionValue($selectedOptions, (string) $axisKey);
                 $colorAxis = $isColorAxis($axis);
             @endphp
 
@@ -52,9 +80,16 @@
                 <div class="storefront-variant-axes__options {{ $colorAxis ? 'storefront-variant-axes__options--color' : 'storefront-variant-axes__options--text' }}">
                     @foreach ($axis['values'] as $value)
                         @php
-                            $matchVariant = $resolveVariantForValue($variants, $axisKey, $value);
+                            $matchingVariants = $variantsForValue($variants, $axisKey, $value);
+                            $matchVariant = collect($matchingVariants)->first($variantIsInStock)
+                                ?? ($matchingVariants[0] ?? null);
                             $isActive = $selectedValue === $value;
-                            $isDisabled = $matchVariant === null || ($matchVariant['available'] ?? 0) <= 0;
+                            $trial = [];
+                            foreach ($selectedOptions as $selectedKey => $selectedOptionValue) {
+                                $trial[strtolower((string) $selectedKey)] = (string) $selectedOptionValue;
+                            }
+                            $trial[strtolower((string) $axisKey)] = (string) $value;
+                            $isDisabled = ! $combinationExists($variants, $trial);
                             $thumb = $matchVariant['image_thumbnail'] ?? null;
                         @endphp
 
@@ -88,7 +123,7 @@
                 class="storefront-variant-selector__option {{ ($variant['uuid'] ?? '') === $selectedUuid ? 'storefront-variant-selector__option--active' : '' }}"
                 data-variant-option
                 data-variant-uuid="{{ $variant['uuid'] }}"
-                @disabled(($variant['available'] ?? 0) <= 0)
+                @disabled(! ($variant['in_stock'] ?? (($variant['available'] ?? 0) > 0)))
             >
                 {{ $variant['sku'] ?? $variant['uuid'] }}
             </button>

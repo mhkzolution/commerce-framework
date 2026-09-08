@@ -36,6 +36,7 @@ final class StorefrontQuickViewService
 
         $variant = $product->defaultVariant();
         $available = $variant !== null ? $this->available((string) $variant->uuid) : 0;
+        $inStock = $variant !== null && $this->inStock($available, $product);
         $images = $this->imageUrls($product);
         $priceMinor = (int) ($variant?->price ?? 0);
         $compareMinor = $variant?->compare_at_price !== null ? (int) $variant->compare_at_price : null;
@@ -60,8 +61,8 @@ final class StorefrontQuickViewService
             'currency' => 'THB',
             'short_description' => $description !== '' ? Str::limit($description, 140) : '',
             'description' => $description,
-            'stock_status' => ($available ?? 1) > 0 ? 'in_stock' : 'out_of_stock',
-            'remaining_stock' => $available ?? 0,
+            'stock_status' => $inStock ? 'in_stock' : 'out_of_stock',
+            'remaining_stock' => $available,
             'sku' => $variant?->sku,
             'brand' => $this->brandName($product),
             'category' => $product->categories->first()?->name,
@@ -70,12 +71,17 @@ final class StorefrontQuickViewService
             'thumbnail' => $images[0] ?? null,
             'images' => $images,
             'default_variant_uuid' => $variant?->uuid,
-            'variants' => $product->variants->map(fn (ProductVariant $item): array => [
-                'uuid' => $item->uuid,
-                'name' => $item->name ?: $product->name,
-                'available' => $this->available((string) $item->uuid) ?? 0,
-            ])->all(),
-            'in_stock' => ($available ?? 1) > 0,
+            'variants' => $product->variants->map(function (ProductVariant $item) use ($product): array {
+                $variantAvailable = $this->available((string) $item->uuid);
+
+                return [
+                    'uuid' => $item->uuid,
+                    'name' => $item->name ?: $product->name,
+                    'available' => $variantAvailable,
+                    'in_stock' => $this->inStock($variantAvailable, $product),
+                ];
+            })->all(),
+            'in_stock' => $inStock,
         ];
     }
 
@@ -118,10 +124,17 @@ final class StorefrontQuickViewService
         }
 
         try {
-            return $this->inventory->getAvailable($variantUuid);
+            return $this->inventory->availabilityForPurchasable($variantUuid);
         } catch (Throwable) {
             return null;
         }
+    }
+
+    private function inStock(?int $available, Product $product): bool
+    {
+        return $available === null
+            || $available > 0
+            || in_array($product->backorder_policy, ['notify', 'allow'], true);
     }
 
     private function formatMoney(int $minor): string

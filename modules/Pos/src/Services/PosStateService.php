@@ -92,6 +92,7 @@ final class PosStateService
         return array_map(function (ProductVariant $variant) use ($stockLevels, $imageMap, $currency): array {
             $level = $stockLevels[$variant->uuid] ?? null;
             $available = $level !== null ? $level->getAvailable() : 0;
+            $quantityLimited = $variant->track_inventory && $variant->product?->backorder_policy === 'deny';
             $attributes = [];
 
             if ($variant->name && $variant->product?->name && $variant->name !== $variant->product->name) {
@@ -108,7 +109,7 @@ final class PosStateService
                 'price' => $this->formatMoney((int) $variant->price, $currency),
                 'price_minor' => (int) $variant->price,
                 'attributes' => $attributes,
-                'stock_warning' => $this->stockWarning($available),
+                'stock_warning' => $this->stockWarning($available, $quantityLimited),
             ];
         }, $variants);
     }
@@ -137,6 +138,7 @@ final class PosStateService
             'subtotal' => $this->formatMoney($line->lineTotal, $currency),
             'subtotal_minor' => $line->lineTotal,
             'available' => $line->available,
+            'quantity_limited' => $line->quantityLimited,
             'stock_warning' => $this->lineStockWarning($line),
             'is_purchasable' => $line->isPurchasable,
         ];
@@ -250,8 +252,12 @@ final class PosStateService
         };
     }
 
-    private function stockWarning(int $available): ?string
+    private function stockWarning(int $available, bool $quantityLimited): ?string
     {
+        if (! $quantityLimited) {
+            return null;
+        }
+
         if ($available <= 0) {
             return 'out';
         }
@@ -267,6 +273,10 @@ final class PosStateService
     {
         if (! $line->isPurchasable) {
             return 'Product unavailable';
+        }
+
+        if (! $line->quantityLimited) {
+            return null;
         }
 
         if ($line->available <= 0) {

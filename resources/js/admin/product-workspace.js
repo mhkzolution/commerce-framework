@@ -1,6 +1,7 @@
 import '../../css/admin/product-workspace.css';
 
 import { ProductWorkspaceState } from './product-workspace/state.js';
+import { bindAttributesPanel } from './product-workspace/attributes-panel.js';
 import { bindVariantBuilder } from './product-workspace/variant-builder.js';
 
 function initTabs(workspace) {
@@ -8,6 +9,11 @@ function initTabs(workspace) {
     const panels = workspace.querySelectorAll('[data-workspace-panel]');
 
     const activate = (key) => {
+        const requestedButton = workspace.querySelector(`[data-workspace-tab="${key}"]`);
+        if (!requestedButton || requestedButton.hidden) {
+            key = 'general';
+        }
+
         tabButtons.forEach((button) => {
             const active = button.dataset.workspaceTab === key;
             button.classList.toggle('is-active', active);
@@ -30,9 +36,100 @@ function initTabs(workspace) {
     });
 
     const hash = location.hash.replace('#', '');
-    if (hash && workspace.querySelector(`[data-workspace-panel="${hash}"]`)) {
+    const hashButton = workspace.querySelector(`[data-workspace-tab="${hash}"]`);
+    if (hash && hashButton && !hashButton.hidden) {
         activate(hash);
     }
+}
+
+function initStockControls(workspace, state) {
+    const typeInputs = workspace.querySelectorAll('[data-workspace-type]');
+    const trackInput = workspace.querySelector('[data-workspace-track-inventory]');
+    const backorderInputs = workspace.querySelectorAll('[data-workspace-backorder]');
+    const simpleFields = workspace.querySelector('[data-simple-product-fields]');
+    const simpleStock = workspace.querySelector('[data-simple-stock]');
+    const simpleQuantity = workspace.querySelector('[data-simple-quantity]');
+    const variantsTab = workspace.querySelector('[data-workspace-variants-tab]');
+    const variantsPanel = workspace.querySelector('[data-workspace-variants-panel]');
+    const variantBuilder = workspace.querySelector('[data-variant-builder]');
+    const simpleSku = workspace.querySelector('[data-workspace-sku]');
+    const simplePrice = workspace.querySelector('[data-workspace-simple-price]');
+    const simpleOnHand = workspace.querySelector('[data-workspace-simple-on-hand]');
+    const skuLabelSimple = workspace.querySelector('[data-workspace-sku-label-simple]');
+    const skuLabelPrefix = workspace.querySelector('[data-workspace-sku-label-prefix]');
+    const skuPrefixHint = workspace.querySelector('[data-workspace-sku-prefix-hint]');
+
+    const render = () => {
+        const product = state.getState().product;
+        const simple = product.type === 'simple';
+        const tracked = Boolean(product.trackInventory);
+
+        simpleFields?.toggleAttribute('hidden', !simple);
+        simpleStock?.toggleAttribute('hidden', !simple);
+        simpleQuantity?.toggleAttribute('hidden', !simple || !tracked);
+        variantsTab?.toggleAttribute('hidden', simple);
+        variantBuilder?.toggleAttribute('hidden', simple);
+        skuLabelSimple?.toggleAttribute('hidden', !simple);
+        skuLabelPrefix?.toggleAttribute('hidden', simple);
+        skuPrefixHint?.toggleAttribute('hidden', simple);
+
+        if (simpleSku) {
+            simpleSku.placeholder = simple ? 'Auto' : 'TSHIRT';
+            simpleSku.value = state.skuInputValue();
+        }
+
+        if (simple && variantsPanel && !variantsPanel.hidden) {
+            workspace.querySelector('[data-workspace-tab="general"]')?.click();
+        }
+    };
+
+    typeInputs.forEach((input) => {
+        input.checked = input.value === state.getState().product.type;
+        input.addEventListener('change', () => {
+            if (!input.checked) {
+                return;
+            }
+
+            const nextType = input.value;
+            state.setType(nextType);
+
+            const product = state.getState().product;
+            if (simpleSku) {
+                simpleSku.value = state.skuInputValue();
+            }
+            if (simplePrice) {
+                simplePrice.value = product.price ?? '';
+            }
+            if (simpleOnHand) {
+                simpleOnHand.value = product.onHand ?? 0;
+            }
+
+            render();
+        });
+    });
+
+    if (trackInput) {
+        trackInput.checked = Boolean(state.getState().product.trackInventory);
+        trackInput.addEventListener('change', () => {
+            state.setProductField('trackInventory', trackInput.checked);
+            render();
+        });
+    }
+
+    backorderInputs.forEach((input) => {
+        input.checked = input.value === state.getState().product.backorderPolicy;
+        input.addEventListener('change', () => {
+            if (input.checked) {
+                state.setProductField('backorderPolicy', input.value);
+            }
+        });
+    });
+
+    simpleSku?.addEventListener('input', () => state.setSkuInput(simpleSku.value));
+    simplePrice?.addEventListener('input', () => state.setProductField('price', simplePrice.value));
+    simpleOnHand?.addEventListener('input', () => state.setProductField('onHand', simpleOnHand.value));
+
+    render();
 }
 
 function bindProductField(form, state, fieldName, stateKey) {
@@ -150,6 +247,7 @@ function initDirtyState(workspace, state) {
         if (payloadInput) {
             payloadInput.value = state.serialize();
         }
+        state.consumeGenerateFlag();
         state.setDirty(false);
     });
 
@@ -180,7 +278,13 @@ export function initProductWorkspaces() {
             const state = new ProductWorkspaceState(initial);
 
             initTabs(workspace);
+            initStockControls(workspace, state);
             initDirtyState(workspace, state);
+
+            const attributesPanel = workspace.querySelector('[data-attributes-panel]');
+            if (attributesPanel) {
+                bindAttributesPanel(attributesPanel, state);
+            }
 
             const builder = workspace.querySelector('[data-variant-builder]');
             if (builder) {

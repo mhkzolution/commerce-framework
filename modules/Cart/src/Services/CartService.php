@@ -20,6 +20,8 @@ use Commerce\Core\Base\BaseService;
 use Commerce\Core\Exceptions\DomainException;
 use Commerce\Core\Exceptions\EntityNotFoundException;
 use Commerce\Core\Pricing\PricingContext;
+use Commerce\Inventory\Services\StockPolicyEvaluator;
+use Commerce\Product\Models\ProductVariant;
 
 final class CartService extends BaseService implements CartServiceInterface
 {
@@ -28,6 +30,7 @@ final class CartService extends BaseService implements CartServiceInterface
         private readonly ProductQueryServiceInterface $productQueryService,
         private readonly InventoryQueryServiceInterface $inventoryQueryService,
         private readonly PriceResolverInterface $priceResolver,
+        private readonly StockPolicyEvaluator $stockPolicy,
         private readonly ?MediaQueryServiceInterface $media = null,
     ) {}
 
@@ -216,6 +219,7 @@ final class CartService extends BaseService implements CartServiceInterface
                 lineTotal: $lineTotal,
                 available: $available,
                 isPurchasable: $isPurchasable,
+                quantityLimited: $variant->track_inventory && $product?->backorder_policy === 'deny',
                 imageUrl: $this->lineImageUrl($variant),
                 imageSrcset: $this->lineImageSrcset($variant),
                 url: $slug ? route('storefront.products.show', $slug) : null,
@@ -278,7 +282,13 @@ final class CartService extends BaseService implements CartServiceInterface
             throw new DomainException('This product is not available for purchase.');
         }
 
-        if (! $this->inventoryQueryService->isAvailable($purchasableUuid, $quantity)) {
+        if (! $variant instanceof ProductVariant) {
+            throw new EntityNotFoundException("Purchasable variant [{$purchasableUuid}] not found.");
+        }
+
+        $level = $this->inventoryQueryService->getStockLevel($purchasableUuid);
+
+        if (! $this->stockPolicy->canFulfill($variant->product, $variant, $quantity, $level)) {
             throw new DomainException('Insufficient stock for this quantity.');
         }
     }

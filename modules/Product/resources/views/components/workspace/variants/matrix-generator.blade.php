@@ -12,10 +12,10 @@
 
 <div class="cf-variant-step" data-variant-step="matrix">
     <div class="cf-variant-step__header">
-        <span class="cf-variant-step__number">3</span>
+        <span class="cf-variant-step__number">1</span>
         <div>
-            <h3 class="cf-variant-step__title">{{ __('product::workspace.generate_variants') }}</h3>
-            <p class="cf-variant-step__desc">{{ __('product::workspace.generate_variants_desc') }}</p>
+            <h3 class="cf-variant-step__title">{{ __('product::workspace.variant_grid') }}</h3>
+            <p class="cf-variant-step__desc">{{ __('product::workspace.variant_grid_desc') }}</p>
         </div>
     </div>
 
@@ -34,20 +34,6 @@
                     @endforeach
                 </select>
             </div>
-
-            <button type="button" class="cf-btn cf-btn--primary" data-variant-generate>
-                {{ __('product::workspace.generate_matrix') }}
-            </button>
-        </div>
-    </div>
-</div>
-
-<div class="cf-variant-step" data-variant-step="grid">
-    <div class="cf-variant-step__header">
-        <span class="cf-variant-step__number">4</span>
-        <div>
-            <h3 class="cf-variant-step__title">{{ __('product::workspace.variant_grid') }}</h3>
-            <p class="cf-variant-step__desc">{{ __('product::workspace.variant_grid_desc') }}</p>
         </div>
     </div>
 </div>

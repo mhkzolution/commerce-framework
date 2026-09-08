@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature\Storefront;
 
 use Commerce\Cart\Services\HomepageProductQuery;
+use Commerce\Cart\Services\ProductCardMapper;
 use Commerce\Contracts\Storefront\ProductCardData;
+use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Product\Services\ProductSearchIndexer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreatesPurchasableProduct;
@@ -59,5 +61,28 @@ final class Ws002ProductCardContractTest extends TestCase
         $cards = app(HomepageProductQuery::class)->arrivals();
         $this->assertNotEmpty($cards);
         $this->assertInstanceOf(ProductCardData::class, $cards[0]);
+    }
+
+    public function test_card_uses_in_stock_sibling_when_default_is_out_of_stock(): void
+    {
+        $default = $this->createPurchasableProduct(price: 1250, stock: 1, sku: 'CARD-MULTI-OOS');
+        app(InventoryServiceInterface::class)->setOnHand($default->uuid, 0);
+        $sibling = $default->product->variants()->create([
+            'tenant_id' => $default->tenant_id,
+            'sku' => 'CARD-MULTI-IN',
+            'track_inventory' => true,
+            'name' => 'In-stock sibling',
+            'price' => 1250,
+            'is_default' => false,
+            'position' => 1,
+        ]);
+        app(InventoryServiceInterface::class)->receive($sibling->uuid, 3);
+
+        $card = app(ProductCardMapper::class)->fromProduct($default->product->fresh('variants'));
+
+        $this->assertNotNull($card);
+        $this->assertTrue($card->inStock);
+        $this->assertSame($sibling->uuid, $card->variantUuid);
+        $this->assertSame(3, $card->available);
     }
 }

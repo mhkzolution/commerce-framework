@@ -73,9 +73,31 @@ final class WorkspacePayload
                 ogImageMediaUuid: $seoInput['og_image_media_uuid'] ?? null,
             ),
             variantOptions: is_array($payload['options'] ?? null) ? $payload['options'] : [],
-            variants: is_array($payload['variants'] ?? null) ? $payload['variants'] : [],
+            variants: self::normalizeVariants(is_array($payload['variants'] ?? null) ? $payload['variants'] : []),
             skuPattern: self::nullableString($payload['skuPattern'] ?? null),
             meta: $meta,
+            type: (string) self::firstPresent($input, $product, ['type'], 'simple'),
+            backorderPolicy: (string) self::firstPresent(
+                $input,
+                $product,
+                ['backorderPolicy', 'backorder_policy'],
+                'deny',
+            ),
+            trackInventory: (bool) self::firstPresent(
+                $input,
+                $product,
+                ['trackInventory', 'track_inventory'],
+                true,
+            ),
+            onHand: self::nullableOnHand(self::firstPresent($input, $product, ['onHand', 'on_hand'])),
+            sku: self::nullableString(self::firstPresent($input, $product, ['sku'])),
+            price: self::nullableString(self::firstPresent($input, $product, ['price'])),
+            productAttributes: self::normalizeProductAttributes(
+                $payload['productAttributes'] ?? $product['productAttributes'] ?? [],
+            ),
+            generateVariants: self::booleanFlag(
+                $payload['generateVariants'] ?? $product['generateVariants'] ?? false,
+            ),
         );
     }
 
@@ -111,6 +133,48 @@ final class WorkspacePayload
     }
 
     /**
+     * @return list<array<string, mixed>>
+     */
+    private static function normalizeProductAttributes(mixed $raw): array
+    {
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($raw as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $normalized[] = [
+                'attributeId' => (int) ($row['attributeId'] ?? $row['attribute_id'] ?? 0),
+                'usedForVariations' => (bool) ($row['usedForVariations'] ?? $row['used_for_variations'] ?? false),
+                'valueIds' => self::intList(is_array($row['valueIds'] ?? null) ? $row['valueIds'] : ($row['value_ids'] ?? [])),
+                'newLabels' => self::stringList(is_array($row['newLabels'] ?? null)
+                    ? $row['newLabels']
+                    : ($row['new_labels'] ?? $row['labels'] ?? [])),
+                'position' => self::nullableInt($row['position'] ?? null),
+            ];
+        }
+
+        return $normalized;
+    }
+
+    private static function booleanFlag(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            return in_array(strtolower($value), ['1', 'true', 'yes', 'on'], true);
+        }
+
+        return (bool) $value;
+    }
+
+    /**
      * @param  list<mixed>  $values
      * @return list<string>
      */
@@ -135,6 +199,72 @@ final class WorkspacePayload
         }
 
         return (int) $value;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $variants
+     * @return list<array<string, mixed>>
+     */
+    private static function normalizeVariants(array $variants): array
+    {
+        return array_values(array_map(static function (array $variant): array {
+            if (! array_key_exists('onHand', $variant) && array_key_exists('on_hand', $variant)) {
+                $variant['onHand'] = $variant['on_hand'];
+            }
+
+            if (array_key_exists('onHand', $variant)) {
+                $variant['onHand'] = self::nullableOnHand($variant['onHand']);
+            }
+
+            return $variant;
+        }, $variants));
+    }
+
+    private static function nullableOnHand(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_int($value)) {
+            $quantity = $value;
+        } elseif (is_string($value) && preg_match('/^\d+$/D', $value) === 1) {
+            $quantity = (int) $value;
+        } else {
+            throw new DomainException('On-hand quantity must be a non-negative integer.');
+        }
+
+        if ($quantity < 0) {
+            throw new DomainException('On-hand quantity must be a non-negative integer.');
+        }
+
+        return $quantity;
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     * @param  array<string, mixed>  $product
+     * @param  list<string>  $keys
+     */
+    private static function firstPresent(
+        array $input,
+        array $product,
+        array $keys,
+        mixed $default = null,
+    ): mixed {
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $input)) {
+                return $input[$key];
+            }
+        }
+
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $product)) {
+                return $product[$key];
+            }
+        }
+
+        return $default;
     }
 
     /**

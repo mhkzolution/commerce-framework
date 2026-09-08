@@ -1,4 +1,9 @@
 import { formatMoneyMinor } from './money.js';
+import {
+    getOptionValue,
+    isAxisValueEnabled,
+    resolveExactVariant,
+} from './variant-combination.js';
 import { initWishlistScope } from './wishlist.js';
 
 const RECENT_KEY = 'commerce:recently-viewed';
@@ -585,23 +590,6 @@ function formatPrice(amount, currency) {
     return formatMoneyMinor(amount, currency);
 }
 
-function normalizeOptionKey(key) {
-    return String(key).toLowerCase();
-}
-
-function getOptionValue(options, axisKey) {
-    if (!options || typeof options !== 'object') {
-        return undefined;
-    }
-
-    if (options[axisKey] !== undefined) {
-        return options[axisKey];
-    }
-
-    const normalized = normalizeOptionKey(axisKey);
-    return Object.entries(options).find(([key]) => normalizeOptionKey(key) === normalized)?.[1];
-}
-
 function buildInitialSelections(variant, axes) {
     const selections = {};
 
@@ -615,24 +603,8 @@ function buildInitialSelections(variant, axes) {
     return selections;
 }
 
-function resolveVariant(variants, selections) {
-    const entries = Object.entries(selections).filter(([, value]) => value !== undefined && value !== '');
-
-    if (entries.length === 0) {
-        return variants[0] ?? null;
-    }
-
-    const exact = variants.find((variant) => entries.every(([key, value]) => String(getOptionValue(variant.options, key)) === String(value)));
-    if (exact) {
-        return exact;
-    }
-
-    const partialMatches = variants.filter((variant) => entries.every(([key, value]) => {
-        const optionValue = getOptionValue(variant.options, key);
-        return optionValue === undefined || String(optionValue) === String(value);
-    }));
-
-    return partialMatches.find((variant) => variant.available > 0) ?? partialMatches[0] ?? null;
+function variantIsInStock(variant) {
+    return variant?.in_stock ?? (typeof variant?.available === 'number' && variant.available > 0);
 }
 
 function initVariants(page) {
@@ -650,7 +622,9 @@ function initVariants(page) {
     const stockNoteEl = buyBox.querySelector('[data-buy-stock-note]');
     const variantInput = buyBox.querySelector('[data-buy-variant-input]');
     const quantityInput = buyBox.querySelector('[data-buy-quantity]');
+    const unavailable = buyBox.querySelector('[data-buy-unavailable]');
     const mobilePrice = page.querySelector('[data-mobile-buy-price]');
+    const mobileBuyBar = page.querySelector('[data-mobile-buy-bar]');
     const variantAxesRoot = page.querySelector('[data-variant-axes]');
 
     let selections = buildInitialSelections(
@@ -670,6 +644,7 @@ function initVariants(page) {
                 'storefront-variant-axes__option--active',
                 selections[axisKey] === axisValue,
             );
+            button.disabled = !isAxisValueEnabled(variants, selections, axisKey, axisValue);
         });
     };
 
@@ -679,7 +654,15 @@ function initVariants(page) {
             return;
         }
 
+        const inStock = variantIsInStock(variant);
         selections = buildInitialSelections(variant, axes);
+        buyBox.querySelector('[data-buy-form]').hidden = !inStock;
+        if (unavailable) {
+            unavailable.hidden = inStock;
+        }
+        if (mobileBuyBar) {
+            mobileBuyBar.hidden = !inStock;
+        }
 
         if (amountEl) {
             amountEl.textContent = formatPrice(variant.price, currency);
@@ -706,11 +689,15 @@ function initVariants(page) {
             variantInput.value = variant.uuid;
         }
         if (quantityInput) {
-            quantityInput.max = String(Math.max(variant.available, 1));
+            if (typeof variant.available === 'number' && variant.available > 0) {
+                quantityInput.max = String(variant.available);
+            } else {
+                quantityInput.removeAttribute('max');
+            }
             quantityInput.value = '1';
         }
         if (stockNoteEl) {
-            stockNoteEl.textContent = variant.available > 0
+            stockNoteEl.textContent = inStock
                 ? stockNoteEl.dataset.inStockLabel || stockNoteEl.textContent
                 : stockNoteEl.dataset.outOfStockLabel || 'Out of stock';
         }
@@ -736,7 +723,7 @@ function initVariants(page) {
             }
 
             selections[button.dataset.axisKey] = button.dataset.axisValue;
-            const resolved = resolveVariant(variants, selections);
+            const resolved = resolveExactVariant(variants, selections);
             if (resolved) {
                 applyVariant(resolved.uuid);
             }
@@ -764,9 +751,11 @@ function initQuantityStepper(page) {
 
         const clamp = () => {
             const min = Number(input.min || 1);
-            const max = Number(input.max || min);
             let value = Number(input.value || min);
-            value = Math.min(Math.max(value, min), max);
+            value = Math.max(value, min);
+            if (input.max !== '') {
+                value = Math.min(value, Number(input.max));
+            }
             input.value = String(value);
         };
 

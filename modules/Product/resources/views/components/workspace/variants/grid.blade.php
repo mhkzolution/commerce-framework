@@ -18,7 +18,7 @@
                     <th class="cf-variant-grid__th">Cost</th>
                     <th class="cf-variant-grid__th">Compare</th>
                     <th class="cf-variant-grid__th">Weight</th>
-                    <th class="cf-variant-grid__th">Stock</th>
+                    <th class="cf-variant-grid__th">{{ __('product::workspace.stock') }}</th>
                     <th class="cf-variant-grid__th">Status</th>
                     <th class="cf-variant-grid__th cf-variant-grid__th--actions">Actions</th>
                 </tr>

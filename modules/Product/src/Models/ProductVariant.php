@@ -20,6 +20,8 @@ class ProductVariant extends Model implements PurchasableInterface
         'tenant_id',
         'product_id',
         'sku',
+        'track_inventory',
+        'sku_is_auto',
         'name',
         'price',
         'compare_at_price',
@@ -32,6 +34,8 @@ class ProductVariant extends Model implements PurchasableInterface
     {
         return [
             'is_default' => 'boolean',
+            'track_inventory' => 'boolean',
+            'sku_is_auto' => 'boolean',
             'meta' => 'array',
         ];
     }

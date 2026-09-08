@@ -25,8 +25,11 @@ final class ProductCardMapper
             return null;
         }
 
-        $variant = $this->defaultVariant($product);
-        if ($variant === null) {
+        $variants = $product->relationLoaded('variants')
+            ? $product->variants
+            : $product->variants()->get();
+        $defaultVariant = $variants->firstWhere('is_default', true) ?? $variants->first();
+        if (! $defaultVariant instanceof ProductVariant) {
             return null;
         }
 
@@ -35,7 +38,16 @@ final class ProductCardMapper
             return null;
         }
 
+        $variant = $defaultVariant;
         $available = $this->available((string) $variant->uuid);
+        foreach ($variants as $candidate) {
+            $candidateAvailable = $this->available((string) $candidate->uuid);
+            if ($this->inStock($candidateAvailable, $product)) {
+                $variant = $candidate;
+                $available = $candidateAvailable;
+                break;
+            }
+        }
         $imageUrls = $this->imageUrls($product);
 
         return new ProductCardData(
@@ -48,20 +60,11 @@ final class ProductCardMapper
             compareAtPrice: $variant->compare_at_price !== null ? (int) $variant->compare_at_price : null,
             imageUrl: $imageUrls[0]['url'] ?? null,
             available: $available,
-            inStock: $this->inStock($available),
+            inStock: $this->inStock($available, $product),
             secondaryImageUrl: $imageUrls[1]['url'] ?? null,
             imageSrcset: $imageUrls[0]['srcset'] ?? null,
             secondaryImageSrcset: $imageUrls[1]['srcset'] ?? null,
         );
-    }
-
-    private function defaultVariant(Product $product): ?ProductVariant
-    {
-        $variants = $product->relationLoaded('variants')
-            ? $product->variants
-            : $product->variants()->get();
-
-        return $variants->firstWhere('is_default', true) ?? $variants->first();
     }
 
     /**
@@ -116,15 +119,17 @@ final class ProductCardMapper
         }
 
         try {
-            return app(InventoryQueryServiceInterface::class)->getAvailable($variantUuid);
+            return app(InventoryQueryServiceInterface::class)->availabilityForPurchasable($variantUuid);
         } catch (Throwable) {
             return null;
         }
     }
 
-    private function inStock(?int $available): bool
+    private function inStock(?int $available, Product $product): bool
     {
-        return $available === null || $available > 0;
+        return $available === null
+            || $available > 0
+            || in_array($product->backorder_policy, ['notify', 'allow'], true);
     }
 
     private function productUrl(string $slug): string

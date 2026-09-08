@@ -16,6 +16,7 @@ use Commerce\Inventory\DTO\StockLevel;
 use Commerce\Inventory\Events\StockAdjusted;
 use Commerce\Inventory\Models\InventoryItem;
 use Commerce\Inventory\Models\StockMovement;
+use Commerce\Product\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
 
 final class InventoryService extends BaseService implements InventoryServiceInterface
@@ -23,6 +24,7 @@ final class InventoryService extends BaseService implements InventoryServiceInte
     public function __construct(
         private readonly EventBusInterface $eventBus,
         private readonly ProductQueryServiceInterface $productQueryService,
+        private readonly StockPolicyEvaluator $stockPolicyEvaluator,
     ) {}
 
     public function adjust(string $purchasableUuid, int $quantity, ?string $reason = null): StockLevelInterface
@@ -88,16 +90,48 @@ final class InventoryService extends BaseService implements InventoryServiceInte
         }
 
         return DB::transaction(function () use ($purchasableUuid, $quantity, $referenceType, $referenceId, $reason): StockLevelInterface {
-            $item = $this->ensureItem($purchasableUuid);
+            $variant = $this->findVariant($purchasableUuid);
 
-            return $this->recordMovement(
-                item: $item,
-                type: StockMovementType::Sale,
+            if (! $this->stockPolicyEvaluator->shouldTrack($variant)) {
+                return $this->currentStockLevel($purchasableUuid);
+            }
+
+            $item = $this->ensureItem($purchasableUuid);
+            $onHandBefore = $item->on_hand;
+
+            if ($variant->product->backorder_policy === 'deny' && $onHandBefore < $quantity) {
+                throw new DomainException('Insufficient stock for sale.');
+            }
+
+            $onHandAfter = max(0, $onHandBefore - $quantity);
+            $reservedAfter = $item->reserved - min($item->reserved, $quantity);
+
+            $item->update([
+                'on_hand' => $onHandAfter,
+                'reserved' => $reservedAfter,
+            ]);
+
+            StockMovement::query()->create([
+                'inventory_item_id' => $item->id,
+                'type' => StockMovementType::Sale->value,
+                'quantity' => -$quantity,
+                'on_hand_before' => $onHandBefore,
+                'on_hand_after' => $onHandAfter,
+                'reason' => $reason ?? 'Order sale',
+                'reference_type' => $referenceType,
+                'reference_id' => $referenceId,
+            ]);
+
+            $this->eventBus->dispatch(new StockAdjusted(
+                purchasableUuid: $item->purchasable_uuid,
+                movementType: StockMovementType::Sale->value,
                 quantity: -$quantity,
-                reason: $reason ?? 'Order sale',
-                referenceType: $referenceType,
-                referenceId: $referenceId,
-            );
+                onHandBefore: $onHandBefore,
+                onHandAfter: $onHandAfter,
+                tenantId: $item->tenant_id,
+            ));
+
+            return $this->toStockLevel($item->fresh());
         });
     }
 
@@ -138,9 +172,16 @@ final class InventoryService extends BaseService implements InventoryServiceInte
         }
 
         return DB::transaction(function () use ($purchasableUuid, $quantity, $referenceType, $referenceId, $reason): StockLevelInterface {
-            $item = $this->ensureItem($purchasableUuid);
+            $variant = $this->findVariant($purchasableUuid);
 
-            if (($item->on_hand - $item->reserved) < $quantity) {
+            if (! $this->stockPolicyEvaluator->shouldTrack($variant)) {
+                return $this->currentStockLevel($purchasableUuid);
+            }
+
+            $item = $this->ensureItem($purchasableUuid);
+            $level = $this->toStockLevel($item);
+
+            if (! $this->stockPolicyEvaluator->canFulfill($variant->product, $variant, $quantity, $level)) {
                 throw new DomainException('Insufficient stock to reserve.');
             }
 
@@ -255,16 +296,39 @@ final class InventoryService extends BaseService implements InventoryServiceInte
 
     private function ensureItem(string $purchasableUuid): InventoryItem
     {
-        $variant = $this->productQueryService->findVariantByUuid($purchasableUuid);
+        $this->findVariant($purchasableUuid);
 
-        if ($variant === null) {
-            throw new EntityNotFoundException("Purchasable variant [{$purchasableUuid}] not found.");
-        }
+        $item = InventoryItem::query()
+            ->where('purchasable_uuid', $purchasableUuid)
+            ->lockForUpdate()
+            ->first();
 
-        return InventoryItem::query()->firstOrCreate(
+        return $item ?? InventoryItem::query()->firstOrCreate(
             ['purchasable_uuid' => $purchasableUuid],
             ['on_hand' => 0, 'reserved' => 0],
         );
+    }
+
+    private function findVariant(string $purchasableUuid): ProductVariant
+    {
+        $variant = $this->productQueryService->findVariantByUuid($purchasableUuid);
+
+        if (! $variant instanceof ProductVariant) {
+            throw new EntityNotFoundException("Purchasable variant [{$purchasableUuid}] not found.");
+        }
+
+        return $variant;
+    }
+
+    private function currentStockLevel(string $purchasableUuid): StockLevelInterface
+    {
+        $item = InventoryItem::query()
+            ->where('purchasable_uuid', $purchasableUuid)
+            ->first();
+
+        return $item === null
+            ? new StockLevel($purchasableUuid, 0, 0)
+            : $this->toStockLevel($item);
     }
 
     private function toStockLevel(InventoryItem $item): StockLevel

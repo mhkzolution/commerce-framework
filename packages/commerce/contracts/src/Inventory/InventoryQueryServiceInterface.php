@@ -14,6 +14,8 @@ interface InventoryQueryServiceInterface
 
     public function getAvailable(string $purchasableUuid): int;
 
+    public function availabilityForPurchasable(string $purchasableUuid): ?int;
+
     /**
      * @param  list<string>  $purchasableUuids
      * @return array<string, StockLevelInterface>

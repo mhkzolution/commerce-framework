@@ -106,6 +106,26 @@ final class Ws002ShopListingContractTest extends TestCase
         $this->assertStringNotContainsString('Published products', $inStock);
     }
 
+    public function test_in_stock_filter_includes_untracked_and_allow_backorder_products(): void
+    {
+        $untracked = $this->createPurchasableProduct(price: 1500, stock: 1, sku: 'LIST-UNTRACKED-1');
+        app(InventoryServiceInterface::class)->setOnHand($untracked->uuid, 0);
+        $untracked->update(['track_inventory' => false]);
+
+        $backorder = $this->createPurchasableProduct(price: 1500, stock: 1, sku: 'LIST-ALLOW-1');
+        app(InventoryServiceInterface::class)->setOnHand($backorder->uuid, 0);
+        $backorder->product->update(['backorder_policy' => 'allow']);
+
+        $denied = $this->createPurchasableProduct(price: 1500, stock: 1, sku: 'LIST-DENY-1');
+        app(InventoryServiceInterface::class)->setOnHand($denied->uuid, 0);
+
+        $this->get(route('storefront.shop.index', ['availability' => 'in_stock']))
+            ->assertOk()
+            ->assertSee($untracked->product->name)
+            ->assertSee($backorder->product->name)
+            ->assertDontSee($denied->product->name);
+    }
+
     public function test_get_filters_survive_reload_and_pagination_query_string(): void
     {
         $mugs = CatalogCategory::query()->create([

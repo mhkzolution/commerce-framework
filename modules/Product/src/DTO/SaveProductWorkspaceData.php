@@ -17,6 +17,7 @@ final readonly class SaveProductWorkspaceData extends DataTransferObject
      * @param  list<array<string, mixed>>  $variantOptions
      * @param  list<array<string, mixed>>  $variants
      * @param  array<string, mixed>  $meta
+     * @param  list<array<string, mixed>>  $productAttributes
      */
     public function __construct(
         public string $name,
@@ -38,5 +39,13 @@ final readonly class SaveProductWorkspaceData extends DataTransferObject
         public array $variants = [],
         public ?string $skuPattern = null,
         public array $meta = [],
+        public string $type = 'simple',
+        public string $backorderPolicy = 'deny',
+        public bool $trackInventory = true,
+        public ?int $onHand = null,
+        public ?string $sku = null,
+        public ?string $price = null,
+        public array $productAttributes = [],
+        public bool $generateVariants = false,
     ) {}
 }

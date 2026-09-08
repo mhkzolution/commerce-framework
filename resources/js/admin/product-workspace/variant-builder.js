@@ -1,4 +1,5 @@
 import { openMediaPicker } from '../media-picker';
+import { applyVariantBuilderNotification } from './variant-builder-render.js';
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -42,27 +43,22 @@ export function bindVariantBuilder(root, state) {
     let activeImageVariantId = null;
     let bulkImageMode = false;
 
-    const inventoryUrl = (uuid) => {
-        const base = state.getState().inventoryBaseUrl;
-        return uuid ? `${base}/${uuid}` : base;
-    };
-
     const updateMatrixSummary = () => {
         if (!matrixCount || !matrixFormula) {
             return;
         }
 
-        const count = state.matrixCount();
+        const count = state.getState().variants.length;
         matrixCount.textContent = `${count} variant${count === 1 ? '' : 's'}`;
 
-        const options = state.getState().options;
-        if (!options.length) {
+        const axes = typeof state.variationAxes === 'function' ? state.variationAxes() : [];
+        if (!axes.length) {
             matrixFormula.textContent = 'Default variant only';
             return;
         }
 
-        matrixFormula.textContent = options
-            .map((opt) => `${opt.values.length} ${opt.name}`)
+        matrixFormula.textContent = axes
+            .map((axis) => `${(axis.valueIds ?? []).length} ${axis.name ?? axis.attributeId}`)
             .join(' × ');
     };
 
@@ -114,28 +110,24 @@ export function bindVariantBuilder(root, state) {
     };
 
     const bindStockSummary = (container, variant) => {
-        const link = container.querySelector('[data-variant-stock-link]');
         const available = container.querySelector('[data-variant-stock-available]');
-        const onHand = container.querySelector('[data-variant-stock-on-hand]');
         const reserved = container.querySelector('[data-variant-stock-reserved]');
-        const incoming = container.querySelector('[data-variant-stock-incoming]');
+        const onHandInput = container.querySelector('[data-variant-stock-on-hand-input]');
+        const onHandWrap = container.querySelector('[data-variant-on-hand-wrap]');
 
-        if (!available || !onHand || !reserved) {
+        if (!available || !reserved) {
             return;
         }
 
         available.textContent = variant.stock.available;
-        onHand.textContent = `${variant.stock.onHand} on hand`;
-        reserved.textContent = `${variant.stock.reserved} reserved`;
-        if (incoming) {
-            incoming.textContent = `${variant.stock.incoming ?? 0} incoming`;
+        reserved.textContent = variant.stock.reserved;
+        if (onHandInput) {
+            onHandInput.value = variant.stock.onHand;
+            onHandInput.addEventListener('input', () => {
+                state.updateVariantStock(variant.id, 'onHand', onHandInput.value);
+            });
         }
-
-        link?.addEventListener('click', () => {
-            if (variant.uuid) {
-                window.location.href = inventoryUrl(variant.uuid);
-            }
-        });
+        onHandWrap?.toggleAttribute('hidden', !state.getState().product.trackInventory);
     };
 
     const bindVariantFields = (row, variant) => {
@@ -175,7 +167,7 @@ export function bindVariantBuilder(root, state) {
                 return;
             }
             state.updateVariant(variant.id, 'imageMediaUuid', item.uuid);
-            state.updateVariant(variant.id, 'imagePreviewUrl', item.preview_url || item.url);
+            state.updateVariant(variant.id, 'imagePreviewUrl', item.preview_url || item.url, { rebuild: true });
         });
 
         const checkbox = row.querySelector('[data-variant-select]');
@@ -255,7 +247,7 @@ export function bindVariantBuilder(root, state) {
                 }
 
                 state.updateVariant(activeImageVariantId, 'imageMediaUuid', item.uuid);
-                state.updateVariant(activeImageVariantId, 'imagePreviewUrl', item.url || item.preview_url);
+                state.updateVariant(activeImageVariantId, 'imagePreviewUrl', item.url || item.preview_url, { rebuild: true });
                 imageDialog?.close();
                 activeImageVariantId = null;
             });
@@ -305,12 +297,16 @@ export function bindVariantBuilder(root, state) {
 
             const summarySlot = card.querySelector('.cf-variant-card__summary');
             summarySlot.innerHTML = `
-                <button type="button" class="cf-variant-stock-summary" data-variant-stock-link>
-                    <span class="cf-variant-stock-summary__available">${variant.stock.available}</span>
+                <div class="cf-variant-stock-summary">
+                    <label data-variant-on-hand-wrap>
+                        <span>On hand</span>
+                        <input type="number" min="0" step="1" class="cf-input" data-variant-stock-on-hand-input>
+                    </label>
                     <span class="cf-variant-stock-summary__meta">
-                        <span>${variant.stock.onHand} on hand</span> · <span>${variant.stock.reserved} reserved</span> · <span>${variant.stock.incoming ?? 0} incoming</span>
+                        <span><strong data-variant-stock-reserved>${variant.stock.reserved}</strong> reserved</span> ·
+                        <span><strong data-variant-stock-available>${variant.stock.available}</strong> available</span>
                     </span>
-                </button>
+                </div>
             `;
 
             const fields = card.querySelector('.cf-variant-card__fields');
@@ -421,6 +417,11 @@ export function bindVariantBuilder(root, state) {
     });
 
     generateBtn?.addEventListener('click', () => {
+        if (typeof state.generateFromAttributes === 'function') {
+            state.generateFromAttributes();
+            return;
+        }
+
         state.generateMatrix();
     });
 
@@ -526,9 +527,24 @@ export function bindVariantBuilder(root, state) {
         });
     };
 
+    let lastEpoch = state.getState().uiEpoch ?? 0;
+
+    const syncTrackVisibility = () => {
+        const tracked = Boolean(state.getState().product.trackInventory);
+        root.querySelectorAll('[data-variant-on-hand-wrap]').forEach((wrap) => {
+            wrap.toggleAttribute('hidden', !tracked);
+        });
+    };
+
     state.subscribe(() => {
-        renderOptions();
-        renderGrid();
+        const { uiEpoch } = state.getState();
+        const result = applyVariantBuilderNotification(uiEpoch, lastEpoch, {
+            renderGrid,
+            renderOptions,
+        });
+        lastEpoch = result.lastEpoch;
+        syncTrackVisibility();
+        renderBulkToolbar();
     });
 
     renderOptions();

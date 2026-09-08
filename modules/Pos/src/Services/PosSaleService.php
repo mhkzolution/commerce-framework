@@ -10,6 +10,7 @@ use Commerce\Contracts\Pricing\PriceResolverInterface;
 use Commerce\Contracts\Product\ProductQueryServiceInterface;
 use Commerce\Contracts\Tax\TaxQuoteServiceInterface;
 use Commerce\Core\Exceptions\DomainException;
+use Commerce\Inventory\Services\StockPolicyEvaluator;
 use Commerce\Orders\Contracts\OrderServiceInterface;
 use Commerce\Orders\DTO\CreateOrderData;
 use Commerce\Orders\DTO\OrderLineData;
@@ -29,6 +30,7 @@ final class PosSaleService
         private readonly InventoryQueryServiceInterface $inventoryQueryService,
         private readonly PriceResolverInterface $priceResolver,
         private readonly OrderServiceInterface $orderService,
+        private readonly StockPolicyEvaluator $stockPolicy,
     ) {}
 
     public function cart(Register $register): PosCartService
@@ -38,6 +40,7 @@ final class PosSaleService
             $this->productQueryService,
             $this->inventoryQueryService,
             $this->priceResolver,
+            $this->stockPolicy,
         );
     }
 

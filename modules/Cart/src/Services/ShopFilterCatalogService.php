@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Commerce\Cart\Services;
 
 use Commerce\Cart\DTO\ShopFilterCatalog;
-use Commerce\Cart\Support\StorefrontAttributeFilterValue;
 use Commerce\Catalog\Models\Attribute;
 use Commerce\Catalog\Models\Brand;
 use Illuminate\Support\Collection;
@@ -166,15 +165,22 @@ final class ShopFilterCatalogService
         $attributeIds = $attributes->pluck('id')->all();
         $values = [];
 
-        $rows = DB::table('product_attribute_values')
-            ->whereIn('attribute_id', $attributeIds)
-            ->whereNull('product_variant_id')
-            ->distinct()
-            ->pluck('value');
+        if (! Schema::hasTable('attribute_values') || ! Schema::hasColumn('product_attribute_values', 'attribute_value_id')) {
+            return [];
+        }
 
-        foreach ($rows as $value) {
-            foreach (StorefrontAttributeFilterValue::parts((string) $value) as $part) {
-                $values[$part] = $part;
+        $rows = DB::table('product_attribute_values as pav')
+            ->whereIn('pav.attribute_id', $attributeIds)
+            ->whereNotNull('pav.attribute_value_id')
+            ->join('attribute_values as av', 'av.id', '=', 'pav.attribute_value_id')
+            ->select(['av.code'])
+            ->distinct()
+            ->get();
+
+        foreach ($rows as $row) {
+            $code = is_string($row->code ?? null) ? trim((string) $row->code) : '';
+            if ($code !== '') {
+                $values[$code] = $code;
             }
         }
 

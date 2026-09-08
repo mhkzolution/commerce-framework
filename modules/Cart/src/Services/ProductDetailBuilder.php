@@ -11,6 +11,8 @@ use Commerce\Contracts\Media\MediaQueryServiceInterface;
 use Commerce\Contracts\Storefront\ProductCardData;
 use Commerce\Contracts\Storefront\ProductDetailData;
 use Commerce\Product\Models\Product;
+use Commerce\Product\Models\ProductAttribute;
+use Commerce\Product\Models\ProductAttributeValue;
 use Commerce\Product\Models\ProductMedia;
 use Commerce\Product\Models\ProductVariant;
 use Commerce\Product\Services\ProductQueryService;
@@ -34,6 +36,8 @@ final class ProductDetailBuilder
         if ($product === null) {
             return null;
         }
+
+        $this->loadCatalogRelations($product);
 
         $variant = $this->defaultVariant($product);
         if ($variant === null) {
@@ -60,7 +64,7 @@ final class ProductDetailBuilder
             displayCurrency: $displayCurrency,
             sku: is_string($variant->sku) && $variant->sku !== '' ? $variant->sku : null,
             available: $available,
-            inStock: $this->inStock($available),
+            inStock: $this->inStock($available, $product),
             variantUuid: (string) $variant->uuid,
             shopUrl: $this->shopUrl(),
             uuid: (string) $product->uuid,
@@ -209,21 +213,19 @@ final class ProductDetailBuilder
     }
 
     /**
-     * @return list<array{uuid: string, price: int, compare_at_price: ?int, available: int, options: array<string, string>, image_thumbnail: ?string, sku: ?string}>
+     * @return list<array{uuid: string, price: int, compare_at_price: ?int, available: ?int, in_stock: bool, options: array<string, string>, image_thumbnail: ?string, sku: ?string}>
      */
     private function variantPayload(Product $product, string $baseCurrency, string $displayCurrency): array
     {
         $payload = [];
 
+        $axisIds = $this->variationAttributeIds($product);
+
         foreach ($product->variants as $variant) {
             $available = $this->available((string) $variant->uuid);
-            $inStock = $this->inStock($available);
+            $inStock = $this->inStock($available, $product);
             $meta = is_array($variant->meta) ? $variant->meta : [];
-            $options = is_array($meta['options'] ?? null) ? $meta['options'] : [];
-            $normalized = [];
-            foreach ($options as $key => $value) {
-                $normalized[strtolower((string) $key)] = (string) $value;
-            }
+            $normalized = $this->variantAxisOptions($product, $variant, $axisIds);
 
             $imageUuid = is_string($meta['image_media_uuid'] ?? null) ? $meta['image_media_uuid'] : null;
             $image = $this->galleryItem($imageUuid, (string) $product->name);
@@ -234,7 +236,8 @@ final class ProductDetailBuilder
                 'compare_at_price' => $variant->compare_at_price !== null
                     ? $this->convert((int) $variant->compare_at_price, $baseCurrency, $displayCurrency)
                     : null,
-                'available' => $available ?? ($inStock ? 9999 : 0),
+                'available' => $available,
+                'in_stock' => $inStock,
                 'options' => $normalized,
                 'image_thumbnail' => $image['url'] ?? null,
                 'image_srcset' => $image['srcset'] ?? null,
@@ -250,57 +253,41 @@ final class ProductDetailBuilder
      */
     private function variantAxes(Product $product): array
     {
-        $meta = is_array($product->meta) ? $product->meta : [];
-        $configured = is_array($meta['variant_options'] ?? null) ? $meta['variant_options'] : [];
         $axes = [];
 
-        foreach ($configured as $option) {
-            if (! is_array($option)) {
+        foreach ($this->variationAttributeRows($product) as $row) {
+            $attribute = $row->attribute;
+            if ($attribute === null) {
                 continue;
             }
 
-            $name = trim((string) ($option['name'] ?? $option['key'] ?? ''));
-            $values = is_array($option['values'] ?? null) ? $option['values'] : [];
-            $values = array_values(array_filter(array_map(
-                static fn (mixed $value): string => trim((string) $value),
-                $values,
-            )));
-
-            if ($name === '' || $values === []) {
-                continue;
-            }
-
-            $axes[] = [
-                'key' => strtolower($name),
-                'name' => $name,
-                'values' => $values,
-            ];
-        }
-
-        if ($axes !== []) {
-            return $axes;
-        }
-
-        $collected = [];
-        foreach ($product->variants as $variant) {
-            $meta = is_array($variant->meta) ? $variant->meta : [];
-            $options = is_array($meta['options'] ?? null) ? $meta['options'] : [];
-            foreach ($options as $key => $value) {
-                $axisKey = strtolower((string) $key);
-                $label = trim((string) $value);
-                if ($axisKey === '' || $label === '') {
+            $values = [];
+            foreach ($product->attributeValues as $pav) {
+                if ($pav->product_variant_id === null || (int) $pav->attribute_id !== (int) $attribute->id) {
                     continue;
                 }
-                $collected[$axisKey]['name'] = (string) $key;
-                $collected[$axisKey]['values'][$label] = $label;
-            }
-        }
 
-        foreach ($collected as $key => $axis) {
+                $label = $this->attributeDisplayValue($pav);
+                if ($label === '') {
+                    continue;
+                }
+
+                $position = $pav->attributeValue?->position ?? PHP_INT_MAX;
+                if (! isset($values[$label]) || $position < $values[$label]['position']) {
+                    $values[$label] = ['label' => $label, 'position' => $position];
+                }
+            }
+
+            if ($values === []) {
+                continue;
+            }
+
+            uasort($values, static fn (array $left, array $right): int => $left['position'] <=> $right['position']);
+
             $axes[] = [
-                'key' => $key,
-                'name' => (string) $axis['name'],
-                'values' => array_values($axis['values']),
+                'key' => strtolower((string) $attribute->name),
+                'name' => (string) $attribute->name,
+                'values' => array_column($values, 'label'),
             ];
         }
 
@@ -312,45 +299,59 @@ final class ProductDetailBuilder
      */
     private function visibleAttributes(Product $product): array
     {
-        $meta = is_array($product->meta) ? $product->meta : [];
-        $specs = is_array($meta['specifications'] ?? null) ? $meta['specifications'] : [];
         $items = [];
+        $seen = [];
+        $axisIds = $this->variationAttributeIds($product);
+        $selected = $this->defaultVariant($product);
 
-        foreach ($specs as $spec) {
-            if (! is_array($spec)) {
-                continue;
+        $add = static function (string $label, string $value) use (&$items, &$seen): void {
+            $label = trim($label);
+            $value = trim($value);
+            $key = strtolower($label.'|'.$value);
+            if ($label === '' || $value === '' || isset($seen[$key])) {
+                return;
             }
-            $label = trim((string) ($spec['label'] ?? ''));
-            $value = trim((string) ($spec['value'] ?? ''));
-            if ($label === '' || $value === '') {
-                continue;
-            }
+
+            $seen[$key] = true;
             $items[] = ['label' => $label, 'value' => $value];
-        }
+        };
 
-        if ($items !== []) {
-            return $items;
-        }
-
-        foreach ($product->attributeValues as $value) {
-            if ($value->product_variant_id !== null) {
-                continue;
-            }
-
-            $attribute = $value->attribute;
+        foreach ($product->productAttributes->sortBy('position')->values() as $row) {
+            $attribute = $row->attribute;
             if ($attribute === null || $attribute->is_visible === false) {
                 continue;
             }
 
-            $raw = trim((string) $value->value);
-            if ($raw === '') {
+            if ($row->used_for_variations) {
+                $pav = $selected === null ? null : $product->attributeValues->first(
+                    static fn (ProductAttributeValue $value): bool => (int) $value->attribute_id === (int) $attribute->id
+                        && (int) $value->product_variant_id === (int) $selected->id,
+                );
+            } else {
+                $pav = $product->attributeValues->first(
+                    static fn (ProductAttributeValue $value): bool => (int) $value->attribute_id === (int) $attribute->id
+                        && $value->product_variant_id === null,
+                );
+            }
+
+            if ($pav === null) {
                 continue;
             }
 
-            $items[] = [
-                'label' => (string) $attribute->name,
-                'value' => $raw,
-            ];
+            $add((string) $attribute->name, $this->attributeDisplayValue($pav));
+        }
+
+        foreach ($product->attributeValues as $pav) {
+            if ($pav->product_variant_id !== null || isset($axisIds[(int) $pav->attribute_id])) {
+                continue;
+            }
+
+            $attribute = $pav->attribute;
+            if ($attribute === null || $attribute->is_visible === false) {
+                continue;
+            }
+
+            $add((string) $attribute->name, $this->attributeDisplayValue($pav));
         }
 
         return $items;
@@ -406,6 +407,82 @@ final class ProductDetailBuilder
         return $cards;
     }
 
+    private function loadCatalogRelations(Product $product): void
+    {
+        $product->loadMissing([
+            'productAttributes.attribute',
+            'attributeValues.attribute',
+            'attributeValues.attributeValue',
+            'variants',
+        ]);
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function variationAttributeIds(Product $product): array
+    {
+        $ids = [];
+        foreach ($this->variationAttributeRows($product) as $row) {
+            $ids[(int) $row->attribute_id] = (int) $row->attribute_id;
+        }
+
+        return $ids;
+    }
+
+    /**
+     * @return iterable<ProductAttribute>
+     */
+    private function variationAttributeRows(Product $product): iterable
+    {
+        return $product->productAttributes
+            ->where('used_for_variations', true)
+            ->sortBy('position')
+            ->values();
+    }
+
+    /**
+     * @param  array<int, int>  $axisIds
+     * @return array<string, string>
+     */
+    private function variantAxisOptions(Product $product, ProductVariant $variant, array $axisIds): array
+    {
+        $options = [];
+
+        foreach ($product->attributeValues as $pav) {
+            if ((int) $pav->product_variant_id !== (int) $variant->id) {
+                continue;
+            }
+            if ($axisIds !== [] && ! isset($axisIds[(int) $pav->attribute_id])) {
+                continue;
+            }
+
+            $attribute = $pav->attribute;
+            if ($attribute === null) {
+                continue;
+            }
+
+            $label = $this->attributeDisplayValue($pav);
+            if ($label === '') {
+                continue;
+            }
+
+            $options[strtolower((string) $attribute->name)] = $label;
+        }
+
+        return $options;
+    }
+
+    private function attributeDisplayValue(ProductAttributeValue $value): string
+    {
+        $label = trim((string) ($value->attributeValue?->label ?? ''));
+        if ($label !== '') {
+            return $label;
+        }
+
+        return trim((string) $value->value);
+    }
+
     private function discountPercent(int $price, ?int $compareAt): ?int
     {
         if ($compareAt === null || $compareAt <= $price || $compareAt <= 0) {
@@ -422,15 +499,17 @@ final class ProductDetailBuilder
         }
 
         try {
-            return $this->inventory->getAvailable($variantUuid);
+            return $this->inventory->availabilityForPurchasable($variantUuid);
         } catch (Throwable) {
             return null;
         }
     }
 
-    private function inStock(?int $available): bool
+    private function inStock(?int $available, Product $product): bool
     {
-        return $available === null || $available > 0;
+        return $available === null
+            || $available > 0
+            || in_array($product->backorder_policy, ['notify', 'allow'], true);
     }
 
     private function convert(int $amount, string $from, string $to): int

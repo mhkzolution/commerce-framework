@@ -14,6 +14,7 @@ use Commerce\Catalog\Contracts\TagServiceInterface;
 use Commerce\Catalog\Services\AttributeQueryService;
 use Commerce\Catalog\Services\AttributeService;
 use Commerce\Catalog\Services\AttributeSetService;
+use Commerce\Catalog\Services\AttributeValueService;
 use Commerce\Catalog\Services\BrandQueryService;
 use Commerce\Catalog\Services\BrandService;
 use Commerce\Catalog\Services\CategoryQueryService;
@@ -57,6 +58,7 @@ final class CatalogServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(CatalogMediaResolver::class);
         $this->app->singleton(AttributeQueryService::class);
         $this->app->singleton(AttributeService::class);
+        $this->app->singleton(AttributeValueService::class);
         $this->app->singleton(AttributeSetService::class);
 
         $this->app->bind(CategoryQueryServiceInterface::class, CategoryQueryService::class);
