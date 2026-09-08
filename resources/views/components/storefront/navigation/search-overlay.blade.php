@@ -15,6 +15,7 @@
     class="storefront-search-overlay"
     data-search-overlay
     data-shop-url="{{ $shopUrl }}"
+    data-suggest-url="{{ route('storefront.suggest') }}"
     hidden
 >
     <div class="storefront-search-overlay__backdrop" data-search-close></div>
@@ -80,6 +81,7 @@
                     <ul class="storefront-search-recent__list" data-search-recent-list></ul>
                 </section>
             </div>
+            <div data-search-results hidden></div>
         </div>
     </div>
 </div>
