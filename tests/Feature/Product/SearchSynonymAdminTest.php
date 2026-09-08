@@ -9,6 +9,7 @@ use Commerce\Core\Models\SearchDocument;
 use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
 use Commerce\Product\Models\SearchSynonym;
+use Commerce\Product\Services\SearchSynonymExpander;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -125,5 +126,29 @@ final class SearchSynonymAdminTest extends TestCase
         $this->assertSame('cotton', $synonym->fresh()->from_term);
         $this->assertSame('ผ้าฝ้าย', $synonym->to_term);
         $this->assertSame(1, SearchSynonym::query()->count());
+    }
+
+    public function test_admin_store_does_not_refresh_a_live_expander(): void
+    {
+        $user = User::query()->firstOrFail();
+
+        app()->forgetInstance(SearchSynonymExpander::class);
+        $expander = app(SearchSynonymExpander::class);
+
+        $this->assertSame(['ผ้าฝ้าย'], $expander->expand(['ผ้าฝ้าย']));
+
+        $this->actingAs($user)
+            ->post(route('admin.catalog.search-synonyms.store'), [
+                'from_term' => 'ผ้าฝ้าย',
+                'to_term' => 'cotton',
+            ])
+            ->assertRedirect(route('admin.catalog.search-synonyms.index'));
+
+        $this->assertDatabaseHas('product_search_synonyms', [
+            'from_term' => 'ผ้าฝ้าย',
+            'to_term' => 'cotton',
+        ]);
+        $this->assertSame(['ผ้าฝ้าย'], $expander->expand(['ผ้าฝ้าย']));
+        $this->assertSame($expander, app(SearchSynonymExpander::class));
     }
 }
