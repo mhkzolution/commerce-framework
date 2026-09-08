@@ -180,13 +180,19 @@ final class ShopProductQuery
         $filterableAttributes = Attribute::query()
             ->where('is_filterable', true)
             ->whereIn('code', array_keys($attributes))
-            ->get(['id', 'code']);
+            ->get(['id', 'code'])
+            ->keyBy('code');
 
-        foreach ($filterableAttributes as $attribute) {
+        foreach ($attributes as $code => $value) {
+            $attribute = $filterableAttributes->get($code);
+            if ($attribute === null) {
+                continue;
+            }
+
             $this->applyAttributeGroupFilter(
                 $query,
                 [(int) $attribute->id],
-                $attributes[(string) $attribute->code] ?? null,
+                $value,
             );
         }
     }
