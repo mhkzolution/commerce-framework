@@ -1,7 +1,7 @@
 # Catalog V2 Follow-up: Search Index Operations
 
 **Date:** 2026-09-08  
-**Status:** Draft for review  
+**Status:** Locked  
 **Owner:** Product search (`modules/Product`) + Catalog label reindex (`AttributeValueService`)  
 **Related:** `docs/superpowers/specs/2026-09-08-catalog-v2-search-discovery-design.md`
 
@@ -44,10 +44,10 @@ Non-goals: build-then-swap, skip-and-continue per product, DB transaction around
 | Queue | None. Still synchronous HTTP + `product:reindex`. |
 | Cap location | After the **final ranking order** is produced and **before** UUIDs are returned from `ProductDiscoveryQuery`. Never `array_slice` then `usort`. Never SQL `LIMIT` on the document scan. |
 | Cap value | `500`. `public const` on `ProductDiscoveryQuery`. Not config / admin setting. |
-| Cap callers | All `candidateUuids()` callers (shop listing + facets for non-empty `q`). Suggest does not use this method and is unchanged. Empty `q` still returns `[]` without reading the table. |
+| Cap callers | All `candidateUuids()` callers. Facet aggregation for q-based discovery uses the same post-rank capped candidate set returned by `ProductDiscoveryQuery`. Listing and facets must not compute a second, uncapped candidate list. Suggest does not use this method and is unchanged. Empty `q` still returns `[]` without reading the table. |
 | Label N+1 | Eager-load on the label-change product query. No Redis. No `attribute_value_id → label` map inside `index()`. |
 | Relation source of truth | The relation list is **one** constant used by `reindexAll()` and the label-change path. Do not copy the array in two files. See §4. |
-| Discovery amendment | In-place, same unit. Rebuild row + candidate cap + scan for leftover unbounded wording. Replacement text is §5.1. |
+| Discovery amendment | In-place in **Task 1**. Known targets: §10 Reindex (rebuild), §8 Facets and filters (discovery flow), §12 Tests (acceptance), plus §3 locked decisions if a pipeline/candidate row is needed. After amendment: rebuild is flush-first + fail-fast; cap = 500 is documented; no leftover wording implies unbounded candidates or rollback-on-failure. Replacement text is §5.1. |
 
 ---
 
@@ -80,6 +80,7 @@ candidateUuids(q)
   → usort highest-field rank then title
   → slice first 500 of that ordered list
   → return uuids
+  → ShopController: that same array is listing searchUuids and facet searchUuids
 
 attribute_values.label change
   → persist label
@@ -105,13 +106,20 @@ sort(...)
 
 ### 5.1 Discovery replacement wording
 
-Write these into the Discovery spec in-place. Do not leave a conflicting claim in another section.
+Write these into the Discovery spec in-place. Known amendment targets (do not only edit acceptance):
 
-**§10 Admin rebuild row** — replace “Flush + rebuild all product documents” with: Flush + rebuild all product documents. After flush, an aborted rebuild leaves empty or partial documents; there is no rollback. CLI exits non-zero; admin does not flash success. Operator re-runs the command or button.
+- **Rebuild section (§10 Reindex)** — Admin rebuild row
+- **Discovery flow section (§8 Facets and filters)** — “After the index returns candidate product ids”
+- **Acceptance section (§12 Tests)** — add/adjust items for abort leftover and cap 500
+- **§3 Locked decisions** — pipeline / candidate row if that table still implies an unbounded set
 
-**§3 ranking / candidate row (new or amend Split/pipeline):** After rank (highest matched field, then `title` ascending), `ProductDiscoveryQuery` returns at most 500 uuids. SQL document load is not `LIMIT`ed. Empty `q` still does not query the index.
+**§10 Admin rebuild row** — replace “Flush + rebuild all product documents” with: Flush + rebuild all product documents. After flush, an aborted rebuild leaves empty or partial documents; documents indexed before the exception remain present; there is no rollback. CLI exits non-zero; admin does not flash success. Operator re-runs the command or button.
 
-**§8 / “After the index returns candidate product ids”:** When `q` is non-empty, that list is the capped ranked set (≤ 500). Empty `q` is still the full published catalog via relations.
+**§3 ranking / candidate row:** After rank (highest matched field, then `title` ascending), `ProductDiscoveryQuery` returns at most 500 uuids. Facets for non-empty `q` use that same list. SQL document load is not `LIMIT`ed. Empty `q` still does not query the index.
+
+**§8 discovery flow** — replace “After the index returns candidate product ids” so it means: when `q` is non-empty, listing and facet aggregation use the same post-rank capped set (≤ 500). Empty `q` is still the full published catalog via relations.
+
+**§12** — add acceptance that leftover documents after a thrown rebuild are not rolled back, and that `candidateUuids` returns at most 500 in rank order.
 
 Scan the whole Discovery document for wording that means “every matching document is a candidate” or “rebuild restores the previous index on failure.” After the edit, none of that remains. `Query-time only` for synonyms stays.
 
@@ -121,28 +129,27 @@ Scan the whole Discovery document for wording that means “every matching docum
 
 Keep existing rebuild-flush-stale, label-change reindex, and Discovery ranking tests green.
 
-### Task 1 — Rebuild failure semantics
+### Task 1 — Rebuild failure semantics + Discovery amendment
 
 1. After `flush`, if `reindexAll` / `index` throws, leftover documents are empty or the prefix already written. No restore of the pre-flush set.
-2. `php artisan product:reindex` exits **non-zero** when rebuild throws. It does not print the success “Indexed N products.” line as if the run completed.
-3. Admin rebuild POST does **not** set the success flash (`Rebuilt search documents for …`) when rebuild throws. The response is a failure (uncaught exception / 5xx is acceptable). Catching the exception and redirecting with that success `status` is a spec fail.
+2. **Documents indexed before the exception remain present. No rollback occurs.** A catch path that deletes those rows (cleanup) fails this spec.
+3. `php artisan product:reindex` exits **non-zero** when rebuild throws. It does not print the success “Indexed N products.” line as if the run completed.
+4. Admin rebuild POST does **not** set the success flash (`Rebuilt search documents for …`) when rebuild throws. The response is a failure (uncaught exception / 5xx is acceptable). Catching the exception and redirecting with that success `status` is a spec fail.
+5. **Discovery V2 is updated in-place** at §10, §8, §12, and §3 as needed. After the edit: rebuild section is flush-first + fail-fast; candidate cap = 500 is documented (including that facets use that set); no remaining wording implies unbounded candidate sets or rollback-on-failure. Scan the whole Discovery document.
 
 ### Task 2 — Candidate cap (500)
 
-4. Rank order unchanged for the kept prefix: build a set of more than 500 matches; the first 500 uuids from `candidateUuids` equal the first 500 of the same query if the cap were not applied (same sort: exact SKU, then highest field, then title).
-5. Tail removed: a document that sorts as 501st is absent from the returned list.
-6. No SQL `LIMIT` on the `search_documents` scan in `ProductDiscoveryQuery`. Cap is `array_slice` (or equivalent) **after** `usort`.
-7. Empty / whitespace `q` still returns `[]` without reading `search_documents`. Suggest tests stay green.
+6. Rank order unchanged for the kept prefix: build a set of more than 500 matches; the first 500 uuids from `candidateUuids` equal the first 500 of the same query if the cap were not applied (same sort: exact SKU, then highest field, then title).
+7. Tail removed: a document that sorts as 501st is absent from the returned list.
+8. No SQL `LIMIT` on the `search_documents` scan in `ProductDiscoveryQuery`. Cap is `array_slice` (or equivalent) **after** `usort`.
+9. Empty / whitespace `q` still returns `[]` without reading `search_documents`. Suggest tests stay green.
+10. **Same set for facets:** `ShopController` (or equivalent) passes the `candidateUuids()` return value to both listing and `ShopFilterCatalogService::buildFor`. No second uncapped discovery call for `q`.
 
 ### Task 3 — Label-change eager load
 
-8. Label rename still reindexes affected products (existing `crimson` / filter-code test stays).
-9. `reindexAll()` and the label-change product query use the **same** `INDEX_RELATIONS` (or equivalent named constant). Grep: `AttributeValueService` does not duplicate a literal relation array that can drift from `reindexAll()`.
-10. Query log (or equivalent) on a label change that touches more than one product: not one `attribute_values` / `variants` load per product via lazy `loadMissing` as the only load path. Eager `with(INDEX_RELATIONS)` is present on that query.
-
-### Shared
-
-11. **Discovery is updated in-place.** After amendment: rebuild section is flush-first + fail-fast; candidate cap = 500 is documented; no remaining wording implies unbounded candidate sets. Scan the whole Discovery document, not only the rebuild table row.
+11. Label rename still reindexes affected products (existing `crimson` / filter-code test stays).
+12. `reindexAll()` and the label-change product query use the **same** `INDEX_RELATIONS` (or equivalent named constant). Grep: `AttributeValueService` does not duplicate a literal relation array that can drift from `reindexAll()`.
+13. Query log (or equivalent) on a label change that touches more than one product: not one `attribute_values` / `variants` load per product via lazy `loadMissing` as the only load path. Eager `with(INDEX_RELATIONS)` is present on that query.
 
 ---
 
@@ -152,7 +159,7 @@ Keep existing rebuild-flush-stale, label-change reindex, and Discovery ranking t
 - Skip failed products and continue
 - Transaction wrapping flush + all inserts
 - Rebuild mutex / cache lock
-- Candidate cap in SQL or in `ShopController` only
+- Candidate cap in SQL or in `ShopController` only (listing capped, facets uncapped)
 - Cap config / admin UI
 - Suggest query changes
 - Ranking formula, synonym expander, merchandising
@@ -164,10 +171,9 @@ Keep existing rebuild-flush-stale, label-change reindex, and Discovery ranking t
 ## 8. Delivery
 
 ```text
-Task 1  Rebuild failure semantics (CLI non-zero, admin no success flash)
-Task 2  Candidate cap 500 after final rank
-Task 3  Label-change reindex uses INDEX_RELATIONS
-        Amend Discovery in-place (rebuild + cap + leftover wording)
+Task 1  Rebuild failure semantics + Discovery amendment
+Task 2  Candidate cap = 500
+Task 3  Label-change reindex eager loading
 ```
 
 Human gate after each task, then whole-branch review. One spec, three tasks.
