@@ -9,19 +9,11 @@ final readonly class ShopFilterCatalog
     /**
      * @param  list<array{name: string, slug: string, count: int}>  $brands
      * @param  list<array{label: string, min: ?int, max: ?int}>  $pricePresets
-     * @param  array<string, string>  $sizes
-     * @param  array<string, string>  $colors
-     * @param  list<int>  $sizeAttributeIds
-     * @param  list<int>  $colorAttributeIds
      * @param  list<array{code: string, name: string, values: list<array{code: string, label: string, count: int}>}>  $facets
      */
     public function __construct(
         public array $brands = [],
         public array $pricePresets = [],
-        public array $sizes = [],
-        public array $colors = [],
-        public array $sizeAttributeIds = [],
-        public array $colorAttributeIds = [],
         public array $facets = [],
     ) {}
 }

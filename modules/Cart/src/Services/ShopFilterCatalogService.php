@@ -14,7 +14,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 use Throwable;
 
 final class ShopFilterCatalogService
@@ -34,7 +33,6 @@ final class ShopFilterCatalogService
     public function buildFor(ShopListingFilters $filters, ?array $searchUuids): ShopFilterCatalog
     {
         $attributes = $this->filterableAttributes();
-        $grouped = $this->groupAttributes($attributes);
         $attributeIdsByCode = $attributes
             ->mapWithKeys(static fn (Attribute $attribute): array => [
                 (string) $attribute->code => [(int) $attribute->id],
@@ -53,10 +51,6 @@ final class ShopFilterCatalogService
         return new ShopFilterCatalog(
             brands: $this->brands($filters, $searchUuids, $attributeIdsByCode),
             pricePresets: $this->pricePresets(),
-            sizes: $this->legacyOptions($facets, $grouped['size']),
-            colors: $this->legacyOptions($facets, $grouped['color']),
-            sizeAttributeIds: $grouped['size']->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all(),
-            colorAttributeIds: $grouped['color']->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all(),
             facets: $facets,
         );
     }
@@ -142,74 +136,6 @@ final class ShopFilterCatalogService
         } catch (Throwable) {
             return collect();
         }
-    }
-
-    /**
-     * @param  Collection<int, Attribute>  $attributes
-     * @return array{size: Collection<int, Attribute>, color: Collection<int, Attribute>}
-     */
-    private function groupAttributes(Collection $attributes): array
-    {
-        $groups = [
-            'size' => collect(),
-            'color' => collect(),
-        ];
-
-        foreach ($attributes as $attribute) {
-            $bucket = $this->resolveGroup($attribute);
-
-            if ($bucket === null) {
-                continue;
-            }
-
-            $groups[$bucket]->push($attribute);
-        }
-
-        return $groups;
-    }
-
-    private function resolveGroup(Attribute $attribute): ?string
-    {
-        if ($this->matchesCodes($attribute, (array) config('cart.storefront.filters.exclude_codes', []))) {
-            return null;
-        }
-
-        foreach (['size', 'color'] as $group) {
-            /** @var list<string> $codes */
-            $codes = (array) config("cart.storefront.filters.groups.{$group}", []);
-
-            if ($this->matchesCodes($attribute, $codes)) {
-                return $group;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param  list<string>  $codes
-     */
-    private function matchesCodes(Attribute $attribute, array $codes): bool
-    {
-        if ($codes === []) {
-            return false;
-        }
-
-        $haystack = Str::lower($attribute->code.' '.$attribute->name);
-
-        foreach ($codes as $code) {
-            $needle = Str::lower(trim((string) $code));
-
-            if ($needle === '') {
-                continue;
-            }
-
-            if ($haystack === $needle || str_contains($haystack, $needle)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -334,23 +260,5 @@ final class ShopFilterCatalogService
         }
 
         return $query;
-    }
-
-    /**
-     * @param  list<array{code: string, name: string, values: list<array{code: string, label: string, count: int}>}>  $facets
-     * @param  Collection<int, Attribute>  $attributes
-     * @return array<string, string>
-     */
-    private function legacyOptions(array $facets, Collection $attributes): array
-    {
-        $codes = $attributes
-            ->pluck('code')
-            ->map(static fn (mixed $code): string => (string) $code);
-
-        return collect($facets)
-            ->whereIn('code', $codes)
-            ->flatMap(static fn (array $facet): array => $facet['values'])
-            ->mapWithKeys(static fn (array $value): array => [$value['code'] => $value['label']])
-            ->all();
     }
 }
