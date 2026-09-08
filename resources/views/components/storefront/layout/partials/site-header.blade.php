@@ -65,7 +65,7 @@
 
                 <noscript>
                     <form method="GET" action="{{ $header->actions->searchUrl }}" class="sr-only" role="search">
-                        <input type="search" name="search" value="{{ $header->actions->searchQuery }}">
+                        <input type="search" name="q" value="{{ $header->actions->searchQuery }}">
                     </form>
                 </noscript>
 

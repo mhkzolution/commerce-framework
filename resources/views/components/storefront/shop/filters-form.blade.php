@@ -37,7 +37,7 @@
     {{ $attributes }}
 >
     @if ($filters->search)
-        <input type="hidden" name="search" value="{{ $filters->search }}">
+        <input type="hidden" name="q" value="{{ $filters->search }}">
     @endif
     @if ($filters->sort !== 'latest')
         <input type="hidden" name="sort" value="{{ $filters->sort }}">

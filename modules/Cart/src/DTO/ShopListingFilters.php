@@ -4,12 +4,26 @@ declare(strict_types=1);
 
 namespace Commerce\Cart\DTO;
 
+use Commerce\Catalog\Models\Attribute;
+use Commerce\Product\Support\SearchReservedParams;
 use Illuminate\Http\Request;
 
 final readonly class ShopListingFilters
 {
+    public ?string $q;
+
+    public ?string $search;
+
+    /**
+     * @var array<string, string>
+     */
+    public array $attributes;
+
+    /**
+     * @param  array<string, string>  $attributes
+     */
     public function __construct(
-        public ?string $search = null,
+        ?string $search = null,
         public ?string $category = null,
         public string $availability = 'all',
         public string $sort = 'latest',
@@ -18,17 +32,44 @@ final readonly class ShopListingFilters
         public ?int $priceMax = null,
         public ?string $size = null,
         public ?string $color = null,
-    ) {}
+        ?string $q = null,
+        array $attributes = [],
+    ) {
+        $this->q = self::nonEmptyString($q) ?? self::nonEmptyString($search);
+        $this->search = $this->q;
+
+        $normalizedAttributes = [];
+        foreach ($attributes as $code => $value) {
+            if (
+                is_string($code)
+                && ! in_array($code, [...SearchReservedParams::KEYS, 'search'], true)
+                && ($normalized = self::nonEmptyString($value)) !== null
+            ) {
+                $normalizedAttributes[$code] = $normalized;
+            }
+        }
+
+        if (! isset($normalizedAttributes['size']) && self::nonEmptyString($size) !== null) {
+            $normalizedAttributes['size'] = self::nonEmptyString($size);
+        }
+        if (! isset($normalizedAttributes['color']) && self::nonEmptyString($color) !== null) {
+            $normalizedAttributes['color'] = self::nonEmptyString($color);
+        }
+
+        $this->attributes = $normalizedAttributes;
+    }
 
     public static function fromRequest(Request $request): self
     {
-        $search = $request->string('search')->toString() ?: null;
+        $q = self::nonEmptyString($request->input('q'));
+        $search = self::nonEmptyString($request->input('search'));
         $category = $request->string('category')->toString() ?: null;
         $availability = $request->string('availability')->toString();
         $sort = $request->string('sort')->toString();
         $brand = $request->string('brand')->toString() ?: null;
         $size = $request->string('size')->toString() ?: null;
         $color = $request->string('color')->toString() ?: null;
+        $attributes = self::filterableAttributes($request);
 
         return new self(
             search: $search,
@@ -40,6 +81,8 @@ final readonly class ShopListingFilters
             priceMax: self::optionalInt($request->input('price_max')),
             size: $size,
             color: $color,
+            q: $q,
+            attributes: $attributes,
         );
     }
 
@@ -48,8 +91,8 @@ final readonly class ShopListingFilters
      */
     public function toQueryArray(): array
     {
-        return array_filter([
-            'search' => $this->search,
+        $query = array_filter([
+            'q' => $this->q,
             'category' => $this->category,
             'availability' => $this->availability !== 'all' ? $this->availability : null,
             'sort' => $this->sort !== 'latest' ? $this->sort : null,
@@ -59,6 +102,12 @@ final readonly class ShopListingFilters
             'size' => $this->size,
             'color' => $this->color,
         ], static fn (?string $value): bool => $value !== null && $value !== '');
+
+        foreach ($this->attributes as $code => $value) {
+            $query[$code] = $value;
+        }
+
+        return $query;
     }
 
     /**
@@ -84,7 +133,8 @@ final readonly class ShopListingFilters
 
     public function hasListingConstraints(): bool
     {
-        return $this->search !== null
+        return $this->q !== null
+            || $this->attributes !== []
             || $this->category !== null
             || $this->brand !== null
             || $this->priceMin !== null
@@ -110,5 +160,49 @@ final readonly class ShopListingFilters
         }
 
         return max(0, (int) $value);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function filterableAttributes(Request $request): array
+    {
+        $candidates = [];
+
+        foreach ($request->query() as $code => $value) {
+            if (
+                ! is_string($code)
+                || in_array($code, [...SearchReservedParams::KEYS, 'search', 'size', 'color'], true)
+                || ! is_string($value)
+                || self::nonEmptyString($value) === null
+            ) {
+                continue;
+            }
+
+            $candidates[$code] = trim($value);
+        }
+
+        if ($candidates === []) {
+            return [];
+        }
+
+        $filterableCodes = Attribute::query()
+            ->where('is_filterable', true)
+            ->whereIn('code', array_keys($candidates))
+            ->pluck('code')
+            ->all();
+
+        return array_intersect_key($candidates, array_flip($filterableCodes));
+    }
+
+    private static function nonEmptyString(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        return $value === '' ? null : $value;
     }
 }

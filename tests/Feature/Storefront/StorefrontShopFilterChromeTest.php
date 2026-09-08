@@ -180,7 +180,22 @@ final class StorefrontShopFilterChromeTest extends TestCase
             ->getContent();
 
         $this->assertMatchesRegularExpression(
-            '/name="search"[^>]*value="harbor mug"|value="harbor mug"[^>]*name="search"/',
+            '/<input(?=[^>]*type="search")(?=[^>]*name="q")(?=[^>]*value="harbor mug")[^>]*>/',
+            $html,
+        );
+    }
+
+    public function test_header_search_prefers_q_over_legacy_search(): void
+    {
+        $html = $this->get(route('storefront.shop.index', [
+            'q' => 'cotton tee',
+            'search' => 'ignored',
+        ]))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/<input(?=[^>]*type="search")(?=[^>]*name="q")(?=[^>]*value="cotton tee")[^>]*>/',
             $html,
         );
     }

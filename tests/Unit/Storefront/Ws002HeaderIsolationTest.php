@@ -71,7 +71,7 @@ final class Ws002HeaderIsolationTest extends TestCase
         $this->assertStringContainsString('x-storefront.navigation.cart-drawer', $contents);
         $this->assertStringContainsString('x-storefront.navigation.wishlist-drawer', $contents);
         $this->assertStringContainsString('x-storefront.layout.page-container', $contents);
-        $this->assertStringContainsString('name="search"', $contents);
+        $this->assertStringContainsString('name="q"', $contents);
         $this->assertStringContainsString('searchQuery', $contents);
         $this->assertStringNotContainsString('x-site.logo', $contents);
 
