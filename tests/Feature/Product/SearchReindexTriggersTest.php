@@ -18,6 +18,7 @@ use Commerce\Iam\Models\Permission;
 use Commerce\Iam\Models\Role;
 use Commerce\Iam\Models\User;
 use Commerce\Iam\Services\AuthorizationService;
+use Commerce\Product\Models\Product;
 use Commerce\Product\Models\ProductAttribute;
 use Commerce\Product\Models\ProductAttributeValue;
 use Commerce\Product\Models\SearchSynonym;
@@ -26,6 +27,7 @@ use Commerce\Product\Services\ProductSearchIndexer;
 use Commerce\Settings\Database\Seeders\SettingsSeeder;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -105,6 +107,76 @@ final class SearchReindexTriggersTest extends TestCase
         $this->get(route('storefront.shop.index', ['color' => 'red']))
             ->assertOk()
             ->assertSee($product->name);
+    }
+
+    public function test_label_change_eager_loads_index_relations_for_multiple_products(): void
+    {
+        $color = Attribute::query()->create([
+            'code' => 'color-nplus',
+            'name' => 'Color',
+            'type' => 'select',
+            'is_filterable' => true,
+            'is_visible' => true,
+            'options' => [],
+        ]);
+        $red = AttributeValue::query()->create([
+            'tenant_id' => $color->tenant_id,
+            'attribute_id' => $color->id,
+            'code' => app(AttributeValueService::class)->allocateCode($color->id, 'Red'),
+            'label' => 'Red',
+            'position' => 0,
+        ]);
+
+        foreach (['NPLUS-A', 'NPLUS-B'] as $sku) {
+            $product = $this->createPurchasableProduct(sku: $sku)->product;
+            ProductAttribute::query()->create([
+                'product_id' => $product->id,
+                'attribute_id' => $color->id,
+                'used_for_variations' => false,
+                'position' => 0,
+            ]);
+            ProductAttributeValue::query()->create([
+                'product_id' => $product->id,
+                'attribute_id' => $color->id,
+                'product_variant_id' => null,
+                'attribute_value_id' => $red->id,
+                'value' => $red->label,
+            ]);
+            app(ProductSearchIndexer::class)->index($product->fresh());
+        }
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        app(AttributeValueService::class)->update($red->uuid, 'Crimson Red');
+
+        $sql = array_column(DB::getQueryLog(), 'query');
+        $attributeValueSelects = collect($sql)->filter(
+            static fn (string $query): bool => preg_match(
+                '/^select \* from ["`](?:product_)?attribute_values["`].* in \(/',
+                $query,
+            ) === 1,
+        );
+        $this->assertLessThanOrEqual(2, $attributeValueSelects->count());
+
+        $productUuids = Product::query()
+            ->whereIn(
+                'id',
+                ProductAttributeValue::query()
+                    ->where('attribute_value_id', $red->id)
+                    ->pluck('product_id'),
+            )
+            ->pluck('uuid');
+
+        foreach ($productUuids as $uuid) {
+            $document = SearchDocument::query()
+                ->where('index_name', ProductSearchIndexer::INDEX)
+                ->where('document_id', $uuid)
+                ->firstOrFail();
+            $this->assertContains(
+                ['code' => $red->fresh()->code, 'label' => 'Crimson Red'],
+                $document->payload['attributes'],
+            );
+        }
     }
 
     public function test_synonym_create_and_update_do_not_rewrite_search_documents(): void

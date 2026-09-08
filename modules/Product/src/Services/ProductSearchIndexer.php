@@ -11,13 +11,23 @@ final class ProductSearchIndexer
 {
     public const INDEX = 'products';
 
+    /**
+     * @var list<string>
+     */
+    public const INDEX_RELATIONS = [
+        'variants',
+        'categories',
+        'brand',
+        'attributeValues.attributeValue',
+    ];
+
     public function __construct(
         private readonly SearchIndexInterface $searchIndex,
     ) {}
 
     public function index(Product $product): void
     {
-        $product->loadMissing(['variants', 'categories', 'brand', 'attributeValues.attributeValue']);
+        $product->loadMissing(self::INDEX_RELATIONS);
 
         $description = strip_tags((string) $product->description);
         $skus = $product->variants
@@ -72,7 +82,7 @@ final class ProductSearchIndexer
         $count = 0;
 
         Product::query()
-            ->with(['variants', 'categories', 'brand', 'attributeValues.attributeValue'])
+            ->with(self::INDEX_RELATIONS)
             ->chunkById(100, function ($products) use (&$count): void {
                 foreach ($products as $product) {
                     $this->index($product);

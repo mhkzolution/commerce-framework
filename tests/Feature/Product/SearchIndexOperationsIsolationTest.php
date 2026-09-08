@@ -18,4 +18,20 @@ final class SearchIndexOperationsIsolationTest extends TestCase
         $this->assertStringContainsString('buildFor($filters, $searchUuids)', $contents);
         $this->assertStringContainsString('searchUuids: $searchUuids', $contents);
     }
+
+    public function test_label_reindex_uses_indexer_relation_constant(): void
+    {
+        $indexer = file_get_contents(dirname(__DIR__, 3).'/modules/Product/src/Services/ProductSearchIndexer.php');
+        $service = file_get_contents(dirname(__DIR__, 3).'/modules/Catalog/src/Services/AttributeValueService.php');
+        $this->assertNotFalse($indexer);
+        $this->assertNotFalse($service);
+
+        $this->assertStringContainsString('INDEX_RELATIONS', $indexer);
+        $this->assertStringContainsString('with(self::INDEX_RELATIONS)', $indexer);
+        $this->assertStringContainsString('ProductSearchIndexer::INDEX_RELATIONS', $service);
+        $this->assertStringNotContainsString(
+            "with(['variants', 'categories', 'brand', 'attributeValues.attributeValue'])",
+            $service,
+        );
+    }
 }

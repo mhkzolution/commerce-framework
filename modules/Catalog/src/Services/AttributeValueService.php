@@ -66,9 +66,14 @@ final class AttributeValueService extends BaseService
                 ->distinct()
                 ->pluck('product_id');
 
-            foreach (Product::query()->whereKey($productIds)->get() as $product) {
-                $this->productSearchIndexer->index($product);
-            }
+            Product::query()
+                ->whereKey($productIds)
+                ->with(ProductSearchIndexer::INDEX_RELATIONS)
+                ->chunkById(100, function ($products): void {
+                    foreach ($products as $product) {
+                        $this->productSearchIndexer->index($product);
+                    }
+                });
         }
 
         return $value->fresh();
