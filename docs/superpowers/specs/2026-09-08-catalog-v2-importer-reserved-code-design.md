@@ -1,7 +1,7 @@
 # Catalog V2 Follow-up: Importer reserved-code skip (F2b)
 
 **Date:** 2026-09-08  
-**Status:** Draft for review  
+**Status:** Locked  
 **Owner:** Product importer (`modules/Product/src/Import`)  
 **Related:** `docs/superpowers/specs/2026-09-08-catalog-v2-reserved-code-hardening-design.md`, `docs/superpowers/specs/2026-09-08-catalog-v2-search-reserved-params-support-design.md`
 
