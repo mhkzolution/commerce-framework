@@ -5,22 +5,11 @@ declare(strict_types=1);
 namespace Commerce\Product\Http\Requests;
 
 use Commerce\Catalog\Models\Attribute;
-use Commerce\Product\Support\SearchReservedParams;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 final class UpdateVariantOptionPresetRequest extends FormRequest
 {
-    protected function prepareForValidation(): void
-    {
-        $code = $this->input('code');
-
-        if (is_string($code)) {
-            $this->merge(['code' => Str::slug($code, '_')]);
-        }
-    }
-
     public function authorize(): bool
     {
         return true;
@@ -29,15 +18,22 @@ final class UpdateVariantOptionPresetRequest extends FormRequest
     public function rules(): array
     {
         $uuid = (string) $this->route('variant_option');
-        $attributeId = Attribute::query()->where('uuid', $uuid)->value('id');
+        $attribute = Attribute::query()->where('uuid', $uuid)->first();
 
         return [
             'code' => [
-                'required',
+                'sometimes',
                 'string',
                 'max:100',
-                Rule::notIn(SearchReservedParams::KEYS),
-                Rule::unique('attributes', 'code')->ignore($attributeId),
+                function (string $attributeName, mixed $value, \Closure $fail) use ($attribute): void {
+                    if ($attribute === null || ! is_string($value)) {
+                        return;
+                    }
+
+                    if (Str::slug($value, '_') !== $attribute->code) {
+                        $fail('The attribute code cannot be changed.');
+                    }
+                },
             ],
             'name' => ['required', 'string', 'max:255'],
             'position' => ['nullable', 'integer', 'min:0'],

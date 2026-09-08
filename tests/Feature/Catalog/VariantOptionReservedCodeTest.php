@@ -76,4 +76,27 @@ final class VariantOptionReservedCodeTest extends TestCase
 
         $this->assertSame('color', $option->fresh()->code);
     }
+
+    public function test_update_accepts_normalized_same_identity(): void
+    {
+        $option = app(VariantOptionPresetService::class)->create(
+            name: 'Shoe size',
+            code: 'shoe_size',
+            options: ['40', '41'],
+            position: 0,
+        );
+
+        $this->actingAs(User::query()->first())
+            ->put(route('admin.catalog.variant-options.update', $option->uuid), [
+                'code' => 'Shoe Size',
+                'name' => 'EU shoe size',
+                'options' => ['40', '41'],
+                'position' => 0,
+            ])
+            ->assertRedirect(route('admin.catalog.variant-options.index'));
+
+        $fresh = $option->fresh();
+        $this->assertSame('shoe_size', $fresh->code);
+        $this->assertSame('EU shoe size', $fresh->name);
+    }
 }
