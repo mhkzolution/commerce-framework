@@ -89,6 +89,12 @@ final class SearchSynonymFreezeIsolationTest extends TestCase
             'make(SearchSynonymExpander::class)',
             $contents,
         );
+        $this->assertSame(1, substr_count($contents, 'make(SearchSynonymExpander::class)'));
+        $this->assertStringNotContainsString('app(SearchSynonymExpander::class)', $contents);
+        $this->assertLessThan(
+            strpos($contents, 'make(SearchSynonymExpander::class)'),
+            strpos($contents, "class_exists('Laravel\\\\Octane\\\\Events\\\\WorkerStarting')"),
+        );
         $this->assertStringNotContainsString(
             'use Laravel\\Octane\\',
             $contents,
