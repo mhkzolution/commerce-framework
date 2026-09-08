@@ -336,17 +336,19 @@ even if the workspace save path no longer writes JSON (Wave 2). JSON may remain 
 - Consumes: `product_attribute_values.attribute_value_id`, `product_attributes.used_for_variations`
 - Produces: non-axis filter = product-level row; axis filter = `whereHas` variant PAV; facet values from `attribute_values.code`
 
-- [ ] **Step 1: Failing test** — variable default Blue, extra variant Red; filter `color=red` includes the product. Simple Material=Cotton product-level row matches.
+- [x] **Step 1: Failing test** — variable default Blue, extra variant Red; filter `color=red` includes the product. Simple Material=Cotton product-level row matches.
 
-- [ ] **Step 2: Run, fail** (current filter ignores variant-scoped rows)
+- [x] **Step 2: Run, fail** (current filter ignores variant-scoped rows)
 
-- [ ] **Step 3: Implement exists-on-variant for axes. Query URL uses code. Do not change PDP disable logic except if a shared helper is required.**
+- [x] **Step 3: Implement exists-on-variant for axes. Query URL uses code. Do not change PDP disable logic except if a shared helper is required.**
 
-- [ ] **Step 4: Pass tests. `constrainInStock` unchanged.**
+- [x] **Step 4: Pass tests. `constrainInStock` unchanged.**
 
-- [ ] **Step 5: Commit** `feat: filter shop products by attribute value relations`
+- [x] **Step 5: Commit** `feat: filter shop products by attribute value relations`
 
 **Stop for human Task 8 review.** Do not start Task 9 (cutover) until approved.
+
+**Task 8 human review (2026-09-07):** Approved. Leftover PAV `value` fallback and sibling-exclusion test tightness stay as known debt for Task 9 / polish. Task 9 open as its own wave.
 
 ---
 
@@ -363,17 +365,21 @@ even if the workspace save path no longer writes JSON (Wave 2). JSON may remain 
 - Consumes: Tasks 7–8 plus Wave 2 hydrate already on relations
 - Produces: save/hydrate/PDP/filter never read or write `variant_options` / `options` JSON. Provisioner has no runtime callers.
 
-- [ ] **Step 1: Failing test** — after save, `products.meta` has no `variant_options` key (or it is absent/empty and ignored); `product_variants.meta.options` not written; `VariantOptionAttributeProvisioner` has no production callers.
+- [x] **Step 1: Failing test** — after save, `products.meta` has no `variant_options` key (or it is absent/empty and ignored); `product_variants.meta.options` not written; `VariantOptionAttributeProvisioner` has no production callers.
 
-- [ ] **Step 2: Run, fail** if provisioner or JSON read still hooked
+- [x] **Step 2: Run, fail** if provisioner or JSON read still hooked
 
-- [ ] **Step 3: Remove write/read. Keep JSON in DB until ops delete it; code must ignore it.**
+- [x] **Step 3: Remove write/read. Keep JSON in DB until ops delete it; code must ignore it.**
 
-- [ ] **Step 4: Run `php vendor/bin/phpunit tests/Feature/Product tests/Feature/Catalog tests/Feature/Cart tests/Unit/Cart/ProductDetailBuilderTest.php tests/Unit/Product`**
+- [x] **Step 4: Run `php vendor/bin/phpunit tests/Feature/Product tests/Feature/Catalog tests/Feature/Cart tests/Unit/Cart/ProductDetailBuilderTest.php tests/Unit/Product`**
 
-- [ ] **Step 5: Commit** `feat: cut over catalog variants to relation-only read and write`
+- [x] **Step 5: Commit** `feat: cut over catalog variants to relation-only read and write`
 
 **Stop for human Wave 3 / Phase 1 review.** Search, CSV, API, SEO stay out of this plan.
+
+**Task 9 implementation (2026-09-07):** `bebe5ca` on `feat/product-create-stock-v1`. Review clean.
+
+**Phase 1 human review (2026-09-08):** Architecture gate passed. Eight-point HTTP regression passed (`CatalogV2Phase1RegressionTest`, 2 tests / 72 assertions). Implementation: Complete. Search/CSV/API/SEO/JSON column drops stay later projects.
 
 ---
 

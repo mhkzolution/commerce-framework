@@ -2,6 +2,7 @@
 
 **Date:** 2026-09-07  
 **Status:** Locked  
+**Implementation:** Complete (Task 9 cutover + 8-point regression, 2026-09-08)  
 **Owner:** Catalog (`modules/Catalog`) + Product workspace (`modules/Product`) + storefront PDP/shop (`modules/Cart`)  
 **Related:** `docs/superpowers/specs/2026-09-07-product-create-stock-design.md`
 
@@ -244,3 +245,34 @@ Do not rewrite SKUs. Auto SKU rules apply only to **new** variants after cutover
 - Shop listing one card per variant
 - Deleting unused `attributes.options` JSON column (optional cleanup after Phase 1 is stable)
 - Changing stock, backorder, or SKU uniqueness rules
+
+---
+
+## 13. Phase 1 close (2026-09-08)
+
+Architecture gate: relation is SoT. JSON = Green / relation = Red is ignored on workspace hydrate, PDP, and shop filter. Save unsets `variant_options` / `specifications` / variant `options`. `VariantOptionAttributeProvisioner` is deleted. Shop filter matches `attribute_values.code` only.
+
+Eight-point regression (`tests/Feature/Product/CatalogV2Phase1RegressionTest.php`):
+
+| Check | Evidence |
+|---|---|
+| 1 Create Simple | workspace store; one default variant; no JSON keys |
+| 2 Create Variable | workspace store as draft |
+| 3 Generate matrix | `generateVariants`; variant-scoped PAV rows |
+| 4 Save | no `variant_options` / `specifications` / `options` after update |
+| 5 Reload Edit | GET `admin.products.edit` `data-product-workspace-state` follows relations while leftover JSON says Green |
+| 6 PDP | `ProductDetailBuilder::fromSlug` axes from relations |
+| 7 Shop filter | `?color=red` includes; `?color=green` excludes |
+| 8 Publish / Scheduled | POST `admin.products.publish`; scheduled save + reload `publishAt` + `publishScheduled()` |
+
+Later projects (search, CSV, API, feeds, dropping JSON columns) stay out of Phase 1.
+
+### Baseline from Phase 1 close
+
+These identities hold after merge. Later work must not reintroduce a second copy.
+
+- Attribute value identity is `attribute_values.id` / `attribute_values.code`. Labels are display. Filter URLs use `code`.
+- Variant identity is `implode('-', sort(attribute_value_ids))`. Do not key variants on option text.
+- PDP, shop filter, and workspace hydrate read relations. They do not read `variant_options`, `options`, or `specifications` JSON.
+- Workspace generate and save write relations. They do not write those JSON keys and do not call a provisioner.
+- Next major initiative after this merge: Catalog V2 Phase 2 (Search & Discovery). Not started.
