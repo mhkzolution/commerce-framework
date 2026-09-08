@@ -6,6 +6,7 @@ namespace Commerce\Product\Http\Controllers\Admin;
 
 use Commerce\Contracts\Settings\SettingQueryServiceInterface;
 use Commerce\Product\Http\Requests\UpdateProductSettingsRequest;
+use Commerce\Product\Services\ProductSearchIndexer;
 use Commerce\Settings\Contracts\SettingServiceInterface;
 use Commerce\Settings\DTO\UpdateSettingsGroupData;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +18,7 @@ final class ProductSettingsController extends Controller
     public function __construct(
         private readonly SettingQueryServiceInterface $settingQueryService,
         private readonly SettingServiceInterface $settingService,
+        private readonly ProductSearchIndexer $productSearchIndexer,
     ) {}
 
     public function show(): View
@@ -43,5 +45,14 @@ final class ProductSettingsController extends Controller
         return redirect()
             ->route('admin.products.settings.show')
             ->with('status', 'Product settings saved.');
+    }
+
+    public function reindex(): RedirectResponse
+    {
+        $count = $this->productSearchIndexer->rebuild();
+
+        return redirect()
+            ->route('admin.products.settings.show')
+            ->with('status', "Rebuilt search documents for {$count} products.");
     }
 }

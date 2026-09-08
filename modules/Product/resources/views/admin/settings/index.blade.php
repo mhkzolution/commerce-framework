@@ -50,5 +50,15 @@
                 </div>
             </form>
         </x-admin.card>
+
+        <x-admin.card title="Search index" class="mt-6 max-w-2xl">
+            <p class="text-sm text-muted">
+                Flush stale product search documents and rebuild the index from the current catalog.
+            </p>
+            <form method="POST" action="{{ route('admin.products.settings.reindex') }}" class="mt-4">
+                @csrf
+                <x-admin.button variant="secondary" type="submit">Rebuild search index</x-admin.button>
+            </form>
+        </x-admin.card>
     </x-admin.page>
 @endsection

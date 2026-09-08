@@ -60,6 +60,13 @@ final class ProductSearchIndexer
         $this->searchIndex->delete(self::INDEX, $productUuid);
     }
 
+    public function rebuild(): int
+    {
+        $this->searchIndex->flush(self::INDEX);
+
+        return $this->reindexAll();
+    }
+
     public function reindexAll(): int
     {
         $count = 0;

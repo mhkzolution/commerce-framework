@@ -21,6 +21,7 @@ Route::middleware('web')->group(function (): void {
 
             Route::middleware('permission:product.product.update')->group(function (): void {
                 Route::put('/settings', [ProductSettingsController::class, 'update'])->name('settings.update');
+                Route::post('/settings/reindex', [ProductSettingsController::class, 'reindex'])->name('settings.reindex');
             });
 
             Route::middleware('permission:product.product.create')->group(function (): void {

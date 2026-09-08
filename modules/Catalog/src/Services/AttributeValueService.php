@@ -7,10 +7,17 @@ namespace Commerce\Catalog\Services;
 use Commerce\Catalog\Models\AttributeValue;
 use Commerce\Core\Base\BaseService;
 use Commerce\Core\Exceptions\EntityNotFoundException;
+use Commerce\Product\Models\Product;
+use Commerce\Product\Services\ProductSearchIndexer;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final class AttributeValueService extends BaseService
 {
+    public function __construct(
+        private readonly ProductSearchIndexer $productSearchIndexer,
+    ) {}
+
     public function allocateCode(int $attributeId, string $label, ?int $exceptId = null): string
     {
         $base = Str::slug($label, '_');
@@ -44,6 +51,7 @@ final class AttributeValueService extends BaseService
             throw new EntityNotFoundException("Attribute value [{$uuid}] not found.");
         }
 
+        $labelChanged = $value->label !== $label;
         $payload = ['label' => $label];
 
         if ($position !== null) {
@@ -51,6 +59,17 @@ final class AttributeValueService extends BaseService
         }
 
         $value->update($payload);
+
+        if ($labelChanged) {
+            $productIds = DB::table('product_attribute_values')
+                ->where('attribute_value_id', $value->id)
+                ->distinct()
+                ->pluck('product_id');
+
+            foreach (Product::query()->whereKey($productIds)->get() as $product) {
+                $this->productSearchIndexer->index($product);
+            }
+        }
 
         return $value->fresh();
     }
