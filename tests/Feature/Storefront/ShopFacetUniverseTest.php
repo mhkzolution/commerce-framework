@@ -81,6 +81,16 @@ final class ShopFacetUniverseTest extends TestCase
             ->assertOk();
     }
 
+    public function test_empty_filterable_attribute_is_not_rendered_in_sidebar(): void
+    {
+        $this->attribute('empty-facet', 'ZZEmptyFacet');
+        $this->product('Visible Product', 'FACET-EMPTY');
+
+        $this->get(route('storefront.shop.index'))
+            ->assertOk()
+            ->assertDontSee('ZZEmptyFacet');
+    }
+
     /**
      * @return array{Product, Product}
      */

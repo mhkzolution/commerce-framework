@@ -186,7 +186,13 @@
                                 @foreach ($product->attributes as $attribute)
                                     <div class="storefront-pdp-spec-list__row">
                                         <dt class="storefront-pdp-spec-list__label">{{ $attribute['label'] }}</dt>
-                                        <dd class="storefront-pdp-spec-list__value">{{ $attribute['value'] }}</dd>
+                                        <dd class="storefront-pdp-spec-list__value">
+                                            <ul class="storefront-pdp-spec-list__values">
+                                                @foreach ($attribute['values'] as $value)
+                                                    <li>{{ $value }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </dd>
                                     </div>
                                 @endforeach
                             </dl>

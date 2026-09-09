@@ -295,25 +295,45 @@ final class ProductDetailBuilder
     }
 
     /**
-     * @return list<array{label: string, value: string}>
+     * @return list<array{label: string, values: list<string>}>
      */
     private function visibleAttributes(Product $product): array
     {
         $items = [];
-        $seen = [];
+        $seenAttributes = [];
         $axisIds = $this->variationAttributeIds($product);
         $selected = $this->defaultVariant($product);
 
-        $add = static function (string $label, string $value) use (&$items, &$seen): void {
+        $add = static function (int $attributeId, string $label, array $values) use (&$items, &$seenAttributes): void {
             $label = trim($label);
-            $value = trim($value);
-            $key = strtolower($label.'|'.$value);
-            if ($label === '' || $value === '' || isset($seen[$key])) {
+            $values = collect($values)
+                ->map(static fn (string $value): string => trim($value))
+                ->filter(static fn (string $value): bool => $value !== '')
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($label === '' || $values === [] || isset($seenAttributes[$attributeId])) {
                 return;
             }
 
-            $seen[$key] = true;
-            $items[] = ['label' => $label, 'value' => $value];
+            $seenAttributes[$attributeId] = true;
+            $items[] = ['label' => $label, 'values' => $values];
+        };
+
+        $productValues = static function (int $attributeId) use ($product): array {
+            return $product->attributeValues
+                ->filter(
+                    static fn (ProductAttributeValue $value): bool => (int) $value->attribute_id === $attributeId
+                        && $value->product_variant_id === null,
+                )
+                ->sortBy(static fn (ProductAttributeValue $value): string => sprintf(
+                    '%020d:%020d',
+                    $value->attributeValue?->position ?? PHP_INT_MAX,
+                    $value->id,
+                ))
+                ->values()
+                ->all();
         };
 
         foreach ($product->productAttributes->sortBy('position')->values() as $row) {
@@ -323,22 +343,26 @@ final class ProductDetailBuilder
             }
 
             if ($row->used_for_variations) {
-                $pav = $selected === null ? null : $product->attributeValues->first(
-                    static fn (ProductAttributeValue $value): bool => (int) $value->attribute_id === (int) $attribute->id
-                        && (int) $value->product_variant_id === (int) $selected->id,
-                );
+                $values = [];
+                if ($selected !== null) {
+                    foreach ($product->attributeValues as $pav) {
+                        if ((int) $pav->attribute_id !== (int) $attribute->id
+                            || (int) $pav->product_variant_id !== (int) $selected->id) {
+                            continue;
+                        }
+
+                        $values[] = $this->attributeDisplayValue($pav);
+                        break;
+                    }
+                }
             } else {
-                $pav = $product->attributeValues->first(
-                    static fn (ProductAttributeValue $value): bool => (int) $value->attribute_id === (int) $attribute->id
-                        && $value->product_variant_id === null,
+                $values = array_map(
+                    fn (ProductAttributeValue $pav): string => $this->attributeDisplayValue($pav),
+                    $productValues((int) $attribute->id),
                 );
             }
 
-            if ($pav === null) {
-                continue;
-            }
-
-            $add((string) $attribute->name, $this->attributeDisplayValue($pav));
+            $add((int) $attribute->id, (string) $attribute->name, $values);
         }
 
         foreach ($product->attributeValues as $pav) {
@@ -351,7 +375,11 @@ final class ProductDetailBuilder
                 continue;
             }
 
-            $add((string) $attribute->name, $this->attributeDisplayValue($pav));
+            $values = array_map(
+                fn (ProductAttributeValue $value): string => $this->attributeDisplayValue($value),
+                $productValues((int) $attribute->id),
+            );
+            $add((int) $attribute->id, (string) $attribute->name, $values);
         }
 
         return $items;

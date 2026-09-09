@@ -275,25 +275,51 @@ final class ProductDetailBuilderTest extends TestCase
 
         $this->assertNotNull($data);
         $this->assertContains(
-            ['label' => 'Material', 'value' => 'Cotton'],
+            ['label' => 'Material', 'values' => ['Cotton']],
             $data->attributes,
         );
         $this->assertContains(
-            ['label' => 'Color', 'value' => 'Blue'],
+            ['label' => 'Color', 'values' => ['Blue']],
             $data->attributes,
         );
         $this->assertContains(
-            ['label' => 'Size', 'value' => 'M'],
+            ['label' => 'Size', 'values' => ['M']],
             $data->attributes,
         );
         $this->assertNotContains(
-            ['label' => 'Color', 'value' => 'Red'],
+            ['label' => 'Color', 'values' => ['Red']],
             $data->attributes,
         );
         $this->assertNotContains(
-            ['label' => 'From JSON', 'value' => 'Should be ignored'],
+            ['label' => 'From JSON', 'values' => ['Should be ignored']],
             $data->attributes,
         );
+    }
+
+    public function test_spec_list_collects_multiple_non_axis_values(): void
+    {
+        $variant = $this->createPurchasableProduct(sku: 'PDP-MULTI-SPEC');
+        $product = $variant->product;
+        $color = Attribute::query()->create([
+            'code' => 'spec-color-'.uniqid(),
+            'name' => 'สี',
+            'type' => 'select',
+            'is_filterable' => true,
+            'is_visible' => true,
+            'options' => [],
+        ]);
+        $blue = $this->createAttributeValue($color, 'สีฟ้า', 0);
+        $gray = $this->createAttributeValue($color, 'สีเทา', 1);
+        $this->attachMembership($product, $color, $blue);
+        $this->attachMembership($product, $color, $gray);
+
+        $data = app(ProductDetailBuilder::class)->fromSlug($product->slug);
+
+        $this->assertNotNull($data);
+        $spec = collect($data->attributes)->firstWhere('label', 'สี');
+        $this->assertIsArray($spec);
+        $this->assertSame(['สีฟ้า', 'สีเทา'], $spec['values']);
+        $this->assertArrayNotHasKey('value', $spec);
     }
 
     public function test_missing_blue_s_is_disabled_while_oos_blue_m_stays_selectable(): void

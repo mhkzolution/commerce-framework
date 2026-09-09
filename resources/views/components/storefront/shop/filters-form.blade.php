@@ -127,6 +127,7 @@
                 $facetOptions[$value['code']] = $value['label'];
             }
         @endphp
+        @continue($facetOptions === [])
         <x-storefront.shop.filter-chip-group
             :legend="$facet['name']"
             :name="$facet['code']"

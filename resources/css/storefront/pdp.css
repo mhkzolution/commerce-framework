@@ -580,6 +580,15 @@
     line-height: 1.5;
 }
 
+.storefront-pdp-spec-list__values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
 .storefront-pdp-details__prose {
     color: var(--color-muted);
     font-size: 0.9375rem;

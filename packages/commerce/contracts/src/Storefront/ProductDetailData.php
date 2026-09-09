@@ -11,7 +11,7 @@ final readonly class ProductDetailData
      * @param  list<array{label: string, url?: string}>  $breadcrumbItems
      * @param  list<array{uuid: string, price: int, compare_at_price: ?int, available: ?int, in_stock: bool, options: array<string, string>, image_thumbnail: ?string, sku: ?string}>  $variants
      * @param  list<array{key: string, name: string, values: list<string>}>  $variantAxes
-     * @param  list<array{label: string, value: string}>  $attributes
+     * @param  list<array{label: string, values: list<string>}>  $attributes
      * @param  list<ProductCardData>  $relatedProducts
      */
     public function __construct(
