@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Commerce\Product\Services;
 
 use Commerce\Catalog\Models\Attribute;
-use Commerce\Catalog\Models\AttributeValue;
-use Commerce\Catalog\Services\AttributeValueService;
 use Commerce\Contracts\Event\EventBusInterface;
 use Commerce\Contracts\Seo\SeoServiceInterface;
 use Commerce\Contracts\Seo\SlugServiceInterface;
@@ -42,7 +40,7 @@ final class ProductWorkspaceSaveService
         private readonly InventoryServiceInterface $inventoryService,
         private readonly VariantMatrixGenerator $variantMatrixGenerator,
         private readonly VariableProductPublishGuard $publishGuard,
-        private readonly AttributeValueService $attributeValueService,
+        private readonly ProductAttributeValueLinker $attributeValueLinker,
         private readonly ProductAttributeSetSync $productAttributeSetSync,
     ) {}
 
@@ -419,100 +417,14 @@ final class ProductWorkspaceSaveService
                     continue;
                 }
 
-                $value = $this->resolveOrCreateAttributeValue($attribute, $label);
+                $value = $this->attributeValueLinker->resolveOrCreateAttributeValue($attribute, $label);
                 if (! in_array($value->id, $valueIds, true)) {
                     $valueIds[] = $value->id;
                 }
             }
 
-            $this->syncProductLevelValues($product, $attribute, $valueIds);
+            $this->attributeValueLinker->syncProductLevelValues($product, $attribute, $valueIds);
         }
-    }
-
-    /**
-     * @param  list<int>  $valueIds
-     */
-    private function syncProductLevelValues(Product $product, Attribute $attribute, array $valueIds): void
-    {
-        $keepIds = [];
-        foreach ($valueIds as $valueId) {
-            $value = AttributeValue::query()
-                ->where('attribute_id', $attribute->id)
-                ->whereKey($valueId)
-                ->first();
-            if ($value === null) {
-                continue;
-            }
-
-            $keepIds[] = $value->id;
-            $this->upsertProductAttributeValue($product, $attribute->id, $value);
-        }
-
-        $stale = ProductAttributeValue::query()
-            ->where('product_id', $product->id)
-            ->where('attribute_id', $attribute->id)
-            ->whereNull('product_variant_id');
-
-        if ($keepIds === []) {
-            $stale->delete();
-
-            return;
-        }
-
-        $stale->where(function ($query) use ($keepIds): void {
-            $query->whereNotIn('attribute_value_id', $keepIds)
-                ->orWhereNull('attribute_value_id');
-        })->delete();
-    }
-
-    private function upsertProductAttributeValue(Product $product, int $attributeId, AttributeValue $value): void
-    {
-        $existing = ProductAttributeValue::query()
-            ->where('product_id', $product->id)
-            ->where('attribute_id', $attributeId)
-            ->whereNull('product_variant_id')
-            ->where('attribute_value_id', $value->id)
-            ->first();
-
-        if ($existing !== null) {
-            if ($existing->value !== $value->label) {
-                $existing->update(['value' => $value->label]);
-            }
-
-            return;
-        }
-
-        ProductAttributeValue::query()->create([
-            'product_id' => $product->id,
-            'attribute_id' => $attributeId,
-            'product_variant_id' => null,
-            'attribute_value_id' => $value->id,
-            'value' => $value->label,
-        ]);
-    }
-
-    private function resolveOrCreateAttributeValue(Attribute $attribute, string $label): AttributeValue
-    {
-        $existing = AttributeValue::query()
-            ->where('attribute_id', $attribute->id)
-            ->whereRaw('LOWER(label) = ?', [mb_strtolower($label)])
-            ->first();
-
-        if ($existing !== null) {
-            return $existing;
-        }
-
-        $maxPosition = (int) AttributeValue::query()
-            ->where('attribute_id', $attribute->id)
-            ->max('position');
-
-        return AttributeValue::query()->create([
-            'tenant_id' => $attribute->tenant_id,
-            'attribute_id' => $attribute->id,
-            'code' => $this->attributeValueService->allocateCode($attribute->id, $label),
-            'label' => $label,
-            'position' => $maxPosition + 1,
-        ]);
     }
 
     private function syncGeneratedMatrix(Product $product, SaveProductWorkspaceData $data): void
