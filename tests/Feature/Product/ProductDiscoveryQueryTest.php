@@ -295,6 +295,36 @@ final class ProductDiscoveryQueryTest extends TestCase
         $this->assertNotContains(sprintf('cap-%03d', ProductDiscoveryQuery::CANDIDATE_CAP), $uuids);
     }
 
+    public function test_candidate_cap_runs_after_coverage(): void
+    {
+        SearchDocument::query()->create([
+            'index_name' => ProductSearchIndexer::INDEX,
+            'document_id' => 'cov-zzz',
+            'title' => 'ZZZ Cotton Red',
+            'body' => '',
+            'payload' => ['skus' => [], 'attributes' => []],
+        ]);
+
+        $lowIds = [];
+        for ($i = 0; $i < ProductDiscoveryQuery::CANDIDATE_CAP; $i++) {
+            $uuid = sprintf('cov-aaa-%03d', $i);
+            $lowIds[] = $uuid;
+            SearchDocument::query()->create([
+                'index_name' => ProductSearchIndexer::INDEX,
+                'document_id' => $uuid,
+                'title' => sprintf('Aaa Cotton %03d', $i),
+                'body' => 'red',
+                'payload' => ['skus' => [], 'attributes' => []],
+            ]);
+        }
+
+        $uuids = app(ProductDiscoveryQuery::class)->candidateUuids('red cotton');
+
+        $this->assertCount(ProductDiscoveryQuery::CANDIDATE_CAP, $uuids);
+        $this->assertContains('cov-zzz', $uuids);
+        $this->assertNotContains($lowIds[ProductDiscoveryQuery::CANDIDATE_CAP - 1], $uuids);
+    }
+
     public function test_candidate_cap_does_not_limit_the_sql_scan(): void
     {
         SearchDocument::query()->create([

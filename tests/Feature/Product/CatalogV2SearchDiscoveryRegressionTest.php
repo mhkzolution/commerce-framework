@@ -323,6 +323,33 @@ final class CatalogV2SearchDiscoveryRegressionTest extends TestCase
         ));
     }
 
+    public function test_shop_listing_follows_coverage_order(): void
+    {
+        $parka = $this->product('Cotton Parka', 'SHOP-COV-PARKA');
+        $parka->update(['description' => 'Bright red finish']);
+        $tee = $this->product('Red Cotton Tee', 'SHOP-COV-TEE');
+        $this->index($parka->fresh(), $tee);
+
+        $this->get(route('storefront.shop.index', ['q' => 'red cotton']))
+            ->assertOk()
+            ->assertSeeInOrder([$tee->name, $parka->name]);
+    }
+
+    public function test_price_asc_does_not_use_coverage_order(): void
+    {
+        $tee = $this->product('Red Cotton Tee', 'SHOP-PRICE-TEE', 9000);
+        $parka = $this->product('Cotton Parka', 'SHOP-PRICE-PARKA', 1000);
+        $parka->update(['description' => 'Bright red finish']);
+        $this->index($tee, $parka->fresh());
+
+        $this->get(route('storefront.shop.index', [
+            'q' => 'red cotton',
+            'sort' => 'price_asc',
+        ]))
+            ->assertOk()
+            ->assertSeeInOrder([$parka->name, $tee->name]);
+    }
+
     public function test_price_sort_overrides_discovery_ranking(): void
     {
         $exact = $this->product('Expensive Exact Product', 'PRICE-RANK', 9000);
