@@ -34,6 +34,22 @@ final class StorefrontSuggestTest extends TestCase
             ->assertJsonPath('products.0.url', route('storefront.products.show', $product->slug));
     }
 
+    public function test_suggest_http_returns_classic_tee_for_word_prefix(): void
+    {
+        $product = $this->product('Classic Tee', 'HTTP-CLASSIC-TEE');
+
+        $this->getJson(route('storefront.suggest', ['q' => 'te']))
+            ->assertOk()
+            ->assertJsonFragment([
+                'label' => 'Classic Tee',
+                'url' => route('storefront.products.show', $product->slug),
+            ])
+            ->assertJsonFragment([
+                'label' => 'Classic Tee',
+                'url' => route('storefront.shop.index', ['q' => 'Classic Tee']),
+            ]);
+    }
+
     public function test_short_q_is_empty_json_and_skips_search_documents(): void
     {
         $this->product('Tee', 'HTTP-TEE-2');

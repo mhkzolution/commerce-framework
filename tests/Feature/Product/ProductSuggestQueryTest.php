@@ -111,9 +111,47 @@ final class ProductSuggestQueryTest extends TestCase
         $this->assertTrue($constructor === null || $constructor->getNumberOfRequiredParameters() === 0);
     }
 
-    public function test_product_query_prefilters_search_documents_by_title_prefix(): void
+    public function test_word_prefix_finds_classic_tee_and_rejects_substring_and_streetwear(): void
     {
-        $this->product('Tee', 'SUGGEST-TEE-PREFILTER');
+        $this->product('Tee', 'SUGGEST-WP-TEE');
+        $this->product('Classic Tee', 'SUGGEST-WP-CLASSIC');
+        $this->product('Team Jersey', 'SUGGEST-WP-TEAM');
+        $this->product('Streetwear', 'SUGGEST-WP-STREET');
+
+        $tee = array_map(
+            static fn (SuggestHit $hit): string => $hit->label,
+            app(ProductSuggestQuery::class)->suggest('tee')->products,
+        );
+        $this->assertContains('Tee', $tee);
+        $this->assertContains('Classic Tee', $tee);
+        $this->assertNotContains('Team Jersey', $tee);
+
+        $te = array_map(
+            static fn (SuggestHit $hit): string => $hit->label,
+            app(ProductSuggestQuery::class)->suggest('te')->products,
+        );
+        $this->assertContains('Classic Tee', $te);
+        $this->assertNotContains('Streetwear', $te);
+
+        $this->assertNotContains(
+            'Team Jersey',
+            array_map(
+                static fn (SuggestHit $hit): string => $hit->label,
+                app(ProductSuggestQuery::class)->suggest('eam')->products,
+            ),
+        );
+        $this->assertNotContains(
+            'Classic Tee',
+            array_map(
+                static fn (SuggestHit $hit): string => $hit->label,
+                app(ProductSuggestQuery::class)->suggest('las')->products,
+            ),
+        );
+    }
+
+    public function test_product_recall_sql_is_not_whole_title_prefix_only(): void
+    {
+        $this->product('Classic Tee', 'SUGGEST-RECALL-CLASSIC');
         DB::flushQueryLog();
         DB::enableQueryLog();
 
@@ -125,7 +163,14 @@ final class ProductSuggestQueryTest extends TestCase
 
         $this->assertNotNull($productQuery);
         $this->assertStringContainsString('suggest_documents.title like ? escape \'!\'', $productQuery['query']);
-        $this->assertContains('te%', $productQuery['bindings']);
+        $bindings = $productQuery['bindings'];
+        $this->assertTrue(
+            collect($bindings)->contains(static fn (mixed $binding): bool => is_string($binding) && str_contains($binding, 'te')),
+        );
+        $this->assertFalse(
+            collect($bindings)->contains(static fn (mixed $binding): bool => $binding === 'te%' && count($bindings) === 1),
+            'Recall must not be only whole-title te%.',
+        );
     }
 
     public function test_product_query_escapes_like_wildcards_in_title_prefix(): void
@@ -249,6 +294,27 @@ final class ProductSuggestQueryTest extends TestCase
         );
     }
 
+    public function test_brand_word_prefix_matches_later_word_and_skips_inactive(): void
+    {
+        app(BrandService::class)->create(new CreateBrandData(
+            name: 'Peak Performance',
+            slug: 'peak-performance',
+            isActive: true,
+        ));
+        app(BrandService::class)->create(new CreateBrandData(
+            name: 'Peak Performance Labs',
+            slug: 'peak-inactive',
+            isActive: false,
+        ));
+
+        $result = app(ProductSuggestQuery::class)->suggest('per');
+
+        $this->assertSame(
+            [['Peak Performance', route('storefront.shop.index', ['brand' => 'peak-performance'])]],
+            array_map(static fn (SuggestHit $hit): array => [$hit->label, $hit->url], $result->brands),
+        );
+    }
+
     public function test_category_hits_come_from_shop_filter_options_with_shop_urls(): void
     {
         Category::query()->create([
@@ -272,6 +338,28 @@ final class ProductSuggestQueryTest extends TestCase
 
         $this->assertSame(
             [['Accessories', route('storefront.shop.index', ['category' => 'accessories'])]],
+            array_map(static fn (SuggestHit $hit): array => [$hit->label, $hit->url], $result->categories),
+        );
+    }
+
+    public function test_category_word_prefix_uses_shop_filter_options_only(): void
+    {
+        Category::query()->create([
+            'name' => 'Graphic Tees',
+            'slug' => 'graphic-tees',
+            'is_active' => true,
+        ]);
+        Category::query()->create([
+            'name' => 'Hidden Tees',
+            'slug' => 'hidden-tees',
+            'is_active' => false,
+        ]);
+
+        $categories = app(HomepageNavigationQuery::class)->shopFilterOptions();
+        $result = app(ProductSuggestQuery::class)->suggest('te', $categories);
+
+        $this->assertSame(
+            [['Graphic Tees', route('storefront.shop.index', ['category' => 'graphic-tees'])]],
             array_map(static fn (SuggestHit $hit): array => [$hit->label, $hit->url], $result->categories),
         );
     }

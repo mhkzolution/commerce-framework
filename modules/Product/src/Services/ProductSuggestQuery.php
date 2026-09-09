@@ -60,7 +60,7 @@ final class ProductSuggestQuery
     private function productCandidates(array $tokens): array
     {
         $candidates = [];
-        $titlePatterns = $this->titlePrefilterPatterns(implode(' ', $tokens));
+        $titlePatterns = $this->titlePrefilterPatterns($tokens);
         $products = Product::query()
             ->visibleOnStorefront()
             ->join('search_documents as suggest_documents', function (JoinClause $join): void {
@@ -101,25 +101,41 @@ final class ProductSuggestQuery
     }
 
     /**
+     * @param  list<string>  $tokens
      * @return list<string>
      */
-    private function titlePrefilterPatterns(string $prefix): array
+    private function titlePrefilterPatterns(array $tokens): array
     {
-        $nfdPrefix = Normalizer::normalize($prefix, Normalizer::FORM_D);
-        $prefixes = [$prefix];
+        $patterns = [];
 
-        if (is_string($nfdPrefix)) {
-            $prefixes[] = mb_strtolower($nfdPrefix);
+        foreach ($tokens as $token) {
+            foreach ($this->unicodeForms($token) as $form) {
+                $escaped = str_replace(
+                    ['!', '\\', '%', '_'],
+                    ['!!', '!\\', '!%', '!_'],
+                    $form,
+                );
+                $patterns[] = $escaped.'%';
+                $patterns[] = '%'.$escaped.'%';
+            }
         }
 
-        return array_map(
-            static fn (string $candidate): string => str_replace(
-                ['!', '\\', '%', '_'],
-                ['!!', '!\\', '!%', '!_'],
-                $candidate,
-            ).'%',
-            array_values(array_unique($prefixes)),
-        );
+        return array_values(array_unique($patterns));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function unicodeForms(string $token): array
+    {
+        $forms = [$token];
+        $nfd = Normalizer::normalize($token, Normalizer::FORM_D);
+
+        if (is_string($nfd)) {
+            $forms[] = mb_strtolower($nfd);
+        }
+
+        return array_values(array_unique($forms));
     }
 
     /**
