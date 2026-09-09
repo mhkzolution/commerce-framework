@@ -14,6 +14,32 @@
     padding: 0 0 var(--space-16);
 }
 
+.storefront-pdp .storefront-breadcrumb__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.875rem;
+}
+
+.storefront-pdp .storefront-breadcrumb__item:not(:last-child)::after {
+    content: "/";
+    margin-inline-start: var(--space-8);
+    color: var(--color-muted);
+}
+
+.storefront-pdp .storefront-breadcrumb__link,
+.storefront-pdp .storefront-breadcrumb__current {
+    color: var(--color-muted);
+    text-decoration: none;
+}
+
+.storefront-pdp .storefront-breadcrumb__link:hover {
+    color: var(--color-text);
+}
+
 .storefront-pdp--market {
     --pdp-accent: var(--color-danger);
     --pdp-accent-hover: var(--color-danger-hover);
@@ -253,7 +279,7 @@
     font-size: 1.5rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
-    color: var(--pdp-accent, var(--color-text));
+    color: var(--color-money);
 }
 
 .storefront-buy-box__compare {
@@ -267,7 +293,7 @@
     display: inline-flex;
     padding: 0.125rem 0.5rem;
     border-radius: var(--pdp-radius, var(--radius-store));
-    background: var(--pdp-accent, var(--color-danger));
+    background: var(--color-danger);
     color: var(--color-on-primary);
     font-size: 0.75rem;
     font-weight: 600;
@@ -429,24 +455,24 @@
 }
 
 .storefront-buy-box__cta--cart {
-    border: 1px solid var(--pdp-accent, var(--color-primary));
+    border: 1px solid var(--color-primary);
     background: var(--color-surface);
-    color: var(--pdp-accent, var(--color-primary));
+    color: var(--color-primary);
 }
 
 .storefront-buy-box__cta--cart:hover {
-    background: color-mix(in srgb, var(--pdp-accent, var(--color-primary)) 6%, var(--color-surface));
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
 }
 
 .storefront-buy-box__cta--buy {
-    border: 1px solid var(--pdp-accent, var(--color-primary));
-    background: var(--pdp-accent, var(--color-primary));
+    border: 1px solid var(--color-primary);
+    background: var(--color-primary);
     color: var(--color-on-primary);
 }
 
 .storefront-buy-box__cta--buy:hover {
-    background: var(--pdp-accent-hover, var(--color-primary-hover));
-    border-color: var(--pdp-accent-hover, var(--color-primary-hover));
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
 }
 
 .storefront-buy-box__cta:focus-visible {
@@ -705,14 +731,14 @@
     min-width: 4.5rem;
     font-size: 0.9375rem;
     font-weight: 600;
-    color: var(--pdp-accent, var(--color-text));
+    color: var(--color-money);
 }
 
 .storefront-mobile-buy-bar__button {
     flex: 1;
     min-height: 2.5rem;
     border-radius: 9999px;
-    border: 1px solid var(--pdp-accent, var(--color-primary));
+    border: 1px solid var(--color-primary);
     font: inherit;
     font-size: 0.8125rem;
     font-weight: 500;
@@ -721,11 +747,11 @@
 
 .storefront-mobile-buy-bar__button--cart {
     background: var(--color-surface);
-    color: var(--pdp-accent, var(--color-primary));
+    color: var(--color-primary);
 }
 
 .storefront-mobile-buy-bar__button--buy {
-    background: var(--pdp-accent, var(--color-primary));
+    background: var(--color-primary);
     color: var(--color-on-primary);
 }
 

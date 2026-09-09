@@ -1993,4 +1993,5 @@ body.storefront-drawer-open {
     margin: 0;
     font-size: 0.875rem;
     font-variant-numeric: tabular-nums;
+    color: var(--color-money);
 }

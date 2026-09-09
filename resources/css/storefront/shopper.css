@@ -254,6 +254,7 @@
 .storefront-table__num {
     text-align: right;
     font-variant-numeric: tabular-nums;
+    color: var(--color-money);
 }
 
 .storefront-qty-form {
@@ -350,6 +351,7 @@
 .storefront-cart-item__total {
     margin: var(--space-8) 0 0;
     font-variant-numeric: tabular-nums;
+    color: var(--color-money);
 }
 
 .storefront-cart-item__controls {
@@ -448,6 +450,7 @@
     font-size: 1.5rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+    color: var(--color-money);
 }
 
 .storefront-cart__coupon {
@@ -708,6 +711,7 @@
     font-size: 1.75rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+    color: var(--color-money);
 }
 
 .storefront-empty .storefront-empty__actions {
@@ -1013,6 +1017,12 @@
     font-variant-numeric: tabular-nums;
 }
 
+#checkout-total,
+#checkout-total-mobile,
+#checkout-subtotal {
+    color: var(--color-money);
+}
+
 .storefront-confirmation--success .storefront-confirmation__card {
     text-align: center;
 }
@@ -1041,6 +1051,7 @@
     font-size: 1.125rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+    color: var(--color-money);
 }
 
 .storefront-confirmation__actions {
@@ -1075,6 +1086,7 @@
 
 .storefront-checkout__summary-toggle-total {
     font-variant-numeric: tabular-nums;
+    color: var(--color-money);
 }
 
 .storefront-checkout__summary-body {
