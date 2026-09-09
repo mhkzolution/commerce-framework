@@ -63,5 +63,9 @@ final class CmsImageLayoutCssTest extends TestCase
         $this->assertStringContainsString('width: 100%', $nodeImgMatches[0]);
         $this->assertStringContainsString('margin: 0', $nodeImgMatches[0]);
         $this->assertStringContainsString('padding: 0', $nodeImgMatches[0]);
+
+        $this->assertStringContainsString('.cms-image-node.ProseMirror-selectednode .cms-image-node__handle', $editorCss);
+        $this->assertStringContainsString('.cms-image-node[data-align="right"] .cms-image-node__handle', $editorCss);
+        $this->assertStringContainsString('cursor: nesw-resize', $editorCss);
     }
 }

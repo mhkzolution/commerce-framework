@@ -305,6 +305,7 @@
 }
 
 .cms-image-node__handle {
+    display: none;
     position: absolute;
     right: 0;
     bottom: 0;
@@ -313,6 +314,17 @@
     cursor: nwse-resize;
     background: var(--color-primary, #44403c);
 }
+
+.cms-image-node.ProseMirror-selectednode .cms-image-node__handle {
+    display: block;
+}
+
+.cms-image-node[data-align="right"] .cms-image-node__handle {
+    left: 0;
+    right: auto;
+    cursor: nesw-resize;
+}
+
 .cms-editor-prose ul,
 .cms-editor-prose ol { padding-left: 1.4rem; }
 .cms-editor-prose table { width: 100%; border-collapse: collapse; }
