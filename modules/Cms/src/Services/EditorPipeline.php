@@ -48,7 +48,7 @@ final class EditorPipeline
     private function sanitizeImages(string $html): string
     {
         return preg_replace_callback('/<img\s+([^>]*?)>/i', function (array $match): string {
-            $attrs = $this->allowedAttributes($match[1], ['src', 'alt', 'title', 'width', 'height']);
+            $attrs = $this->allowedAttributes($match[1], ['src', 'alt', 'title', 'width', 'height', 'data-align']);
             $src = $attrs['src'] ?? '';
 
             if ($src === '' || preg_match('/^\s*javascript:/i', $src) === 1) {
@@ -57,8 +57,30 @@ final class EditorPipeline
 
             $attrs['alt'] ??= '';
 
+            if (isset($attrs['width']) && ! $this->isAllowedPercentWidth($attrs['width'])) {
+                unset($attrs['width']);
+            }
+
+            $align = $attrs['data-align'] ?? '';
+            if (! in_array($align, ['left', 'center', 'right'], true)) {
+                unset($attrs['data-align']);
+            } elseif ($align === 'left') {
+                unset($attrs['data-align']);
+            }
+
             return '<img '.$this->attributeString($attrs).'>';
         }, $html) ?? $html;
+    }
+
+    private function isAllowedPercentWidth(string $value): bool
+    {
+        if (preg_match('/^(\d{1,3})%$/', $value, $match) !== 1) {
+            return false;
+        }
+
+        $percent = (int) $match[1];
+
+        return $percent >= 25 && $percent <= 100;
     }
 
     /**
@@ -79,7 +101,10 @@ final class EditorPipeline
                 continue;
             }
 
-            $attrs[$name] = html_entity_decode($match[3] !== '' ? $match[3] : ($match[4] !== '' ? $match[4] : $match[5]), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $value = str_contains($match[0], '="')
+                ? $match[3]
+                : (str_contains($match[0], "='") ? $match[4] : $match[5]);
+            $attrs[$name] = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         }
 
         return $attrs;

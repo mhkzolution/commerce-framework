@@ -60,4 +60,40 @@ final class EditorPipelineTest extends TestCase
         $this->assertNull($this->pipeline->sanitize(null));
         $this->assertSame('', $this->pipeline->sanitize(''));
     }
+
+    public function test_it_keeps_percent_width_and_data_align(): void
+    {
+        $html = '<img src="/x.jpg" alt="A" width="50%" data-align="center">';
+
+        $this->assertSame($html, $this->pipeline->sanitize($html));
+    }
+
+    public function test_it_drops_invalid_image_layout_attributes(): void
+    {
+        $html = '<img src="/x.jpg" alt="A" width="12%" data-align="justify" style="width:50%" width-px="50">';
+
+        $sanitized = $this->pipeline->sanitize($html);
+
+        $this->assertStringContainsString('src="/x.jpg"', $sanitized);
+        $this->assertStringContainsString('alt="A"', $sanitized);
+        $this->assertStringNotContainsString('width="12%"', $sanitized);
+        $this->assertStringNotContainsString('data-align="justify"', $sanitized);
+        $this->assertStringNotContainsString('style=', $sanitized);
+    }
+
+    public function test_it_drops_pixel_and_out_of_range_width(): void
+    {
+        $pixel = $this->pipeline->sanitize('<img src="/x.jpg" alt="" width="50">');
+        $over = $this->pipeline->sanitize('<img src="/x.jpg" alt="" width="150%">');
+
+        $this->assertStringNotContainsString('width="50"', $pixel);
+        $this->assertStringNotContainsString('width="150%"', $over);
+    }
+
+    public function test_legacy_image_without_width_is_kept(): void
+    {
+        $html = '<img src="/x.jpg" alt="">';
+
+        $this->assertSame($html, $this->pipeline->sanitize($html));
+    }
 }
