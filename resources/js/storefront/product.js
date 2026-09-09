@@ -821,9 +821,14 @@ function copyShareUrl(url, copiedEl) {
         window.setTimeout(() => copiedEl?.classList.remove('storefront-share-btn--copied'), 1500);
     };
 
-    return navigator.clipboard.writeText(url).then(markCopied).catch(() => {
-        window.prompt('Copy link:', url);
-    });
+    if (navigator.clipboard?.writeText) {
+        return navigator.clipboard.writeText(url).then(markCopied).catch(() => {
+            window.prompt('Copy link:', url);
+        });
+    }
+
+    window.prompt('Copy link:', url);
+    return Promise.resolve();
 }
 
 function initShare(root) {
@@ -890,6 +895,12 @@ function initShare(root) {
 
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
+                close();
+            }
+        });
+
+        window.matchMedia('(min-width: 1024px)').addEventListener('change', (event) => {
+            if (!event.matches) {
                 close();
             }
         });
