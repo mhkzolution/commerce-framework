@@ -48,4 +48,50 @@ final class AppearanceSettingsTest extends TestCase
         $this->assertSame('#111827', app(SettingQueryServiceInterface::class)->get('theme.primary'));
         $this->assertSame('#111827', ThemeDesignTokens::resolve()['primary'] ?? null);
     }
+
+    public function test_admin_can_save_money_color(): void
+    {
+        $this->actingAs(User::query()->first())
+            ->put(route('admin.settings.appearance.update'), [
+                'primary' => '#111827',
+                'primary_hover' => '#0f172a',
+                'primary_active' => '#020617',
+                'accent' => '#db2777',
+                'accent_hover' => '#be185d',
+                'background' => '#f8fafc',
+                'surface' => '#ffffff',
+                'money' => '#00aa00',
+            ])
+            ->assertRedirect(route('admin.settings.appearance.show'));
+
+        $this->assertSame('#00aa00', app(SettingQueryServiceInterface::class)->get('theme.money'));
+        $this->assertSame('#00aa00', ThemeDesignTokens::resolve()['money'] ?? null);
+    }
+
+    public function test_invalid_money_hex_is_rejected(): void
+    {
+        $this->actingAs(User::query()->first())
+            ->from(route('admin.settings.appearance.show'))
+            ->put(route('admin.settings.appearance.update'), [
+                'primary' => '#111827',
+                'primary_hover' => '#0f172a',
+                'primary_active' => '#020617',
+                'accent' => '#db2777',
+                'accent_hover' => '#be185d',
+                'background' => '#f8fafc',
+                'surface' => '#ffffff',
+                'money' => 'red',
+            ])
+            ->assertRedirect(route('admin.settings.appearance.show'))
+            ->assertSessionHasErrors('money');
+    }
+
+    public function test_appearance_page_includes_money_token(): void
+    {
+        $this->actingAs(User::query()->first())
+            ->get(route('admin.settings.appearance.show'))
+            ->assertOk()
+            ->assertSee('--color-money', false)
+            ->assertSee(__('settings::admin.appearance_color_money'), false);
+    }
 }

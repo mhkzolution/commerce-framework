@@ -40,6 +40,7 @@ final class SettingsSeeder extends Seeder
             'theme.surface' => ['type' => 'string', 'label' => 'Surface', 'group' => 'theme', 'default' => '#ffffff', 'is_public' => true],
             'theme.accent' => ['type' => 'string', 'label' => 'Accent', 'group' => 'theme', 'default' => '#2563eb', 'is_public' => true],
             'theme.accent_hover' => ['type' => 'string', 'label' => 'Accent hover', 'group' => 'theme', 'default' => '#1d4ed8', 'is_public' => true],
+            'theme.money' => ['type' => 'string', 'label' => 'Money color', 'group' => 'theme', 'default' => '#dc2626', 'is_public' => true],
         ];
 
         foreach ($definitions as $key => $schema) {

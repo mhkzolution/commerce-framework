@@ -29,6 +29,7 @@ final class ThemeDesignTokens
             'surface' => 'surface',
             'accent' => 'accent',
             'accent_hover' => 'accent-hover',
+            'money' => 'money',
         ];
 
         foreach ($map as $settingKey => $token) {

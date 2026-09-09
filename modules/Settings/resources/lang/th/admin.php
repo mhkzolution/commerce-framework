@@ -30,6 +30,7 @@ return [
     'appearance_color_accent_hover' => 'สีเน้นเมื่อชี้ (Hover)',
     'appearance_color_background' => 'พื้นหลัง',
     'appearance_color_surface' => 'พื้นผิวการ์ด',
+    'appearance_color_money' => 'สีจำนวนเงิน',
     'save' => 'บันทึก',
     'cancel' => 'ยกเลิก',
     'edit' => 'แก้ไข',

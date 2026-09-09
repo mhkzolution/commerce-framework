@@ -25,6 +25,7 @@ final class AppearanceController extends Controller
         'accent_hover' => ['token' => 'accent-hover', 'label_key' => 'appearance_color_accent_hover', 'default' => '#1d4ed8'],
         'background' => ['token' => 'background', 'label_key' => 'appearance_color_background', 'default' => '#f4f6f8'],
         'surface' => ['token' => 'surface', 'label_key' => 'appearance_color_surface', 'default' => '#ffffff'],
+        'money' => ['token' => 'money', 'label_key' => 'appearance_color_money', 'default' => '#dc2626'],
     ];
 
     public function __construct(

@@ -38,6 +38,9 @@
                     <div class="rounded-lg px-4 py-3 text-sm font-medium shadow-sm transition-colors" data-preview="accent-hover" style="background: var(--color-accent-hover, var(--color-primary-hover)); color: var(--color-on-primary);">
                         {{ __('settings::admin.appearance_color_accent_hover') }}
                     </div>
+                    <div class="rounded-lg border px-4 py-3 text-sm font-medium shadow-sm" data-preview="money" style="background: var(--color-surface); color: var(--color-money);">
+                        {{ __('settings::admin.appearance_color_money') }}
+                    </div>
                 </div>
             </x-admin.card>
 
@@ -98,6 +101,9 @@
                     }
                     if (preview && ['background', 'surface'].includes(token)) {
                         preview.style.background = value;
+                    }
+                    if (preview && token === 'money') {
+                        preview.style.color = value;
                     }
 
                     if (key === 'primary' && !document.querySelector('[name="primary_hover"]')?.value) {

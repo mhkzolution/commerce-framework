@@ -28,6 +28,7 @@ final class UpdateAppearanceRequest extends FormRequest
             'surface' => $hex,
             'accent' => $hex,
             'accent_hover' => $hex,
+            'money' => $hex,
         ];
     }
 

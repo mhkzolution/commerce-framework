@@ -30,6 +30,7 @@ return [
     'appearance_color_accent_hover' => 'Accent hover',
     'appearance_color_background' => 'Background',
     'appearance_color_surface' => 'Surface',
+    'appearance_color_money' => 'Money',
     'save' => 'Save',
     'cancel' => 'Cancel',
     'edit' => 'Edit',
