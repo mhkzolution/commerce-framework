@@ -56,6 +56,7 @@ final class CmsImageLayoutCssTest extends TestCase
         $this->assertStringContainsString('box-sizing: border-box', $nodeBlock);
         $this->assertStringContainsString('padding-inline: 0.25rem', $nodeBlock);
         $this->assertStringContainsString('max-width: 1023px', $nodeBlock);
+        $this->assertStringContainsString('width: 100% !important', $nodeBlock);
 
         preg_match('/\.cms-editor-prose \.cms-image-node img\s*\{[^}]+\}/s', $editorCss, $nodeImgMatches);
         $this->assertNotEmpty($nodeImgMatches, 'Editor CSS should define inner NodeView img sizing');

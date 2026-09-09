@@ -131,5 +131,6 @@ final class CmsAdminTest extends TestCase
         $this->assertNotNull($post);
         $this->assertStringContainsString('width="50%"', (string) $post->content);
         $this->assertStringContainsString('src="/media/hero.jpg"', (string) $post->content);
+        $this->assertStringNotContainsString('cms-image-node', (string) $post->content);
     }
 }

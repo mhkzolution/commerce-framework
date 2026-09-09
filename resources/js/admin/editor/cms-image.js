@@ -52,6 +52,9 @@ export const CmsImage = Image.extend({
             const handle = document.createElement('span');
             let currentNode = node;
             let pointerId = null;
+            let startLeft = 0;
+            let startRight = 0;
+            let dragFromRight = false;
 
             wrapper.className = 'cms-image-node';
             handle.className = 'cms-image-node__handle';
@@ -100,9 +103,10 @@ export const CmsImage = Image.extend({
                     return;
                 }
 
-                const next = snapPercent(
-                    ((event.clientX - wrapper.getBoundingClientRect().left) / contentWidth) * 100,
-                );
+                const draggedWidth = dragFromRight
+                    ? startRight - event.clientX
+                    : event.clientX - startLeft;
+                const next = snapPercent((draggedWidth / contentWidth) * 100);
                 wrapper.style.width = `${next}%`;
                 editor.commands.updateAttributes('image', { width: `${next}%` });
             };
@@ -119,6 +123,10 @@ export const CmsImage = Image.extend({
             handle.addEventListener('pointerdown', (event) => {
                 event.preventDefault();
                 editor.commands.setNodeSelection(getPos());
+                const bounds = wrapper.getBoundingClientRect();
+                startLeft = bounds.left;
+                startRight = bounds.right;
+                dragFromRight = currentNode.attrs['data-align'] === 'right';
                 pointerId = event.pointerId;
                 window.addEventListener('pointermove', onPointerMove);
                 window.addEventListener('pointerup', onPointerUp);
