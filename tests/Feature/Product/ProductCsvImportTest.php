@@ -47,6 +47,32 @@ final class ProductCsvImportTest extends TestCase
             ->assertSee('Download CSV template', false);
     }
 
+    public function test_import_result_summary_shows_errors_count_tile(): void
+    {
+        $html = $this->actingAs(User::query()->first())
+            ->withSession([
+                'import_result' => [
+                    'created' => 1,
+                    'updated' => 0,
+                    'skipped' => 0,
+                    'duplicates' => 0,
+                    'linked_images' => 0,
+                    'warnings' => 0,
+                    'messages' => ['Created: Clean Tee (SKU: CSV-RSV-CLEAN)'],
+                    'duplicate_skus' => [],
+                    'errors' => ['Row 16: database exception'],
+                ],
+            ])
+            ->get(route('admin.products.import.show'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertMatchesRegularExpression(
+            '/<div class="text-xs uppercase tracking-wide text-muted">Errors<\/div>\s*<div class="text-2xl font-semibold text-text">1<\/div>/',
+            $html,
+        );
+    }
+
     public function test_admin_can_create_product_from_csv(): void
     {
         Http::fake([

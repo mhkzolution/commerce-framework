@@ -56,7 +56,7 @@
 
     @if (is_array($importResult))
       <x-admin.card title="Import result" class="mt-6">
-        <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+        <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           <div class="rounded-lg border border-border px-4 py-3">
             <div class="text-xs uppercase tracking-wide text-muted">Created</div>
             <div class="text-2xl font-semibold text-text">{{ $importResult['created'] ?? 0 }}</div>
@@ -80,6 +80,10 @@
           <div class="rounded-lg border border-border px-4 py-3">
             <div class="text-xs uppercase tracking-wide text-muted">Images linked</div>
             <div class="text-2xl font-semibold text-text">{{ $importResult['linked_images'] ?? 0 }}</div>
+          </div>
+          <div class="rounded-lg border border-border px-4 py-3">
+            <div class="text-xs uppercase tracking-wide text-muted">Errors</div>
+            <div class="text-2xl font-semibold text-text">{{ count($importResult['errors'] ?? []) }}</div>
           </div>
         </div>
 
