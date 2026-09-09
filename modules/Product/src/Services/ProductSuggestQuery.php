@@ -20,15 +20,15 @@ final class ProductSuggestQuery
 
     public function suggest(string $q, iterable $categories = []): SuggestResult
     {
-        $prefix = SearchNormalizer::textNormalize($q);
+        $tokens = SearchNormalizer::tokenize($q);
 
-        if (mb_strlen($prefix) < 2) {
+        if ($tokens === [] || $this->hasShortToken($tokens)) {
             return new SuggestResult;
         }
 
-        $products = $this->productCandidates($prefix);
-        $brands = $this->brandCandidates($prefix);
-        $categoryCandidates = $this->categoryCandidates($prefix, $categories);
+        $products = $this->productCandidates($tokens);
+        $brands = $this->brandCandidates($tokens);
+        $categoryCandidates = $this->categoryCandidates($tokens, $categories);
         $completionCandidates = array_merge($products, $brands, $categoryCandidates);
 
         return new SuggestResult(
@@ -40,12 +40,27 @@ final class ProductSuggestQuery
     }
 
     /**
+     * @param  list<string>  $tokens
+     */
+    private function hasShortToken(array $tokens): bool
+    {
+        foreach ($tokens as $token) {
+            if (mb_strlen($token) < 2) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  list<string>  $tokens
      * @return list<array{label: string, url: string, rank: int}>
      */
-    private function productCandidates(string $prefix): array
+    private function productCandidates(array $tokens): array
     {
         $candidates = [];
-        $titlePatterns = $this->titlePrefilterPatterns($prefix);
+        $titlePatterns = $this->titlePrefilterPatterns(implode(' ', $tokens));
         $products = Product::query()
             ->visibleOnStorefront()
             ->join('search_documents as suggest_documents', function (JoinClause $join): void {
@@ -71,7 +86,7 @@ final class ProductSuggestQuery
         foreach ($products as $product) {
             $title = (string) $product->getAttribute('suggest_title');
 
-            if (! $this->hasPrefix($title, $prefix)) {
+            if (! $this->matchesName($title, $tokens)) {
                 continue;
             }
 
@@ -108,9 +123,10 @@ final class ProductSuggestQuery
     }
 
     /**
+     * @param  list<string>  $tokens
      * @return list<array{label: string, url: string}>
      */
-    private function brandCandidates(string $prefix): array
+    private function brandCandidates(array $tokens): array
     {
         $candidates = [];
 
@@ -118,7 +134,7 @@ final class ProductSuggestQuery
             $name = (string) $brand->name;
             $slug = trim((string) $brand->slug);
 
-            if ($slug === '' || ! $this->hasPrefix($name, $prefix)) {
+            if ($slug === '' || ! $this->matchesName($name, $tokens)) {
                 continue;
             }
 
@@ -132,14 +148,15 @@ final class ProductSuggestQuery
     }
 
     /**
+     * @param  list<string>  $tokens
      * @return list<array{label: string, url: string}>
      */
-    private function categoryCandidates(string $prefix, iterable $categories): array
+    private function categoryCandidates(array $tokens, iterable $categories): array
     {
         $candidates = [];
 
         foreach ($categories as $category) {
-            if (! $this->hasPrefix($category->name, $prefix)) {
+            if (! $this->matchesName($category->name, $tokens)) {
                 continue;
             }
 
@@ -152,9 +169,29 @@ final class ProductSuggestQuery
         return $this->sortCandidates($candidates);
     }
 
-    private function hasPrefix(string $label, string $prefix): bool
+    /**
+     * @param  list<string>  $queryTokens
+     */
+    private function matchesName(string $label, array $queryTokens): bool
     {
-        return str_starts_with(SearchNormalizer::textNormalize($label), $prefix);
+        $nameTokens = SearchNormalizer::tokenize($label);
+
+        foreach ($queryTokens as $queryToken) {
+            $hit = false;
+
+            foreach ($nameTokens as $nameToken) {
+                if (str_starts_with($nameToken, $queryToken)) {
+                    $hit = true;
+                    break;
+                }
+            }
+
+            if (! $hit) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

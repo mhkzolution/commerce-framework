@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Product;
 
+use Commerce\Cart\Services\HomepageNavigationQuery;
 use Commerce\Catalog\DTO\CreateBrandData;
 use Commerce\Catalog\Models\Category;
 use Commerce\Catalog\Services\BrandService;
-use Commerce\Cart\Services\HomepageNavigationQuery;
 use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Product\Contracts\ProductServiceInterface;
 use Commerce\Product\DTO\CreateProductData;
 use Commerce\Product\DTO\SuggestHit;
 use Commerce\Product\Models\Product;
+use Commerce\Product\Models\SearchSynonym;
 use Commerce\Product\Services\ProductSearchIndexer;
 use Commerce\Product\Services\ProductSuggestQuery;
+use Commerce\Product\Services\SearchSynonymExpander;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Normalizer;
@@ -37,6 +39,69 @@ final class ProductSuggestQueryTest extends TestCase
         $this->assertFalse(collect(DB::getQueryLog())->contains(
             static fn (array $entry): bool => str_contains($entry['query'], 'search_documents'),
         ));
+    }
+
+    public function test_any_token_shorter_than_two_skips_search_documents(): void
+    {
+        $this->product('Classic Tee', 'SUGGEST-GATE-CLASSIC');
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        foreach (['t e', 'classic t'] as $query) {
+            $result = app(ProductSuggestQuery::class)->suggest($query);
+            $this->assertSame([], $result->products);
+            $this->assertSame([], $result->completions);
+        }
+
+        $this->assertFalse(collect(DB::getQueryLog())->contains(
+            static fn (array $entry): bool => str_contains($entry['query'], 'search_documents'),
+        ));
+    }
+
+    public function test_trimmed_two_letter_token_still_suggests(): void
+    {
+        $this->product('Tee', 'SUGGEST-TRIM-TE');
+        $labels = array_map(
+            static fn (SuggestHit $hit): string => $hit->label,
+            app(ProductSuggestQuery::class)->suggest('  te  ')->products,
+        );
+        $this->assertContains('Tee', $labels);
+    }
+
+    public function test_and_tokens_match_classic_tee_via_whole_title_recall(): void
+    {
+        $this->product('Classic Tee', 'SUGGEST-AND-CLASSIC');
+
+        $labels = array_map(
+            static fn (SuggestHit $hit): string => $hit->label,
+            app(ProductSuggestQuery::class)->suggest('classic te')->products,
+        );
+        $this->assertContains('Classic Tee', $labels);
+
+        $miss = array_map(
+            static fn (SuggestHit $hit): string => $hit->label,
+            app(ProductSuggestQuery::class)->suggest('tee park')->products,
+        );
+        $this->assertNotContains('Classic Tee', $miss);
+    }
+
+    public function test_suggest_does_not_resolve_synonym_expander(): void
+    {
+        $this->product('Cotton Shirt', 'SUGGEST-COTTON-SHIRT');
+        SearchSynonym::query()->create([
+            'from_term' => 'tee',
+            'to_term' => 'cotton',
+        ]);
+        $this->app->forgetInstance(SearchSynonymExpander::class);
+
+        $labels = array_map(
+            static fn (SuggestHit $hit): string => $hit->label,
+            app(ProductSuggestQuery::class)->suggest('tee')->products,
+        );
+        $this->assertNotContains('Cotton Shirt', $labels);
+
+        $constructor = (new \ReflectionClass(ProductSuggestQuery::class))->getConstructor();
+        $this->assertTrue($constructor === null || $constructor->getNumberOfRequiredParameters() === 0);
     }
 
     public function test_product_suggest_query_has_no_cart_service_dependency(): void

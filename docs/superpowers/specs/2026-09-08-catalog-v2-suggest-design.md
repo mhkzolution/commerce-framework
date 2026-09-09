@@ -22,7 +22,7 @@ The overlay already exists (`resources/views/components/storefront/navigation/se
 ## 2. Goals
 
 1. After two or more characters, show a mixed overlay: query completions, products, brands, categories.
-2. Prefix match on **names** already in the catalog (product title, brand name, category name). Not substring, not listing tokens, not SKU rows.
+2. Word-prefix match on **name tokens** already in the catalog (product title, brand name, category name). Each query token prefixes a name token; this is not substring-inside-a-token matching, listing-token matching, or SKU-row matching.
 3. Clicks are entity-correct: completion → `/shop?q=`, product → PDP, brand → `/shop?brand={slug}`, category → `/shop?category={slug}`.
 4. Enter in the search field still runs Phase 2 discovery listing.
 5. Empty or short `q` does not read `search_documents`.
@@ -37,13 +37,13 @@ Non-goals: synonym expansion in suggest, query-log autocomplete, SKU completion 
 |---|---|
 | Engine | SQL on existing tables. No new suggest table. No Meilisearch/Typesense. |
 | Listing isolation | `ProductDiscoveryQuery` is never called from suggest. Shop listing ranking/facets unchanged. |
-| Min length | Trim then `SearchNormalizer::textNormalize`. Length **< 2** → empty groups, no index read. Whitespace-only is empty. |
-| Match | Case-insensitive **prefix** (`normalized LIKE 'prefix%'`). Not contains. Not exact-token listing. |
+| Min length | Run `SearchNormalizer::tokenize(q)`. If there are no tokens or any token has `mb_strlen` **< 2**, return empty groups and do not read `search_documents`. Whitespace-only is empty. |
+| Match | Case-insensitive **word prefix**: each query token must prefix some token of the name. Not contains inside a token. Product SQL `LIKE` is recall only; the PHP matcher is the source of truth. |
 | Synonyms | **Off** for suggest V1. Directed replace stays listing-only. |
-| Completions source | Distinct strings from product names, brand names, and category names that prefix-match. Distinct after `SearchNormalizer::textNormalize()` (so `TEE` / `Tee` / `tee` is one row). Keep the first label after the group sort below. No query log. No SKU strings. |
-| Products | `search_documents.title` prefix + product `visibleOnStorefront()`. **Title only:** description, attributes, categories, and brand matches do **not** create product rows. Link = PDP (`storefront.products.show` / `/products/{slug}`). |
-| Brands | `brands` relation, `is_active`, prefix on `name`. URL = `/shop?brand={slug}`. |
-| Categories | Same query/service that populates storefront shop category navigation: `HomepageNavigationQuery::shopFilterOptions()`. Prefix on `name`. URL = `/shop?category={slug}`. |
+| Completions source | Union of word-prefix + AND matching product, brand, and category names. Distinct after `SearchNormalizer::textNormalize()` **across groups** (so `TEE` / `Tee` / `tee` is one row). Keep the first label after the group sort below. No query log. No SKU strings. |
+| Products | Product SQL recalls `search_documents.title` rows, then PHP applies word-prefix + AND with `visibleOnStorefront()`. **Title only:** description, attributes, categories, and brand matches do **not** create product rows. Link = PDP (`storefront.products.show` / `/products/{slug}`). |
+| Brands | `brands` relation, `is_active`, word-prefix + AND on `name`. URL = `/shop?brand={slug}`. |
+| Categories | Start with `HomepageNavigationQuery::shopFilterOptions()`, then apply word-prefix + AND in PHP on `name`. URL = `/shop?category={slug}`. |
 | Cap | **5** items per group. Deterministic order: **shorter matching names first, then alphabetical** (`ORDER BY CHAR_LENGTH(name), name` / `mb_strlen` then name). Example: `te` → `Tee`, `Tee Shirt`, `Team Jersey`. |
 | Overlay empty state | `q` empty or `< 2` chars: keep today’s popular config pills + recent (localStorage). Hide those when suggest groups are shown. |
 | Submit | Overlay form `GET /shop` with `name="q"` unchanged. |
@@ -70,19 +70,20 @@ Facet/filter identity stays Phase 2 (`attribute_values.code`, brand slug, catego
 New service, e.g. `ProductSuggestQuery` in Product or Cart, used only by a storefront suggest endpoint.
 
 ```text
-normalize(q)
-if length < 2 → empty payload, return
-prefix = normalized q
+tokens = SearchNormalizer::tokenize(q)
+if tokens empty or any token length < 2 → empty payload, return without search_documents
 
-completions ← distinct matching names (product title, brand name, category name),
-             unique by textNormalize, shorter then alphabetical, cap 5
-products   ← storefront-visible products whose search_documents.title prefixes, cap 5
+products   ← SQL recall storefront-visible search_documents.title rows,
+             then PHP word-prefix + AND on title, cap 5
              (title only; ignore description / attributes / brand / category text)
-brands     ← active brands whose name prefixes, cap 5
-categories ← HomepageNavigationQuery::shopFilterOptions() whose name prefixes, cap 5
+brands     ← active brands, then PHP word-prefix + AND on name, cap 5
+categories ← HomepageNavigationQuery::shopFilterOptions(),
+             then PHP word-prefix + AND on name, cap 5
+completions ← union matching product, brand, and category labels,
+              unique across groups by textNormalize, shorter then alphabetical, cap 5
 ```
 
-- Do not tokenize. Do not expand synonyms. Do not score with Phase 2 field ranks.
+- Do not expand synonyms. Do not score with Phase 2 field ranks.
 - Do not scan `payload.skus`, description, or attribute labels for suggest V1.
 - Do not call `ProductDiscoveryQuery`.
 - Alias `search` is not required on the suggest endpoint; overlay already sends `q`.
@@ -112,13 +113,16 @@ JS: debounce input (≈200ms). `< 2` chars → show hints, clear suggest. `>= 2`
 
 ## 7. Tests (acceptance)
 
-1. `q` empty, `"  "`, or one character: suggest handler does not query `search_documents`.
-2. `q=te` returns a product named `Tee` and does **not** return a product named `Parka` whose description or attributes contain `tee`. Description, attributes, categories, and brand matches do not create product rows.
-3. Prefix is case-insensitive (`TE` finds `Tee`). Completions for `TEE` / `Tee` / `tee` are a single row after `textNormalize`.
-4. Completion click target is `/shop?q=` + that label. Brand/category use slug params. Product uses PDP URL.
-5. `GET /shop?q=te` listing still uses Phase 2 exact-token (does not start matching `cotton` from `cot` via this work).
-6. Cap: a sixth prefix-matching product is omitted. Completions for `te` order `Tee` before `Tee Shirt` before `Team Jersey`.
-7. Suggest endpoint never invokes `ProductDiscoveryQuery` (bind a throwing fake in the HTTP test).
+1. `q` empty, `"  "`, or one character, and token-gate cases `"t e"` and `"classic t"`: suggest returns empty groups and does not query `search_documents`. A trimmed two-letter token such as `"  te  "` still runs.
+2. `q=te` word-prefix matches products named `Tee` and `Classic Tee`, while `eam` does not match `Team Jersey` and `las` does not match `Classic Tee`.
+3. Product matching remains title-only: `q=te` does **not** return `Parka` whose description or attributes contain `tee`. Description, attributes, categories, and brand matches do not create product rows.
+4. Multiple query tokens use AND: `classic te` matches `Classic Tee`; `tee park` does not.
+5. PHP is the source of truth: a recalled `Streetwear` title does not match `q=te`.
+6. Word-prefix matching is case-insensitive (`TE` finds `Tee`). Completions for `TEE` / `Tee` / `tee` are one row after cross-group `textNormalize` dedupe.
+7. Completion click target is `/shop?q=` + the full label. Brand/category use slug params. Product uses PDP URL.
+8. `GET /shop?q=cot` listing still uses Phase 2 exact-token and does not list `Cotton Parka` through suggest behavior.
+9. Cap: a sixth word-prefix-matching product is omitted. Completions for `te` order `Tee` before `Tee Shirt` before `Team Jersey`.
+10. Suggest endpoint never invokes `ProductDiscoveryQuery` (bind a throwing fake in the HTTP test).
 
 ---
 
