@@ -96,4 +96,13 @@ final class EditorPipelineTest extends TestCase
 
         $this->assertSame($html, $this->pipeline->sanitize($html));
     }
+
+    public function test_it_parses_quoted_attributes_with_whitespace_around_equals(): void
+    {
+        $html = '<img src= "/x.jpg" alt= "">';
+
+        $sanitized = $this->pipeline->sanitize($html);
+
+        $this->assertSame('<img src="/x.jpg" alt="">', $sanitized);
+    }
 }

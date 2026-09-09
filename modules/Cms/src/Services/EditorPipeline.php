@@ -91,7 +91,7 @@ final class EditorPipeline
     {
         $attrs = [];
 
-        if (preg_match_all('/([a-zA-Z_:][\w:.-]*)\s*=\s*("([^"]*)"|\'([^\']*)\'|([^\s>]+))/', $raw, $matches, PREG_SET_ORDER) === false) {
+        if (preg_match_all('/([a-zA-Z_:][\w:.-]*)\s*=\s*("([^"]*)"|\'([^\']*)\'|([^\s>]+))/', $raw, $matches, PREG_SET_ORDER | PREG_UNMATCHED_AS_NULL) === false) {
             return [];
         }
 
@@ -101,9 +101,11 @@ final class EditorPipeline
                 continue;
             }
 
-            $value = str_contains($match[0], '="')
-                ? $match[3]
-                : (str_contains($match[0], "='") ? $match[4] : $match[5]);
+            $value = match (true) {
+                $match[3] !== null => $match[3],
+                $match[4] !== null => $match[4],
+                default => $match[5] ?? '',
+            };
             $attrs[$name] = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         }
 
