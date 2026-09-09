@@ -261,20 +261,6 @@
     color: var(--color-text);
 }
 
-.storefront-buy-box__category {
-    display: inline-block;
-    margin-top: -0.25rem;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--color-text-secondary);
-    text-decoration: none;
-}
-
-.storefront-buy-box__category:hover {
-    color: var(--color-text);
-    text-decoration: underline;
-}
-
 .storefront-buy-box__price-panel {
     padding: 0.875rem 1rem;
     border-radius: var(--pdp-radius, var(--radius-store));

@@ -38,6 +38,10 @@ final class StorefrontMoneyLayoutCssTest extends TestCase
             '/\.storefront-mobile-buy-bar__button--buy:hover\s*\{[^}]*--color-primary-hover/s',
             $pdp,
         );
+        $this->assertMatchesRegularExpression(
+            '/\.storefront-mobile-buy-bar__button--cart:hover\s*\{[^}]*color-mix\(in srgb, var\(--color-primary\) 6%, var\(--color-surface\)\)/s',
+            $pdp,
+        );
         $this->assertStringNotContainsString(
             '.storefront-buy-box__cta--cart {
     border: 1px solid var(--pdp-accent, var(--color-primary));',
