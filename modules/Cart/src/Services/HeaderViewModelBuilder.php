@@ -85,7 +85,7 @@ final class HeaderViewModelBuilder
 
         $shopUrl = $this->url('storefront.shop.index');
         if ($shopUrl !== null) {
-            $links[] = new NavigationLinkData('Shop', $shopUrl, 'shop');
+            $links[] = new NavigationLinkData(__('storefront::storefront.nav_shop'), $shopUrl, 'shop');
         }
 
         $blogUrl = $this->url('storefront.cms.posts.index');
@@ -175,12 +175,22 @@ final class HeaderViewModelBuilder
     private function appendMainLinks(array $nav): array
     {
         $seen = [];
+        $shopUrl = rtrim((string) $this->url('storefront.shop.index'), '/');
 
         foreach ($nav['items'] as $item) {
             $seen[mb_strtolower((string) ($item['label'] ?? ''))] = true;
+            $seen[mb_strtolower((string) ($item['id'] ?? ''))] = true;
             $url = rtrim((string) ($item['url'] ?? ''), '/');
             if ($url !== '') {
                 $seen[$url] = true;
+            }
+
+            if ($this->isShopNavItem($item, $shopUrl)) {
+                $seen['shop'] = true;
+                $seen['ร้านค้า'] = true;
+                if ($shopUrl !== '') {
+                    $seen[$shopUrl] = true;
+                }
             }
         }
 
@@ -189,6 +199,10 @@ final class HeaderViewModelBuilder
             $urlKey = rtrim($link->url, '/');
 
             if (isset($seen[$labelKey]) || ($urlKey !== '' && isset($seen[$urlKey]))) {
+                continue;
+            }
+
+            if (isset($seen['shop']) && ($this->isShopAlias($link->label) || ($shopUrl !== '' && $urlKey === $shopUrl))) {
                 continue;
             }
 
@@ -207,6 +221,29 @@ final class HeaderViewModelBuilder
         }
 
         return $nav;
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     */
+    private function isShopNavItem(array $item, string $shopUrl): bool
+    {
+        if (mb_strtolower((string) ($item['id'] ?? '')) === 'shop') {
+            return true;
+        }
+
+        if ($this->isShopAlias((string) ($item['label'] ?? ''))) {
+            return true;
+        }
+
+        $url = rtrim((string) ($item['url'] ?? ''), '/');
+
+        return $shopUrl !== '' && $url === $shopUrl;
+    }
+
+    private function isShopAlias(string $label): bool
+    {
+        return in_array(mb_strtolower(trim($label)), ['shop', 'ร้านค้า'], true);
     }
 
     private function customerName(): string

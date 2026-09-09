@@ -1,7 +1,6 @@
 @props([
     'filters',
     'filterCatalog',
-    'categories' => [],
     'formId' => 'shop-filters',
     'variant' => null,
 ])
@@ -16,11 +15,6 @@
     $brandOptions = [];
     foreach ($filterCatalog->brands as $brand) {
         $brandOptions[$brand['slug']] = $brand['name'];
-    }
-
-    $categoryOptions = [];
-    foreach ($categories as $category) {
-        $categoryOptions[$category->slug] = $category->name;
     }
 
     $availabilityOptions = [
@@ -42,18 +36,12 @@
     @if ($filters->sort !== 'latest')
         <input type="hidden" name="sort" value="{{ $filters->sort }}">
     @endif
+    @if ($filters->category)
+        <input type="hidden" name="category" value="{{ $filters->category }}">
+    @endif
 
     @if (isset($actions))
         <div class="storefront-filters__scroll">
-    @endif
-
-    @if ($categoryOptions !== [])
-        <x-storefront.shop.filter-chip-group
-            :legend="__('storefront::storefront.filter_category')"
-            name="category"
-            :options="$categoryOptions"
-            :selected="$filters->category"
-        />
     @endif
 
     <x-storefront.shop.filter-chip-group

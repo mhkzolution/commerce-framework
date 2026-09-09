@@ -52,7 +52,7 @@
                             <p class="storefront-drawer-line__meta">{{ $line->variantLabel }}</p>
                         @endif
                         <p class="storefront-drawer-line__price">
-                            {{ number_format($line->lineTotal / 100, 2) }} {{ $cart->currency }}
+                            {{ \Commerce\Currency\Support\MoneyDisplay::format((int) $line->lineTotal, $cart->currency) }}
                         </p>
                         <div class="storefront-drawer-line__actions">
                             <form method="POST" action="{{ route('storefront.cart.items.update', $line->purchasableUuid) }}" class="storefront-qty-stepper" data-qty-stepper data-cart-qty>
@@ -79,7 +79,7 @@
             @if ($cart !== null && $cart->lines !== [])
                 <div class="storefront-drawer__subtotal">
                     <span>{{ __('storefront::storefront.subtotal') }}</span>
-                    <strong data-mini-cart-subtotal>{{ number_format($cart->subtotal / 100, 2) }} {{ $cart->currency }}</strong>
+                    <strong data-mini-cart-subtotal>{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $cart->subtotal, $cart->currency) }}</strong>
                 </div>
                 <div class="storefront-drawer__actions">
                     <a href="{{ $cartUrl }}" class="storefront-drawer__cta storefront-drawer__cta--secondary">

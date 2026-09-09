@@ -136,7 +136,7 @@ final class StorefrontWishlistPresenter
     {
         $baseCurrency = app()->bound(CurrencyConverterInterface::class)
             ? app(CurrencyConverterInterface::class)->baseCurrency()
-            : (string) config('cart.default_currency', 'USD');
+            : (string) config('cart.default_currency', 'THB');
 
         $displayCurrency = app()->bound(CartStorageInterface::class)
             ? app(CartStorageInterface::class)->currency()

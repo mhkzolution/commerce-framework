@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Commerce\Product\Services;
 
 use Commerce\Catalog\Models\Brand;
+use Commerce\Contracts\Media\MediaQueryServiceInterface;
 use Commerce\Product\DTO\SuggestHit;
 use Commerce\Product\DTO\SuggestResult;
 use Commerce\Product\Models\Product;
+use Commerce\Product\Models\ProductMedia;
 use Commerce\Product\Support\SearchNormalizer;
 use Illuminate\Database\Query\JoinClause;
 use Normalizer;
@@ -17,6 +19,21 @@ final class ProductSuggestQuery
     private const LIMIT = 5;
 
     private const PRODUCT_CANDIDATE_LIMIT = 100;
+
+    /**
+     * @var array<string, list<string>>
+     */
+    private const CATEGORY_ALIASES = [
+        'swim' => ['kids-swimwear', 'kids-swim-shirts'],
+        'dress' => ['kids-dresses'],
+        'toy' => ['toys'],
+        'book' => ['kids-books'],
+        'shoes' => ['kids-shoes'],
+    ];
+
+    public function __construct(
+        private readonly ?MediaQueryServiceInterface $media = null,
+    ) {}
 
     public function suggest(string $q, iterable $categories = []): SuggestResult
     {
@@ -55,7 +72,7 @@ final class ProductSuggestQuery
 
     /**
      * @param  list<string>  $tokens
-     * @return list<array{label: string, url: string, rank: int}>
+     * @return list<array{label: string, url: string, rank: int, imageUrl?: ?string}>
      */
     private function productCandidates(array $tokens): array
     {
@@ -63,6 +80,7 @@ final class ProductSuggestQuery
         $titlePatternGroups = $this->titlePrefilterPatterns($tokens);
         $products = Product::query()
             ->visibleOnStorefront()
+            ->with('media')
             ->join('search_documents as suggest_documents', function (JoinClause $join): void {
                 $join->on('suggest_documents.document_id', '=', 'products.uuid')
                     ->where('suggest_documents.index_name', ProductSearchIndexer::INDEX);
@@ -98,6 +116,7 @@ final class ProductSuggestQuery
                 'label' => $title,
                 'url' => route('storefront.products.show', (string) $product->slug),
                 'rank' => (int) $product->id,
+                'imageUrl' => $this->productImageUrl($product),
             ];
         }
 
@@ -178,8 +197,8 @@ final class ProductSuggestQuery
     {
         $candidates = [];
 
-        foreach ($categories as $category) {
-            if (! $this->matchesName($category->name, $tokens)) {
+        foreach ($this->flattenCategories($categories) as $category) {
+            if (! $this->matchesCategory($category, $tokens)) {
                 continue;
             }
 
@@ -190,6 +209,63 @@ final class ProductSuggestQuery
         }
 
         return $this->sortCandidates($candidates);
+    }
+
+    /**
+     * @param  iterable<mixed>  $categories
+     * @return list<object>
+     */
+    private function flattenCategories(iterable $categories): array
+    {
+        $flat = [];
+
+        foreach ($categories as $category) {
+            $flat[] = $category;
+
+            if (is_object($category) && isset($category->children) && is_iterable($category->children)) {
+                foreach ($this->flattenCategories($category->children) as $child) {
+                    $flat[] = $child;
+                }
+            }
+        }
+
+        return $flat;
+    }
+
+    /**
+     * @param  list<string>  $queryTokens
+     */
+    private function matchesCategory(object $category, array $queryTokens): bool
+    {
+        $name = SearchNormalizer::textNormalize((string) $category->name);
+        $slug = (string) $category->slug;
+
+        foreach ($queryTokens as $queryToken) {
+            if (! $this->tokenMatchesCategory($queryToken, $name, $slug)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function tokenMatchesCategory(string $queryToken, string $normalizedName, string $slug): bool
+    {
+        if (mb_strpos($normalizedName, $queryToken) !== false) {
+            return true;
+        }
+
+        foreach (self::CATEGORY_ALIASES as $alias => $slugs) {
+            if (! in_array($slug, $slugs, true)) {
+                continue;
+            }
+
+            if ($queryToken === $alias || str_starts_with($alias, $queryToken)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -241,15 +317,55 @@ final class ProductSuggestQuery
     }
 
     /**
-     * @param  list<array{label: string, url: string, rank?: int}>  $candidates
+     * @param  list<array{label: string, url: string, rank?: int, imageUrl?: ?string}>  $candidates
      * @return list<SuggestHit>
      */
     private function hits(array $candidates): array
     {
         return array_map(
-            static fn (array $candidate): SuggestHit => new SuggestHit($candidate['label'], $candidate['url']),
+            static fn (array $candidate): SuggestHit => new SuggestHit(
+                $candidate['label'],
+                $candidate['url'],
+                $candidate['imageUrl'] ?? null,
+            ),
             array_slice($candidates, 0, self::LIMIT),
         );
+    }
+
+    private function productImageUrl(Product $product): ?string
+    {
+        if ($this->media === null) {
+            return null;
+        }
+
+        $mediaRows = $product->relationLoaded('media')
+            ? $product->media
+            : $product->media()->get();
+
+        $ordered = $mediaRows
+            ->sortBy(static function (ProductMedia $row): string {
+                $priority = $row->is_primary ? '0' : '1';
+
+                return $priority.'-'.str_pad((string) (int) $row->position, 6, '0', STR_PAD_LEFT);
+            })
+            ->values();
+
+        foreach ($ordered as $row) {
+            $uuid = is_string($row->media_uuid) ? $row->media_uuid : null;
+            if ($uuid === null || $uuid === '') {
+                continue;
+            }
+
+            $url = $this->media->getUrl($uuid, 'card')
+                ?? $this->media->getUrl($uuid, 'medium')
+                ?? $this->media->getUrl($uuid);
+
+            if (is_string($url) && $url !== '') {
+                return $url;
+            }
+        }
+
+        return null;
     }
 
     /**

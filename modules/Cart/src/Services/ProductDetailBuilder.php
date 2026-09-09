@@ -76,6 +76,8 @@ final class ProductDetailBuilder
             variantAxes: $this->variantAxes($product),
             attributes: $this->visibleAttributes($product),
             relatedProducts: $this->relatedProducts($product, $baseCurrency, $displayCurrency),
+            categoryName: $this->categoryName($product),
+            categoryUrl: $this->categoryUrl($product),
         );
     }
 
@@ -194,22 +196,65 @@ final class ProductDetailBuilder
     {
         $items = [
             [
-                'label' => __('storefront::storefront.shop'),
-                'url' => $this->shopUrl(),
+                'label' => __('storefront::storefront.home'),
+                'url' => $this->homeUrl(),
             ],
         ];
 
-        $category = $product->categories->first();
-        if ($category !== null && filled($category->slug)) {
+        $assigned = $this->assignedCategory($product);
+        if ($assigned !== null) {
+            $parent = $assigned->parent;
+            if ($parent !== null && filled($parent->slug)) {
+                $items[] = [
+                    'label' => (string) $parent->name,
+                    'url' => $this->shopUrl(['category' => (string) $parent->slug]),
+                ];
+            }
+
             $items[] = [
-                'label' => (string) $category->name,
-                'url' => $this->shopUrl(['category' => (string) $category->slug]),
+                'label' => (string) $assigned->name,
+                'url' => $this->shopUrl(['category' => (string) $assigned->slug]),
             ];
         }
 
         $items[] = ['label' => (string) $product->name];
 
         return $items;
+    }
+
+    private function assignedCategory(Product $product): ?object
+    {
+        $category = $product->categories->first();
+        if ($category === null || ! filled($category->slug)) {
+            return null;
+        }
+
+        return $category;
+    }
+
+    private function categoryName(Product $product): ?string
+    {
+        $category = $this->assignedCategory($product);
+
+        return $category === null ? null : (string) $category->name;
+    }
+
+    private function categoryUrl(Product $product): ?string
+    {
+        $category = $this->assignedCategory($product);
+
+        return $category === null
+            ? null
+            : $this->shopUrl(['category' => (string) $category->slug]);
+    }
+
+    private function homeUrl(): string
+    {
+        if (Route::has('storefront.home')) {
+            return route('storefront.home');
+        }
+
+        return '/';
     }
 
     /**
@@ -442,6 +487,7 @@ final class ProductDetailBuilder
             'attributeValues.attribute',
             'attributeValues.attributeValue',
             'variants',
+            'categories.parent',
         ]);
     }
 

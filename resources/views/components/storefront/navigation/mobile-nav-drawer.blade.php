@@ -97,6 +97,26 @@
                                 <p class="storefront-mobile-nav__section-title">{{ $column['title'] }}</p>
                             @endif
 
+                            @if (! empty($column['groups']))
+                                @foreach ($column['groups'] as $group)
+                                    <ul class="storefront-mobile-nav__list">
+                                        @if (! empty($group['url']))
+                                            <li>
+                                                <a href="{{ $group['url'] }}" class="storefront-mobile-nav__row storefront-mobile-nav__row--link {{ ($group['active'] ?? false) ? 'storefront-mobile-nav__row--active' : '' }}">
+                                                    <span>{{ $group['label'] }}</span>
+                                                </a>
+                                            </li>
+                                        @endif
+                                        @foreach ($group['children'] ?? [] as $link)
+                                            <li>
+                                                <a href="{{ $link['url'] }}" class="storefront-mobile-nav__row storefront-mobile-nav__row--link storefront-mobile-nav__row--child {{ ($link['active'] ?? false) ? 'storefront-mobile-nav__row--active' : '' }}">
+                                                    <span>{{ $link['label'] }}</span>
+                                                </a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                @endforeach
+                            @else
                             <ul class="storefront-mobile-nav__list">
                                 @foreach ($column['links'] ?? [] as $link)
                                     <li>
@@ -106,6 +126,7 @@
                                     </li>
                                 @endforeach
                             </ul>
+                            @endif
 
                             @if (! empty($column['view_all']))
                                 <a href="{{ $column['view_all']['url'] }}" class="storefront-mobile-nav__view-all">

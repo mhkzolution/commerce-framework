@@ -108,11 +108,11 @@
 
         <div class="storefront-product-card__meta">
             <span class="storefront-product-card__price">
-                {{ number_format($displayPrice / 100, 2) }} {{ $displayCurrency }}
+                {{ \Commerce\Currency\Support\MoneyDisplay::format((int) $displayPrice, $displayCurrency !== '' ? $displayCurrency : 'THB') }}
             </span>
             @if ($displayCompare !== null && $displayCompare > $displayPrice)
                 <span class="storefront-product-card__compare">
-                    {{ number_format($displayCompare / 100, 2) }} {{ $displayCurrency }}
+                    {{ \Commerce\Currency\Support\MoneyDisplay::format((int) $displayCompare, $displayCurrency !== '' ? $displayCurrency : 'THB') }}
                 </span>
             @endif
             <span class="storefront-product-card__stock">

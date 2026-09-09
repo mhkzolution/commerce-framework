@@ -7,6 +7,7 @@ namespace Commerce\Cart\Services;
 use Commerce\Catalog\Models\Brand;
 use Commerce\Contracts\Inventory\InventoryQueryServiceInterface;
 use Commerce\Contracts\Media\MediaQueryServiceInterface;
+use Commerce\Currency\Support\MoneyDisplay;
 use Commerce\Product\Models\Product;
 use Commerce\Product\Models\ProductMedia;
 use Commerce\Product\Models\ProductVariant;
@@ -139,6 +140,6 @@ final class StorefrontQuickViewService
 
     private function formatMoney(int $minor): string
     {
-        return number_format($minor / 100, 2);
+        return MoneyDisplay::format($minor, (string) config('cart.default_currency', 'THB'));
     }
 }

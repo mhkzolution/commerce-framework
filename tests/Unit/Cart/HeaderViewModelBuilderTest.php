@@ -57,6 +57,21 @@ final class HeaderViewModelBuilderTest extends TestCase
         $this->assertNotContains('Cart', $labels);
     }
 
+    public function test_primary_nav_does_not_append_english_shop_next_to_thai_shop(): void
+    {
+        app()->setLocale('th');
+
+        $header = app(HeaderViewModelBuilder::class)->build();
+        $labels = array_map(
+            static fn (array $item): string => (string) $item['label'],
+            $header->primaryNav['items'],
+        );
+
+        $this->assertContains('ร้านค้า', $labels);
+        $this->assertNotContains('Shop', $labels);
+        $this->assertSame(1, count(array_filter($labels, static fn (string $label): bool => $label === 'ร้านค้า')));
+    }
+
     public function test_search_query_comes_from_request(): void
     {
         $this->get(route('storefront.shop.index', ['search' => 'harbor mug']));

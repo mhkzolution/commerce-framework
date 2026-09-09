@@ -162,6 +162,12 @@ final class Ws002ShopListingContractTest extends TestCase
         $this->assertStringContainsString('value="in_stock"', $reload);
         $this->assertStringContainsString('value="price_asc"', $reload);
         $this->assertStringContainsString('storefront-pagination', $reload);
+        $this->assertStringContainsString('data-shop-pagination', $reload);
+        $this->assertStringContainsString('data-shop-infinite-sentinel', $reload);
+        $this->assertStringNotContainsString('&amp;laquo;', $reload);
+        $this->assertStringNotContainsString('&laquo;', $reload);
+        $this->assertStringContainsString('>1</span>', $reload);
+        $this->assertStringContainsString('page=2', $reload);
 
         $pageTwo = $this->get(route('storefront.shop.index', [
             'category' => 'mugs',

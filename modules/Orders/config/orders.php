@@ -9,7 +9,7 @@ return [
         'completed' => 'Completed',
         'cancelled' => 'Cancelled',
     ],
-    'default_currency' => 'USD',
+    'default_currency' => 'THB',
     'default_channel' => 'web',
     'default_country' => 'TH',
     'order_number_prefix' => 'ORD-',

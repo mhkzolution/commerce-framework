@@ -9,6 +9,9 @@
     <x-app-fonts />
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/css/storefront/footer.css'])
     <x-admin.design-tokens />
+    <script>
+        window.__storefrontMoney = @json($storefrontMoney ?? ['currency' => 'THB', 'symbol' => '฿', 'decimals' => 2]);
+    </script>
     @stack('head')
 </head>
 <body class="storefront min-h-screen bg-background text-text antialiased">

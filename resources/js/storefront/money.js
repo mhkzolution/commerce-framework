@@ -22,7 +22,7 @@ function formatAmount(amount, currency, decimals) {
     const symbol = resolveSymbol(currency);
     const locale = document.documentElement.lang || 'th-TH';
 
-    return `${symbol} ${Number(amount).toLocaleString(locale, {
+    return `${symbol}${Number(amount).toLocaleString(locale, {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals,
     })}`;
@@ -32,7 +32,7 @@ export function formatMoneyMinor(amountMinor, currency, options = {}) {
     const config = readMoneyConfig();
     const decimals = options.decimals ?? config.decimals ?? 2;
 
-    return formatAmount(Number(amountMinor) / (10 ** decimals), currency || config.currency, decimals);
+    return formatAmount(Number(amountMinor) / 100, currency || config.currency, decimals);
 }
 
 export function formatMoneyMajor(amount, currency, options = {}) {

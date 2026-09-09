@@ -35,7 +35,7 @@ final class DashboardQueryService extends BaseQueryService
 
         $currency = app()->bound(CurrencyConverterInterface::class)
             ? app(CurrencyConverterInterface::class)->baseCurrency()
-            : (string) config('orders.default_currency', 'USD');
+            : (string) config('orders.default_currency', 'THB');
 
         $revenueStatuses = [OrderStatus::Confirmed->value, OrderStatus::Completed->value];
 

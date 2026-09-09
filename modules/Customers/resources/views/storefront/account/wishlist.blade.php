@@ -38,7 +38,7 @@
                                     <p class="storefront-muted">{{ $item['variant_label'] }}</p>
                                 @endif
                                 <p class="storefront-account-product__price">
-                                    {{ number_format(((int) $item['price']) / 100, 2) }} {{ $item['currency'] }}
+                                    {{ \Commerce\Currency\Support\MoneyDisplay::format((int) $item['price'], (string) ($item['currency'] ?? 'THB')) }}
                                 </p>
                                 <form method="POST" action="{{ route('storefront.account.wishlist.items.destroy') }}">
                                     @csrf

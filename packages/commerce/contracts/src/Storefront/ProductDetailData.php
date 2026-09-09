@@ -35,5 +35,7 @@ final readonly class ProductDetailData
         public array $variantAxes = [],
         public array $attributes = [],
         public array $relatedProducts = [],
+        public ?string $categoryName = null,
+        public ?string $categoryUrl = null,
     ) {}
 }

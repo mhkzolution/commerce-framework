@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Commerce\Currency;
 
+use Commerce\Cart\Contracts\CartStorageInterface;
 use Commerce\Contracts\Currency\CurrencyConverterInterface;
 use Commerce\Core\Base\BaseModuleServiceProvider;
 use Commerce\Currency\Contracts\CurrencyServiceInterface;
@@ -44,12 +45,22 @@ final class CurrencyServiceProvider extends BaseModuleServiceProvider
             }
 
             $converter = app(CurrencyConverterInterface::class);
-            $view->with('storeCurrencies', $converter->activeCurrencies());
-            $view->with('storeBaseCurrency', $converter->baseCurrency());
+            $currencies = $converter->activeCurrencies();
+            $display = app()->bound(CartStorageInterface::class)
+                ? app(CartStorageInterface::class)->currency()
+                : $converter->baseCurrency();
+            $meta = collect($currencies)->first(
+                fn (object $currency): bool => strtoupper((string) $currency->code) === strtoupper($display),
+            );
 
-            if (app()->bound(\Commerce\Cart\Contracts\CartStorageInterface::class)) {
-                $view->with('storeDisplayCurrency', app(\Commerce\Cart\Contracts\CartStorageInterface::class)->currency());
-            }
+            $view->with('storeCurrencies', $currencies);
+            $view->with('storeBaseCurrency', $converter->baseCurrency());
+            $view->with('storeDisplayCurrency', $display);
+            $view->with('storefrontMoney', [
+                'currency' => $display,
+                'symbol' => is_string($meta?->symbol) && $meta->symbol !== '' ? $meta->symbol : $display,
+                'decimals' => (int) ($meta?->decimal_places ?? 2),
+            ]);
         });
     }
 }

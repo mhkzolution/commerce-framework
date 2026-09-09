@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Commerce\Cart\Services;
 
+use Commerce\Currency\Support\MoneyDisplay;
 use Commerce\Product\Models\Product;
 use Commerce\Settings\Services\CustomerExperienceConfig;
 
@@ -52,7 +53,7 @@ final class StorefrontNotificationFeedService
                     'type' => 'newProduct',
                     'eyebrow' => __('storefront::storefront.cx_notification_new_product'),
                     'title' => $product->name,
-                    'body' => number_format($price / 100, 2),
+                    'body' => MoneyDisplay::format($price, (string) config('cart.default_currency', 'THB')),
                     'action' => __('storefront::storefront.cx_view_product'),
                     'url' => route('storefront.products.show', $product->slug),
                 ];

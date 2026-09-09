@@ -32,6 +32,40 @@ final class CategoryQueryService extends BaseQueryService implements CategoryQue
     }
 
     /**
+     * @return list<int>
+     */
+    public function idsForSlugIncludingDescendants(string $slug): array
+    {
+        $slug = trim($slug);
+        if ($slug === '') {
+            return [];
+        }
+
+        $category = Category::query()->where('slug', $slug)->first();
+        if ($category === null) {
+            return [];
+        }
+
+        $ids = [(int) $category->id];
+        $this->appendDescendantIds((int) $category->id, $ids);
+
+        return $ids;
+    }
+
+    /**
+     * @param  list<int>  $ids
+     */
+    private function appendDescendantIds(int $parentId, array &$ids): void
+    {
+        $childIds = Category::query()->where('parent_id', $parentId)->pluck('id')->all();
+
+        foreach ($childIds as $id) {
+            $ids[] = (int) $id;
+            $this->appendDescendantIds((int) $id, $ids);
+        }
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function childrenRecursive(): array

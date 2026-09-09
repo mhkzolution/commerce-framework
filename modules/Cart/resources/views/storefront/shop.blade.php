@@ -6,10 +6,15 @@
     if (is_string($filters->search) && $filters->search !== '') {
         $pageTitle = $filters->search;
     } elseif (is_string($filters->category) && $filters->category !== '') {
-        foreach ($categories as $category) {
+        $stack = $categories;
+        while ($stack !== []) {
+            $category = array_shift($stack);
             if ($category->slug === $filters->category) {
                 $pageTitle = $category->name;
                 break;
+            }
+            foreach ($category->children as $child) {
+                $stack[] = $child;
             }
         }
     } elseif (is_string($filters->brand) && $filters->brand !== '') {
@@ -41,6 +46,11 @@
             </div>
         @endif
 
+        <x-storefront.shop.category-strip
+            :filters="$filters"
+            :categories="$categories"
+        />
+
         @if ($filters->hasListingConstraints())
             <header class="storefront-shop__context">
                 <h1 class="storefront-shop__context-title">{{ $pageTitle }}</h1>
@@ -64,7 +74,6 @@
                 class="storefront-shop-filters-sidebar"
                 :filters="$filters"
                 :filter-catalog="$filterCatalog"
-                :categories="$categories"
             />
 
             <div class="storefront-shop__results" data-shop-results>
@@ -83,7 +92,10 @@
                 </div>
 
                 @if ($products->hasPages())
-                    <div class="storefront-shop__pagination">{{ $products->withQueryString()->links('pagination::storefront') }}</div>
+                    <div class="storefront-shop__pagination" data-shop-pagination>
+                        {{ $products->withQueryString()->links('pagination::storefront') }}
+                    </div>
+                    <div class="storefront-shop__infinite-sentinel" data-shop-infinite-sentinel aria-hidden="true"></div>
                 @endif
             </div>
         </div>
@@ -91,7 +103,6 @@
         <x-storefront.shop.filters-sheet
             :filters="$filters"
             :filter-catalog="$filterCatalog"
-            :categories="$categories"
         />
     </x-storefront.layout.page-container>
 @endsection

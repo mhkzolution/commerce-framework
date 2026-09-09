@@ -68,7 +68,7 @@
                                 @if ($line->quantityLimited && $line->available < $line->quantity)
                                     <p class="storefront-danger">{{ __('storefront::storefront.only_n_available', ['count' => $line->available]) }}</p>
                                 @endif
-                                <p class="storefront-cart-item__price">{{ number_format($line->unitPrice / 100, 2) }} {{ $cart->currency }}</p>
+                                <p class="storefront-cart-item__price">{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $line->unitPrice, $cart->currency) }}</p>
                             </div>
                             <div class="storefront-cart-item__controls">
                                 <form method="POST" action="{{ route('storefront.cart.items.update', $line->purchasableUuid) }}" class="storefront-qty-stepper" data-qty-stepper data-cart-qty>
@@ -78,7 +78,7 @@
                                     <input type="number" name="quantity" value="{{ $line->quantity }}" min="0" @if ($line->quantityLimited) max="{{ $line->available }}" @endif class="storefront-qty-stepper__input">
                                     <button type="button" class="storefront-qty-stepper__btn" data-qty-inc aria-label="{{ __('storefront::storefront.increase_quantity') }}">+</button>
                                 </form>
-                                <p class="storefront-cart-item__total">{{ number_format($line->lineTotal / 100, 2) }}</p>
+                                <p class="storefront-cart-item__total">{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $line->lineTotal, $cart->currency) }}</p>
                                 <form method="POST" action="{{ route('storefront.cart.items.destroy', $line->purchasableUuid) }}" data-cart-remove>
                                     @csrf
                                     @method('DELETE')
@@ -94,10 +94,10 @@
                         <h2 class="storefront-panel__title">{{ __('storefront::storefront.order_summary') }}</h2>
                         <div>
                             <div class="storefront-muted">{{ trans_choice('storefront::storefront.subtotal_items', $cart->itemCount, ['count' => $cart->itemCount]) }}</div>
-                            <p class="storefront-cart__total">{{ number_format($cart->subtotal / 100, 2) }} {{ $cart->currency }}</p>
+                            <p class="storefront-cart__total">{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $cart->subtotal, $cart->currency) }}</p>
                             @if ($cart->discountTotal > 0)
                                 <div class="storefront-success">
-                                    {{ $cart->promotionName }} ({{ $cart->couponCode }}): -{{ number_format($cart->discountTotal / 100, 2) }}
+                                    {{ $cart->promotionName }} ({{ $cart->couponCode }}): -{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $cart->discountTotal, $cart->currency) }}
                                 </div>
                             @endif
                         </div>

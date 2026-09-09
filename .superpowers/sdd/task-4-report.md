@@ -1,41 +1,77 @@
-# Task 4 Report: Attribute Recovery Commands
+# Task 4 Report: Drag Resize NodeView and Persistence
 
 ## Status
 
-Implemented the recovery service and both Artisan commands. Recovery audits and canonicalizes size/age values, backs up affected state, links the eight covered attributes without replacing unrelated attributes, flips them to select, updates the WooCommerce Default set, set-syncs products with `used_for_variations=false`, and reindexes touched products. Restore reinstates PAV rows, attribute types, set pivots, and pre-recovery product-attribute rows, removes catalog values created after the backup watermark, and reindexes all products.
+Implemented the CMS image NodeView and the requested post-save regression test. The editor-only NodeView renders `span.cms-image-node` around the image, copies `width` and `data-align` to that wrapper, applies the percent as an inline preview width, and adds the existing `cms-image-node__handle` resize control. Stored HTML remains governed by the image extension attributes and therefore remains a single `<img>`.
 
-No recovery command was run against the live `commerce_framework` database.
+## TDD / Persistence Regression
 
-## RED
+Added `test_post_save_keeps_image_percent_width` to `CmsAdminTest`.
 
-`php artisan test tests/Feature/Product/RecoverProductAttributeValuesTest.php`
+Command:
 
-Observed: 7 tests failed with 0 assertions because `Commerce\Product\Services\RecoverProductAttributeValues` and `product:recover-attribute-values` did not exist.
+`php artisan test --filter=test_post_save_keeps_image_percent_width`
 
-## GREEN
+Observed: 1 test passed with 4 assertions. As anticipated in the task brief, the test passed immediately because Task 1 had already implemented sanitizer persistence. It remains as a round-trip regression covering `width="50%"` and the image source.
 
-`php artisan test tests/Feature/Product/RecoverProductAttributeValuesTest.php tests/Feature/Product/ProductCsvImportTest.php tests/Feature/Product/ProductAttributeValueLinkerTest.php`
+## NodeView Implementation
 
-Observed: 40 tests passed with 228 assertions.
+- Creates a `span.cms-image-node` containing the image and `span.cms-image-node__handle`.
+- Mirrors the node's percent `width` and optional `data-align` onto the wrapper.
+- Sets `wrapper.style.width` for immediate drag preview without adding `style` to serialized HTML.
+- Selects the image node on pointer down.
+- Tracks pointer movement against `editor.view.dom.clientWidth`.
+- Uses the existing `snapPercent` helper, preserving the 25–100 clamp and ±3 preset snapping.
+- Updates image attributes on every drag frame so the inspector stays synchronized.
+- Applies the final pointer position on pointer up and removes global listeners on completion, cancellation, or NodeView destruction.
+- Refreshes image and wrapper attributes through the NodeView `update` hook.
 
-`vendor/bin/pint --test modules/Product/src/Services/RecoverProductAttributeValues.php modules/Product/src/Console/RecoverProductAttributeValuesCommand.php modules/Product/src/Console/RestoreProductAttributeValuesCommand.php tests/Feature/Product/RecoverProductAttributeValuesTest.php modules/Product/src/ProductServiceProvider.php`
+## Verification
 
-Observed: passed. IDE diagnostics reported no errors in task files.
+`php artisan test --filter='EditorPipelineTest|CmsImageLayoutCssTest|CmsAdminTest'`
 
-## Operational Notes
+Observed: 17 tests passed with 72 assertions.
 
-- Apply refuses to overwrite the dated PAV backup; `--force` allocates a numbered suffix.
-- A completed second apply is a no-op and returns the original suffix.
-- Audit and dry-run paths create no backups or catalog values.
-- Restore intentionally replaces staff changes made after recovery, as warned by the restore command.
+`npm run build`
 
-## Important Review Fixes
+Observed: Vite completed successfully after transforming 192 modules. It reported two pre-existing ineffective dynamic import warnings in POS modules; no build errors occurred.
 
-- Mixed linked and raw product values now submit the union of existing catalog labels and normalized raw tokens, preserving already-linked values. Attributes with no resulting tokens are omitted from linker input.
-- Every apply backup now includes `_bak_attr_recovery_meta_{suffix}`, and apply/idempotency reporting tracks the numbered suffix actually created by forced runs.
-- Apply validates all eight covered attribute name/code pairs and the `woocommerce_default` attribute set before creating backups or mutating recovery data.
-- Added regression coverage for mixed `Blue` + raw `Red`, numbered backup suffix reporting, and missing-set failure before PAV backup creation.
+IDE diagnostics reported no errors in either task file. `git diff --check` passed.
 
-`php artisan test tests/Feature/Product/RecoverProductAttributeValuesTest.php tests/Feature/Product/ProductAttributeValueLinkerTest.php`
+## Commit
 
-Observed: 16 tests passed with 53 assertions.
+`ff598b4 feat: drag-resize CMS images as percent width`
+
+The commit contains only:
+
+- `resources/js/admin/editor/cms-image.js`
+- `tests/Feature/Cms/CmsAdminTest.php`
+
+## Concerns
+
+No task-blocking concerns. The persistence regression could not demonstrate a red failure because the required behavior already existed from Task 1, exactly as noted in the brief.
+
+## Fix
+
+Command:
+
+`php artisan test --filter='EditorPipelineTest|CmsImageLayoutCssTest|CmsAdminTest'`
+
+Observed: 17 tests passed with 74 assertions.
+
+- Captured the NodeView's left and right edges on pointer down so center/right resizing does not shift its measurement origin during a drag.
+- Measured right-aligned images inward from the captured right edge and left/center images outward from the captured left edge, retaining percent snapping against the editor width.
+- Made the editor NodeView mobile width declaration `100% !important` so it overrides the desktop inline preview width below 1024px.
+- Extended persistence coverage to ensure the editor-only `cms-image-node` wrapper is never stored.
+
+## Critical and Important Review Fix
+
+Command:
+
+`php artisan test --filter='EditorPipelineTest|CmsImageLayoutCssTest|CmsAdminTest'`
+
+Observed: 17 tests passed with 77 assertions.
+
+- Moved the right-aligned image resize handle to the wrapper's left edge, matching the existing `startRight - clientX` drag measurement and preventing the first pointer move from collapsing the width.
+- Hid image resize handles by default and revealed them only for `.ProseMirror-selectednode` image NodeViews.
+- Added CSS regression assertions for selected-node visibility and the right-aligned handle rule.

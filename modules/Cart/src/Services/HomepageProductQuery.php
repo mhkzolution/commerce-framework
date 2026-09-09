@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Commerce\Cart\Services;
 
 use Commerce\Cms\Support\HomeContentCache;
+use Commerce\Contracts\Catalog\CategoryQueryServiceInterface;
 use Commerce\Contracts\Storefront\ProductCardData;
 use Commerce\Product\Models\Product;
 use Commerce\Product\Services\ProductQueryService;
@@ -17,6 +18,7 @@ final class HomepageProductQuery
     public function __construct(
         private readonly ProductQueryService $products,
         private readonly ProductCardMapper $cards,
+        private readonly ?CategoryQueryServiceInterface $categories = null,
     ) {}
 
     /**
@@ -59,8 +61,16 @@ final class HomepageProductQuery
         $query = Product::query()->visibleOnStorefront();
 
         if (is_string($categorySlug) && $categorySlug !== '') {
-            $query->whereHas('categories', static function (Builder $categoryQuery) use ($categorySlug): void {
-                $categoryQuery->where('slug', $categorySlug);
+            $ids = $this->categories?->idsForSlugIncludingDescendants($categorySlug) ?? [];
+
+            $query->whereHas('categories', static function (Builder $categoryQuery) use ($categorySlug, $ids): void {
+                if ($ids === []) {
+                    $categoryQuery->where('slug', $categorySlug);
+
+                    return;
+                }
+
+                $categoryQuery->whereIn('categories.id', $ids);
             });
         }
 

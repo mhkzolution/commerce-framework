@@ -6,7 +6,6 @@ namespace Commerce\Cart\Services;
 
 use Commerce\Catalog\Models\Brand;
 use Commerce\Catalog\Models\Category;
-use Illuminate\Http\Request;
 use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Route;
 use Throwable;
@@ -16,7 +15,7 @@ final class StorefrontPrimaryNavigation
     public function __construct(
         private readonly StorefrontNavigationCatalog $navigationCatalog,
         private readonly StorefrontNavigationConfig $navigationConfig,
-        private readonly Request $request,
+        private readonly ?HomepageNavigationQuery $categoryNavigation = null,
     ) {}
 
     /**
@@ -142,6 +141,23 @@ final class StorefrontPrimaryNavigation
             $source = (string) ($column['source'] ?? '');
             $limit = max(1, (int) ($column['limit'] ?? 8));
 
+            if ($source === 'categories') {
+                $groups = $this->categoryGroups();
+                $viewAll = $this->resolveViewAll($column, $source, []);
+                if ($groups === [] && $viewAll === null) {
+                    continue;
+                }
+
+                $resolved[] = [
+                    'title' => $title,
+                    'links' => [],
+                    'groups' => $groups,
+                    'view_all' => $viewAll,
+                ];
+
+                continue;
+            }
+
             if ($source !== '') {
                 $links = $this->linksFromSource($source, $limit);
                 $viewAll = $this->resolveViewAll($column, $source, $links);
@@ -157,6 +173,7 @@ final class StorefrontPrimaryNavigation
             $resolved[] = [
                 'title' => $title,
                 'links' => $links,
+                'groups' => [],
                 'view_all' => $viewAll,
             ];
         }
@@ -178,6 +195,56 @@ final class StorefrontPrimaryNavigation
         }
 
         return '';
+    }
+
+    /**
+     * @return list<array{label: string, url: ?string, slug: string, active: bool, children: list<array{label: string, url: string, slug: ?string, active: bool}>}>
+     */
+    private function categoryGroups(): array
+    {
+        if ($this->categoryNavigation === null) {
+            return [];
+        }
+
+        $activeSlug = (string) request()->query('category', '');
+        $groups = [];
+
+        foreach ($this->categoryNavigation->shopFilterOptions() as $node) {
+            $children = [];
+            $childActive = false;
+
+            foreach ($node->children as $child) {
+                $url = $child->url ?? $this->categoryUrl($child->slug);
+                $active = $activeSlug !== '' && $activeSlug === $child->slug;
+                $childActive = $childActive || $active;
+                $children[] = [
+                    'label' => $child->name,
+                    'url' => $url ?? route('storefront.shop.index'),
+                    'slug' => $child->slug,
+                    'active' => $active,
+                ];
+            }
+
+            $url = $node->url ?? $this->categoryUrl($node->slug);
+            $groups[] = [
+                'label' => $node->name,
+                'url' => $url,
+                'slug' => $node->slug,
+                'active' => $activeSlug !== '' && ($activeSlug === $node->slug || $childActive),
+                'children' => $children,
+            ];
+        }
+
+        return $groups;
+    }
+
+    private function categoryUrl(string $slug): ?string
+    {
+        if (! Route::has('storefront.shop.index')) {
+            return null;
+        }
+
+        return route('storefront.shop.index', ['category' => $slug]);
     }
 
     /**
@@ -204,7 +271,7 @@ final class StorefrontPrimaryNavigation
      */
     private function mapCatalogLinks(SupportCollection $items, string $queryKey): array
     {
-        $activeSlug = (string) $this->request->query($queryKey, '');
+        $activeSlug = (string) request()->query($queryKey, '');
 
         return $items
             ->filter(static fn ($item) => filled($item->slug))
@@ -282,6 +349,18 @@ final class StorefrontPrimaryNavigation
                     return true;
                 }
             }
+
+            foreach ($column['groups'] ?? [] as $group) {
+                if ($group['active'] ?? false) {
+                    return true;
+                }
+
+                foreach ($group['children'] ?? [] as $link) {
+                    if ($link['active'] ?? false) {
+                        return true;
+                    }
+                }
+            }
         }
 
         return false;
@@ -296,12 +375,12 @@ final class StorefrontPrimaryNavigation
         $params = (array) ($item['params'] ?? []);
 
         if ($route === 'storefront.shop.index') {
-            if (! $this->request->routeIs('storefront.shop.index')) {
+            if (! request()->routeIs('storefront.shop.index')) {
                 return false;
             }
 
             foreach ($params as $key => $value) {
-                if ((string) $this->request->query($key) !== (string) $value) {
+                if ((string) request()->query($key) !== (string) $value) {
                     return false;
                 }
             }
@@ -309,10 +388,10 @@ final class StorefrontPrimaryNavigation
             return true;
         }
 
-        if ($route !== '' && Route::has($route) && $this->request->routeIs($route)) {
+        if ($route !== '' && Route::has($route) && request()->routeIs($route)) {
             return true;
         }
 
-        return rtrim($this->request->fullUrl(), '/') === rtrim($url, '/');
+        return rtrim(request()->fullUrl(), '/') === rtrim($url, '/');
     }
 }

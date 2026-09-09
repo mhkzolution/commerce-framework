@@ -67,7 +67,7 @@ final class OrderService extends BaseService implements OrderServiceInterface
                 $order = Order::query()->create([
                     'order_number' => OrderNumberGenerator::next(),
                     'status' => OrderStatus::Pending->value,
-                    'currency' => $data->currency ?? config('orders.default_currency', 'USD'),
+                    'currency' => $data->currency ?? config('orders.default_currency', 'THB'),
                     'subtotal' => $subtotal,
                     'discount_total' => $discountTotal,
                     'promotion_uuid' => $data->promotionUuid,

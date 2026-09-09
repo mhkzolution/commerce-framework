@@ -5,6 +5,7 @@
 ])
 
 @php
+    use Commerce\Cart\DTO\ShopCategoryStripData;
     use Commerce\Cart\DTO\ShopFilterCatalog;
     use Commerce\Cart\DTO\ShopListingFilters;
     use Illuminate\Support\Arr;
@@ -22,13 +23,8 @@
     }
 
     if ($filters?->category) {
-        $categoryName = $filters->category;
-        foreach ($categories as $category) {
-            if ($category->slug === $filters->category) {
-                $categoryName = $category->name;
-                break;
-            }
-        }
+        $categoryName = ShopCategoryStripData::findInTree($categories, $filters->category)?->name
+            ?? $filters->category;
         $chips[] = [
             'label' => $categoryName,
             'url' => route('storefront.shop.index', Arr::except($query, ['category'])),

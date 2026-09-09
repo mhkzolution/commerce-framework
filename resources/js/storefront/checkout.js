@@ -1,3 +1,5 @@
+import { formatMoneyMinor } from './money.js';
+
 const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
 const fillAddressFields = (prefix, address) => {
@@ -255,7 +257,7 @@ const initTotals = (root) => {
     const tax = parseInt(root.dataset.tax || '0', 10);
     const currency = root.dataset.currency || '';
 
-    const formatTotal = (amount) => `${(amount / 100).toFixed(2)} ${currency}`.trim();
+    const formatTotal = (amount) => formatMoneyMinor(amount, currency);
 
     const updateCheckoutTotal = () => {
         if (!subtotalEl || !totalEl) {
@@ -273,7 +275,7 @@ const initTotals = (root) => {
 
         if (shippingEl) {
             const freeLabel = shippingEl.dataset.free || '';
-            shippingEl.textContent = shipping === 0 ? freeLabel : (shipping / 100).toFixed(2);
+            shippingEl.textContent = shipping === 0 ? freeLabel : formatMoneyMinor(shipping, currency);
         }
 
         const total = formatTotal(subtotal - discount + tax + shipping);

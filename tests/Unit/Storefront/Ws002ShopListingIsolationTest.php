@@ -48,6 +48,9 @@ final class Ws002ShopListingIsolationTest extends TestCase
         $this->assertStringContainsString('x-storefront.shop.filters-sidebar', $shop);
         $this->assertStringContainsString('x-storefront.shop.filters-sheet', $shop);
         $this->assertStringContainsString('x-storefront.shop.active-filters', $shop);
+        $this->assertStringContainsString('x-storefront.shop.category-strip', $shop);
+        $this->assertStringContainsString('data-shop-pagination', $shop);
+        $this->assertStringContainsString('data-shop-infinite-sentinel', $shop);
     }
 
     public function test_shop_view_has_no_admin_search_eloquent_or_header_extract(): void
@@ -89,8 +92,33 @@ final class Ws002ShopListingIsolationTest extends TestCase
         $this->assertStringContainsString('.storefront-filters', $contents);
         $this->assertStringContainsString('.storefront-product-grid', $contents);
         $this->assertStringContainsString('var(--font-store)', $contents);
+        $this->assertMatchesRegularExpression(
+            '/storefront-shop-category-strip__link--active\s*\{[^}]*--color-primary/',
+            $contents,
+        );
+        $this->assertStringContainsString('.storefront-shop__infinite-sentinel', $contents);
         $this->assertStringNotContainsString('77.5rem', $contents);
         $this->assertStringNotContainsString('x-storefront.layout.partials.site-header', $contents);
+    }
+
+    public function test_shop_js_loads_more_pages_on_mobile(): void
+    {
+        $contents = file_get_contents($this->repoRoot().'/resources/js/storefront/shop.js');
+        $this->assertNotFalse($contents);
+        $this->assertStringContainsString('max-width: 1023px', $contents);
+        $this->assertStringContainsString('IntersectionObserver', $contents);
+        $this->assertStringContainsString('rel="next"', $contents);
+    }
+
+    public function test_pagination_view_does_not_print_html_entities(): void
+    {
+        $contents = file_get_contents($this->paginationPath());
+        $this->assertNotFalse($contents);
+        $this->assertStringNotContainsString('&laquo;', $contents);
+        $this->assertStringNotContainsString('pagination.previous', $contents);
+        $this->assertStringContainsString('rel="prev"', $contents);
+        $this->assertStringContainsString('rel="next"', $contents);
+        $this->assertStringContainsString('aria-label', $contents);
     }
 
     public function test_shop_controller_uses_shop_product_query(): void

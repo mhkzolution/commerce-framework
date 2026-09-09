@@ -102,6 +102,6 @@ final class SessionCartStorage implements CartStorageInterface
             return app(CurrencyConverterInterface::class)->baseCurrency();
         }
 
-        return strtoupper((string) config('cart.default_currency', 'USD'));
+        return strtoupper((string) config('cart.default_currency', 'THB'));
     }
 }

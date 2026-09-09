@@ -1,17 +1,16 @@
 @if ($paginator->hasPages())
     <nav class="storefront-pagination" role="navigation" aria-label="{{ __('Pagination Navigation') }}">
         <ul class="storefront-pagination__list">
-            @if ($paginator->onFirstPage())
-                <li class="storefront-pagination__item storefront-pagination__item--disabled">
-                    <span class="storefront-pagination__link">{{ __('pagination.previous') }}</span>
+            @unless ($paginator->onFirstPage())
+                <li class="storefront-pagination__item storefront-pagination__item--prev">
+                    <a
+                        class="storefront-pagination__link"
+                        href="{{ $paginator->previousPageUrl() }}"
+                        rel="prev"
+                        aria-label="{{ __('storefront::storefront.previous_page') }}"
+                    >‹</a>
                 </li>
-            @else
-                <li class="storefront-pagination__item">
-                    <a class="storefront-pagination__link" href="{{ $paginator->previousPageUrl() }}" rel="prev">
-                        {{ __('pagination.previous') }}
-                    </a>
-                </li>
-            @endif
+            @endunless
 
             @foreach ($elements as $element)
                 @if (is_string($element))
@@ -34,14 +33,13 @@
             @endforeach
 
             @if ($paginator->hasMorePages())
-                <li class="storefront-pagination__item">
-                    <a class="storefront-pagination__link" href="{{ $paginator->nextPageUrl() }}" rel="next">
-                        {{ __('pagination.next') }}
-                    </a>
-                </li>
-            @else
-                <li class="storefront-pagination__item storefront-pagination__item--disabled">
-                    <span class="storefront-pagination__link">{{ __('pagination.next') }}</span>
+                <li class="storefront-pagination__item storefront-pagination__item--next">
+                    <a
+                        class="storefront-pagination__link"
+                        href="{{ $paginator->nextPageUrl() }}"
+                        rel="next"
+                        aria-label="{{ __('storefront::storefront.next_page') }}"
+                    >›</a>
                 </li>
             @endif
         </ul>

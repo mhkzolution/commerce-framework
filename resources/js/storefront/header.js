@@ -347,18 +347,35 @@ function bindSearchAutocomplete() {
         hints?.removeAttribute('hidden');
     };
 
-    const renderSection = (title, items) => {
+    const renderProductItem = (item) => {
+        const thumb = typeof item.image_url === 'string' && item.image_url !== ''
+            ? `<img src="${escapeHtml(item.image_url)}" alt="" class="storefront-search-results__thumb" width="48" height="48" loading="lazy" decoding="async">`
+            : '<span class="storefront-search-results__thumb storefront-search-results__thumb--placeholder" aria-hidden="true"></span>';
+
+        return `
+                <li>
+                    <a href="${escapeHtml(item.url)}" class="storefront-search-results__product">
+                        ${thumb}
+                        <span class="storefront-search-results__name">${escapeHtml(item.label)}</span>
+                    </a>
+                </li>
+            `;
+    };
+
+    const renderSection = (title, items, { products = false } = {}) => {
         if (!Array.isArray(items) || items.length === 0) {
             return '';
         }
 
         const links = items
             .filter((item) => typeof item?.label === 'string' && typeof item?.url === 'string')
-            .map((item) => `
+            .map((item) => (products
+                ? renderProductItem(item)
+                : `
                 <li>
                     <a href="${escapeHtml(item.url)}" class="storefront-search-results__link">${escapeHtml(item.label)}</a>
                 </li>
-            `)
+            `))
             .join('');
 
         if (!links) {
@@ -376,7 +393,7 @@ function bindSearchAutocomplete() {
     const renderResults = (payload) => {
         const html = [
             renderSection(labels.completions, payload.completions),
-            renderSection(labels.products, payload.products),
+            renderSection(labels.products, payload.products, { products: true }),
             renderSection(labels.brands, payload.brands),
             renderSection(labels.categories, payload.categories),
         ].join('');

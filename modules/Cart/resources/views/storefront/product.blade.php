@@ -12,7 +12,7 @@
         throw new \InvalidArgumentException('PDP requires ProductDetailData.');
     }
 
-    $formatMoney = static fn (int $amount): string => number_format($amount / 100, 2).' '.$product->displayCurrency;
+    $formatMoney = static fn (int $amount): string => \Commerce\Currency\Support\MoneyDisplay::format($amount, $product->displayCurrency);
     $galleryImage = $product->gallery[0]['thumbnail'] ?? $product->gallery[0]['url'] ?? $product->imageUrl ?? '';
 @endphp
 
@@ -61,6 +61,9 @@
                 <section class="storefront-pdp__panel storefront-pdp__panel--buy">
                     <aside class="storefront-buy-box storefront-buy-box--market" data-buy-box>
                         <h1 class="storefront-buy-box__title">{{ $product->name }}</h1>
+                        @if ($product->categoryName !== null && $product->categoryUrl !== null)
+                            <a href="{{ $product->categoryUrl }}" class="storefront-buy-box__category">{{ $product->categoryName }}</a>
+                        @endif
 
                         <div class="storefront-buy-box__price-panel" data-buy-price-panel>
                             <div class="storefront-buy-box__price" data-buy-price>

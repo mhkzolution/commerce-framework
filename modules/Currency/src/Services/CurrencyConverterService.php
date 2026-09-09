@@ -20,7 +20,7 @@ final class CurrencyConverterService extends BaseService implements CurrencyConv
     {
         $base = $this->queryService->baseCurrency();
 
-        return $base?->normalizedCode() ?? (string) config('cart.default_currency', 'USD');
+        return $base?->normalizedCode() ?? (string) config('cart.default_currency', 'THB');
     }
 
     public function activeCurrencies(): array
@@ -67,10 +67,12 @@ final class CurrencyConverterService extends BaseService implements CurrencyConv
     public function format(int $amount, string $currency): string
     {
         $model = $this->queryService->findByCode($currency);
-        $decimals = $model?->decimal_places ?? 2;
-        $symbol = $model?->symbol ?? strtoupper($currency);
+        $decimals = max(0, min(4, (int) ($model?->decimal_places ?? 2)));
+        $symbol = is_string($model?->symbol) && $model->symbol !== ''
+            ? $model->symbol
+            : strtoupper($currency);
 
-        return $symbol . number_format($amount / (10 ** $decimals), $decimals);
+        return $symbol.number_format($amount / 100, $decimals);
     }
 
     private function rateMicroFor(string $code): int

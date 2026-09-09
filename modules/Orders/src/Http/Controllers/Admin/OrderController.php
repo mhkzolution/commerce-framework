@@ -58,7 +58,7 @@ final class OrderController extends Controller
             'channels' => config('orders.channels', []),
             'adminStatuses' => config('orders.admin_statuses', []),
             'defaultChannel' => config('orders.default_channel', 'web'),
-            'currency' => config('orders.default_currency', 'USD'),
+            'currency' => config('orders.default_currency', 'THB'),
             'initialLines' => $this->hydrateOldLines((array) old('lines', [])),
         ]);
     }
@@ -282,7 +282,7 @@ final class OrderController extends Controller
             customerEmail: $request->validated('customer_email'),
             customerName: $request->validated('customer_name'),
             customerUuid: $request->validated('customer_uuid'),
-            currency: $request->validated('currency') ?: config('orders.default_currency', 'USD'),
+            currency: $request->validated('currency') ?: config('orders.default_currency', 'THB'),
             channel: $request->validated('channel') ?: config('orders.default_channel', 'web'),
             billingAddress: $request->billingAddress(),
             shippingAddress: $request->shippingAddress(),

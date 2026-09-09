@@ -6,6 +6,7 @@ namespace Commerce\Product;
 
 use Commerce\Contracts\Product\ProductQueryServiceInterface;
 use Commerce\Core\Base\BaseModuleServiceProvider;
+use Commerce\Product\Console\AttachLocalProductImagesCommand;
 use Commerce\Product\Console\ImportWooCommerceProductsCommand;
 use Commerce\Product\Console\PublishScheduledProductsCommand;
 use Commerce\Product\Console\RecoverProductAttributeValuesCommand;
@@ -66,6 +67,7 @@ final class ProductServiceProvider extends BaseModuleServiceProvider
                 PublishScheduledProductsCommand::class,
                 ReindexProductsCommand::class,
                 ImportWooCommerceProductsCommand::class,
+                AttachLocalProductImagesCommand::class,
                 RecoverProductAttributeValuesCommand::class,
                 RestoreProductAttributeValuesCommand::class,
             ]);

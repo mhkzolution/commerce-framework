@@ -120,6 +120,7 @@ final class Ws002IsolationTest extends TestCase
         $this->assertStringNotContainsString('--store-gutter', $contents);
         $this->assertStringNotContainsString('--radius-store', $contents);
         $this->assertStringNotContainsString('--space-4:', $contents);
+        $this->assertStringContainsString('scrollbar-color: var(--color-primary)', $contents);
     }
 
     public function test_tokens_do_not_dump_archive_footer_or_header_css(): void

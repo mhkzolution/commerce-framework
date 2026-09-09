@@ -23,7 +23,7 @@
                     {{ __('storefront::storefront.order_status') }}: {{ config('orders.statuses')[$order->status] ?? $order->status }}
                 </p>
             @endif
-            <p class="storefront-pay__amount">{{ number_format($payment->amount / 100, 2) }} {{ $payment->currency }}</p>
+            <p class="storefront-pay__amount">{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $payment->amount, (string) $payment->currency) }}</p>
             <p class="storefront-muted">
                 {{ __('storefront::storefront.gateway') }}: {{ $gateway->getName() }}
             </p>

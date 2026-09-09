@@ -32,14 +32,14 @@
                         <tr>
                             <td>{{ $line->name }}</td>
                             <td class="storefront-table__num">{{ $line->quantity }}</td>
-                            <td class="storefront-table__num storefront-money">{{ number_format($line->line_total / 100, 2) }} {{ $order->currency }}</td>
+                            <td class="storefront-table__num storefront-money">{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $line->line_total, (string) $order->currency) }}</td>
                         </tr>
                     @endforeach
                 </tbody>
                 <tfoot>
                     <tr>
                         <td colspan="2" class="storefront-table__num">{{ __('storefront::storefront.grand_total') }}</td>
-                        <td class="storefront-table__num storefront-money">{{ number_format($order->grand_total / 100, 2) }} {{ $order->currency }}</td>
+                        <td class="storefront-table__num storefront-money">{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $order->grand_total, (string) $order->currency) }}</td>
                     </tr>
                 </tfoot>
             </table>

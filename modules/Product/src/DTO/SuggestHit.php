@@ -11,5 +11,6 @@ final readonly class SuggestHit extends DataTransferObject
     public function __construct(
         public string $label,
         public string $url,
+        public ?string $imageUrl = null,
     ) {}
 }

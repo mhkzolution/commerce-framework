@@ -30,7 +30,7 @@
             </p>
             <p class="storefront-confirmation__total">
                 {{ __('storefront::storefront.total') }}:
-                <span class="storefront-money">{{ number_format($order->grand_total / 100, 2) }} {{ $order->currency }}</span>
+                <span class="storefront-money">{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $order->grand_total, (string) $order->currency) }}</span>
             </p>
 
             @if ($addressLines !== [])
@@ -48,7 +48,7 @@
                     @foreach ($order->lineItems as $line)
                         <li class="storefront-summary-row">
                             <span>{{ $line->name }} × {{ $line->quantity }}</span>
-                            <span class="storefront-money">{{ number_format($line->line_total / 100, 2) }} {{ $order->currency }}</span>
+                            <span class="storefront-money">{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $line->line_total, (string) $order->currency) }}</span>
                         </li>
                     @endforeach
                 </ul>

@@ -39,6 +39,58 @@
     color: var(--color-text);
 }
 
+.storefront-shop-category-strip {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    min-width: 0;
+    margin: 1rem 0 0.25rem;
+    padding-block: 0.125rem;
+}
+
+.storefront-shop-category-strip::-webkit-scrollbar {
+    display: none;
+}
+
+.storefront-shop-category-strip__link,
+.storefront-shop-category-strip__back {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    height: 2.25rem;
+    padding: 0 0.95rem;
+    border: 1px solid var(--color-border);
+    border-radius: 9999px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.storefront-shop-category-strip__back {
+    color: var(--color-text-secondary);
+}
+
+.storefront-shop-category-strip__link:hover,
+.storefront-shop-category-strip__back:hover {
+    border-color: var(--color-primary);
+}
+
+.storefront-shop-category-strip__link--active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-on-primary);
+}
+
+.storefront-shop-category-strip__link:focus-visible,
+.storefront-shop-category-strip__back:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
 .storefront-shop__context {
     margin-bottom: 1rem;
 }
@@ -262,7 +314,7 @@
 
 .storefront-filters__scroll::-webkit-scrollbar-thumb {
     border-radius: 9999px;
-    background: color-mix(in srgb, var(--color-text) 18%, transparent);
+    background: var(--color-primary);
 }
 
 .storefront-filters--panel .storefront-filters__actions,
@@ -323,6 +375,37 @@
     color: var(--color-text);
 }
 
+.storefront-category-tree__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.storefront-category-tree__list--children {
+    margin-top: 0.25rem;
+    margin-left: 0.75rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid var(--color-divider);
+}
+
+.storefront-category-tree__item + .storefront-category-tree__item {
+    margin-top: 0.25rem;
+}
+
+.storefront-filters__tree-link {
+    display: block;
+    padding: 0.25rem 0;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+}
+
+.storefront-filters__tree-link:hover,
+.storefront-filters__tree-link--active {
+    color: var(--color-text);
+    font-weight: 600;
+}
+
 .storefront-filters__options {
     display: grid;
     gap: 0.5rem;
@@ -360,14 +443,14 @@
 
 .storefront-filters__chip:hover span,
 .storefront-filters__chip:hover .storefront-filters__chip-label {
-    border-color: color-mix(in srgb, var(--color-text) 35%, var(--color-border));
+    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
     color: var(--color-text);
 }
 
 .storefront-filters__chip input:checked + span,
 .storefront-filters__chip input:checked + .storefront-filters__chip-label {
-    border-color: var(--color-text);
-    background: var(--color-text);
+    border-color: var(--color-primary);
+    background: var(--color-primary);
     color: var(--color-on-primary);
 }
 
@@ -385,13 +468,13 @@
 }
 
 .storefront-filters__badge:hover {
-    border-color: color-mix(in srgb, var(--color-text) 35%, var(--color-border));
+    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
     color: var(--color-text);
 }
 
 .storefront-filters__badge--active {
-    border-color: var(--color-text);
-    background: var(--color-text);
+    border-color: var(--color-primary);
+    background: var(--color-primary);
     color: var(--color-on-primary);
 }
 
@@ -501,9 +584,9 @@
     align-items: center;
     justify-content: center;
     padding: 0.625rem 1rem;
-    border: 1px solid var(--color-text);
+    border: 1px solid var(--color-primary);
     border-radius: var(--radius-store);
-    background: var(--color-text);
+    background: var(--color-primary);
     color: var(--color-on-primary);
     font: inherit;
     font-size: 0.8125rem;
@@ -672,4 +755,20 @@ body.storefront-filters-sheet-open {
 .storefront-pagination__item--disabled .storefront-pagination__link {
     color: var(--color-muted);
     pointer-events: none;
+}
+
+.storefront-shop__infinite-sentinel {
+    display: none;
+    width: 100%;
+    height: 2rem;
+}
+
+@media (max-width: 1023px) {
+    .storefront-shop [data-shop-pagination] {
+        display: none;
+    }
+
+    .storefront-shop__infinite-sentinel {
+        display: block;
+    }
 }

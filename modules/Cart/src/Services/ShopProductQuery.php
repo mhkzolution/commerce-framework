@@ -8,6 +8,7 @@ use Commerce\Cart\DTO\ShopFilterCatalog;
 use Commerce\Cart\DTO\ShopListingFilters;
 use Commerce\Catalog\Models\Attribute;
 use Commerce\Catalog\Models\Brand;
+use Commerce\Contracts\Catalog\CategoryQueryServiceInterface;
 use Commerce\Product\Models\Product;
 use Commerce\Product\Services\ProductDiscoveryQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -20,6 +21,7 @@ final class ShopProductQuery
 {
     public function __construct(
         private readonly ProductDiscoveryQuery $discovery,
+        private readonly ?CategoryQueryServiceInterface $categories = null,
     ) {}
 
     /**
@@ -70,8 +72,18 @@ final class ShopProductQuery
             return;
         }
 
-        $query->whereHas('categories', static function (Builder $categoryQuery) use ($category): void {
-            $categoryQuery->where('slug', $category);
+        $ids = $this->categories?->idsForSlugIncludingDescendants($category) ?? [];
+
+        if ($ids === []) {
+            $query->whereHas('categories', static function (Builder $categoryQuery) use ($category): void {
+                $categoryQuery->where('slug', $category);
+            });
+
+            return;
+        }
+
+        $query->whereHas('categories', static function (Builder $categoryQuery) use ($ids): void {
+            $categoryQuery->whereIn('categories.id', $ids);
         });
     }
 

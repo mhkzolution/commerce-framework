@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Storefront;
 
+use Commerce\Contracts\Media\MediaQueryServiceInterface;
 use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Product\Contracts\ProductServiceInterface;
 use Commerce\Product\DTO\CreateProductData;
 use Commerce\Product\Models\Product;
+use Commerce\Product\Models\ProductMedia;
 use Commerce\Product\Services\ProductDiscoveryQuery;
 use Commerce\Product\Services\ProductSearchIndexer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -31,7 +33,8 @@ final class StorefrontSuggestTest extends TestCase
             ->assertJsonMissingPath('data')
             ->assertJsonPath('completions.0.label', 'Tee')
             ->assertJsonPath('products.0.label', 'Tee')
-            ->assertJsonPath('products.0.url', route('storefront.products.show', $product->slug));
+            ->assertJsonPath('products.0.url', route('storefront.products.show', $product->slug))
+            ->assertJsonPath('products.0.image_url', null);
     }
 
     public function test_suggest_http_returns_classic_tee_for_word_prefix(): void
@@ -79,6 +82,49 @@ final class StorefrontSuggestTest extends TestCase
         $this->get(route('storefront.shop.index', ['q' => 'cot']))
             ->assertOk()
             ->assertDontSee($cotton->name);
+    }
+
+    public function test_suggest_http_product_includes_image_url(): void
+    {
+        $product = $this->product('Tee', 'HTTP-TEE-IMG');
+        $mediaUuid = 'media-http-tee';
+        ProductMedia::query()->create([
+            'product_id' => $product->id,
+            'media_uuid' => $mediaUuid,
+            'position' => 0,
+            'is_primary' => true,
+        ]);
+
+        $this->app->instance(MediaQueryServiceInterface::class, new class($mediaUuid) implements MediaQueryServiceInterface
+        {
+            public function __construct(private readonly string $uuid) {}
+
+            public function findByUuid(string $uuid): ?object
+            {
+                return null;
+            }
+
+            public function getUrl(string $uuid, ?string $variant = null): ?string
+            {
+                return $uuid === $this->uuid ? 'https://cdn.example.test/http-tee.jpg' : null;
+            }
+
+            public function getSrcset(string $uuid): ?string
+            {
+                return null;
+            }
+
+            public function findByUuids(array $uuids): array
+            {
+                return [];
+            }
+        });
+
+        $this->getJson(route('storefront.suggest', ['q' => 'te']))
+            ->assertOk()
+            ->assertJsonPath('products.0.image_url', 'https://cdn.example.test/http-tee.jpg')
+            ->assertJsonMissingPath('brands.0.image_url')
+            ->assertJsonMissingPath('categories.0.image_url');
     }
 
     /**

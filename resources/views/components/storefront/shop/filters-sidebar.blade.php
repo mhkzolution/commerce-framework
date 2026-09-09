@@ -1,7 +1,6 @@
 @props([
     'filters',
     'filterCatalog',
-    'categories' => [],
 ])
 
 <aside
@@ -15,7 +14,6 @@
         <x-storefront.shop.filters-form
             :filters="$filters"
             :filter-catalog="$filterCatalog"
-            :categories="$categories"
             form-id="shop-filters-desktop"
             variant="panel"
             data-shop-filters

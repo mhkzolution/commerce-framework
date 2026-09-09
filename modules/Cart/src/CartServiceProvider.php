@@ -94,7 +94,7 @@ final class CartServiceProvider extends BaseModuleServiceProvider
                 $view->with('cart', $this->app->make(CartServiceInterface::class)->get());
             } catch (\Throwable) {
                 $view->with('cart', new CartData(
-                    currency: (string) config('cart.default_currency', 'USD'),
+                    currency: (string) config('cart.default_currency', 'THB'),
                     lines: [],
                     subtotal: 0,
                     itemCount: 0,

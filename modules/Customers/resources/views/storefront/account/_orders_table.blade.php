@@ -1,5 +1,5 @@
 @php
-    $formatMoney = static fn ($order): string => number_format(((int) $order->grand_total) / 100, 2).' '.$order->currency;
+    $formatMoney = static fn ($order): string => \Commerce\Currency\Support\MoneyDisplay::format((int) $order->grand_total, (string) $order->currency);
 @endphp
 
 <div class="storefront-table-wrap">

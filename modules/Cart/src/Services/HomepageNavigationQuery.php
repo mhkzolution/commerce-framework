@@ -20,16 +20,7 @@ final class HomepageNavigationQuery
      */
     public function arrivalTabs(): array
     {
-        return $this->mapCategories(
-            $this->activeCategories()
-                ->filter(static fn (Category $category): bool => filled($category->slug))
-                ->sortBy([
-                    ['position', 'asc'],
-                    ['name', 'asc'],
-                ])
-                ->take(8)
-                ->values(),
-        );
+        return array_slice($this->visibleTopLevel(), 0, 8);
     }
 
     /**
@@ -37,15 +28,7 @@ final class HomepageNavigationQuery
      */
     public function shopFilterOptions(): array
     {
-        return $this->mapCategories(
-            $this->activeCategories()
-                ->filter(static fn (Category $category): bool => filled($category->slug))
-                ->sortBy([
-                    ['position', 'asc'],
-                    ['name', 'asc'],
-                ])
-                ->values(),
-        );
+        return $this->visibleTopLevel();
     }
 
     /**
@@ -53,32 +36,7 @@ final class HomepageNavigationQuery
      */
     public function featured(): array
     {
-        $categories = $this->activeCategories()
-            ->filter(static fn (Category $category): bool => $category->parent_id === null && filled($category->slug))
-            ->sortBy([
-                ['position', 'asc'],
-                ['name', 'asc'],
-            ])
-            ->take(8)
-            ->values();
-
-        $counts = $this->productCounts($categories);
-
-        return $categories
-            ->map(function (Category $category) use ($counts): HomepageNavigationData {
-                $slug = trim((string) $category->slug);
-
-                return new HomepageNavigationData(
-                    uuid: (string) $category->uuid,
-                    name: (string) $category->name,
-                    slug: $slug,
-                    url: $this->categoryUrl($slug),
-                    imageUrl: $this->categoryImageUrl($category),
-                    productCount: $counts[$category->id] ?? 0,
-                    imageSrcset: $this->categoryImageSrcset($category),
-                );
-            })
-            ->all();
+        return array_slice($this->visibleTopLevel(), 0, 8);
     }
 
     /**
@@ -108,23 +66,112 @@ final class HomepageNavigationQuery
     }
 
     /**
-     * @param  Collection<int, Category>  $categories
      * @return list<HomepageNavigationData>
      */
-    private function mapCategories(Collection $categories): array
+    private function visibleTopLevel(): array
     {
-        return $categories
-            ->map(function (Category $category): HomepageNavigationData {
-                $slug = trim((string) $category->slug);
+        $categories = $this->activeCategories()
+            ->filter(static fn (Category $category): bool => filled($category->slug))
+            ->values();
 
-                return new HomepageNavigationData(
-                    uuid: (string) $category->uuid,
-                    name: (string) $category->name,
-                    slug: $slug,
-                    url: $this->categoryUrl($slug),
-                );
-            })
-            ->all();
+        if ($categories->isEmpty()) {
+            return [];
+        }
+
+        $inclusive = $this->inclusiveCounts($categories);
+        $byParent = $categories->groupBy(static fn (Category $category): int => (int) ($category->parent_id ?? 0));
+
+        $roots = $categories
+            ->filter(static fn (Category $category): bool => $category->parent_id === null)
+            ->sortBy([
+                ['position', 'asc'],
+                ['name', 'asc'],
+            ])
+            ->values();
+
+        $nodes = [];
+
+        foreach ($roots as $root) {
+            $node = $this->toNode($root, $byParent, $inclusive);
+            if ($node !== null) {
+                $nodes[] = $node;
+            }
+        }
+
+        return $nodes;
+    }
+
+    /**
+     * @param  Collection<int, Collection<int, Category>>  $byParent
+     * @param  array<int, int>  $inclusive
+     */
+    private function toNode(Category $category, Collection $byParent, array $inclusive): ?HomepageNavigationData
+    {
+        $id = (int) $category->id;
+        $count = $inclusive[$id] ?? 0;
+
+        if ($count < 1) {
+            return null;
+        }
+
+        $children = [];
+        foreach (($byParent[$id] ?? collect())->sortBy([['position', 'asc'], ['name', 'asc']])->values() as $child) {
+            $childNode = $this->toNode($child, $byParent, $inclusive);
+            if ($childNode !== null) {
+                $children[] = $childNode;
+            }
+        }
+
+        $slug = trim((string) $category->slug);
+
+        return new HomepageNavigationData(
+            uuid: (string) $category->uuid,
+            name: (string) $category->name,
+            slug: $slug,
+            url: $this->categoryUrl($slug),
+            imageUrl: $this->categoryImageUrl($category),
+            productCount: $count,
+            imageSrcset: $this->categoryImageSrcset($category),
+            children: $children,
+        );
+    }
+
+    /**
+     * @param  Collection<int, Category>  $categories
+     * @return array<int, int>
+     */
+    private function inclusiveCounts(Collection $categories): array
+    {
+        $direct = $this->productCounts($categories);
+        $childrenOf = [];
+
+        foreach ($categories as $category) {
+            $parentId = (int) ($category->parent_id ?? 0);
+            $childrenOf[$parentId][] = (int) $category->id;
+        }
+
+        $memo = [];
+
+        $walk = function (int $id) use (&$walk, &$memo, $direct, $childrenOf): int {
+            if (array_key_exists($id, $memo)) {
+                return $memo[$id];
+            }
+
+            $total = $direct[$id] ?? 0;
+
+            foreach ($childrenOf[$id] ?? [] as $childId) {
+                $total += $walk($childId);
+            }
+
+            return $memo[$id] = $total;
+        };
+
+        $inclusive = [];
+        foreach ($categories as $category) {
+            $inclusive[(int) $category->id] = $walk((int) $category->id);
+        }
+
+        return $inclusive;
     }
 
     private function categoryUrl(string $slug): ?string

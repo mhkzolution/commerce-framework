@@ -14,4 +14,9 @@ interface CategoryQueryServiceInterface
      * @return list<object>
      */
     public function tree(?int $parentId = null): array;
+
+    /**
+     * @return list<int>
+     */
+    public function idsForSlugIncludingDescendants(string $slug): array;
 }

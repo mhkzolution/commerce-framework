@@ -28,7 +28,7 @@ final class SuggestController extends Controller
 
         return response()->json([
             'completions' => $this->serializeHits($result->completions),
-            'products' => $this->serializeHits($result->products),
+            'products' => $this->serializeHits($result->products, includeImage: true),
             'brands' => $this->serializeHits($result->brands),
             'categories' => $this->serializeHits($result->categories),
         ]);
@@ -36,15 +36,23 @@ final class SuggestController extends Controller
 
     /**
      * @param  list<SuggestHit>  $hits
-     * @return list<array{label: string, url: string}>
+     * @return list<array{label: string, url: string, image_url?: ?string}>
      */
-    private function serializeHits(array $hits): array
+    private function serializeHits(array $hits, bool $includeImage = false): array
     {
         return array_map(
-            static fn (SuggestHit $hit): array => [
-                'label' => $hit->label,
-                'url' => $hit->url,
-            ],
+            static function (SuggestHit $hit) use ($includeImage): array {
+                $payload = [
+                    'label' => $hit->label,
+                    'url' => $hit->url,
+                ];
+
+                if ($includeImage) {
+                    $payload['image_url'] = $hit->imageUrl;
+                }
+
+                return $payload;
+            },
             $hits,
         );
     }

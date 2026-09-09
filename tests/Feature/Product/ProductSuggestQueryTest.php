@@ -8,11 +8,13 @@ use Commerce\Cart\Services\HomepageNavigationQuery;
 use Commerce\Catalog\DTO\CreateBrandData;
 use Commerce\Catalog\Models\Category;
 use Commerce\Catalog\Services\BrandService;
+use Commerce\Contracts\Media\MediaQueryServiceInterface;
 use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Product\Contracts\ProductServiceInterface;
 use Commerce\Product\DTO\CreateProductData;
 use Commerce\Product\DTO\SuggestHit;
 use Commerce\Product\Models\Product;
+use Commerce\Product\Models\ProductMedia;
 use Commerce\Product\Models\SearchSynonym;
 use Commerce\Product\Services\ProductSearchIndexer;
 use Commerce\Product\Services\ProductSuggestQuery;
@@ -342,6 +344,60 @@ final class ProductSuggestQueryTest extends TestCase
         );
     }
 
+    public function test_product_hit_includes_primary_image_url_when_media_exists(): void
+    {
+        $product = $this->product('Tee Shirt', 'SUGGEST-IMG-TEE');
+        $mediaUuid = 'media-suggest-tee';
+        ProductMedia::query()->create([
+            'product_id' => $product->id,
+            'media_uuid' => $mediaUuid,
+            'position' => 0,
+            'is_primary' => true,
+        ]);
+
+        $this->app->instance(MediaQueryServiceInterface::class, new class($mediaUuid) implements MediaQueryServiceInterface
+        {
+            public function __construct(private readonly string $uuid) {}
+
+            public function findByUuid(string $uuid): ?object
+            {
+                return null;
+            }
+
+            public function getUrl(string $uuid, ?string $variant = null): ?string
+            {
+                return $uuid === $this->uuid ? 'https://cdn.example.test/tee.jpg' : null;
+            }
+
+            public function getSrcset(string $uuid): ?string
+            {
+                return null;
+            }
+
+            public function findByUuids(array $uuids): array
+            {
+                return [];
+            }
+        });
+        $this->app->forgetInstance(ProductSuggestQuery::class);
+
+        $hit = app(ProductSuggestQuery::class)->suggest('te')->products[0] ?? null;
+
+        $this->assertNotNull($hit);
+        $this->assertSame('Tee Shirt', $hit->label);
+        $this->assertSame('https://cdn.example.test/tee.jpg', $hit->imageUrl);
+    }
+
+    public function test_product_hit_image_url_is_null_without_media(): void
+    {
+        $this->product('Tee No Image', 'SUGGEST-NO-IMG');
+
+        $hit = app(ProductSuggestQuery::class)->suggest('te')->products[0] ?? null;
+
+        $this->assertNotNull($hit);
+        $this->assertNull($hit->imageUrl);
+    }
+
     public function test_brand_hits_are_active_prefix_matches_with_shop_urls(): void
     {
         app(BrandService::class)->create(new CreateBrandData(
@@ -386,7 +442,7 @@ final class ProductSuggestQueryTest extends TestCase
 
     public function test_category_hits_come_from_shop_filter_options_with_shop_urls(): void
     {
-        Category::query()->create([
+        $accessories = Category::query()->create([
             'name' => 'Accessories',
             'slug' => 'accessories',
             'is_active' => true,
@@ -401,6 +457,7 @@ final class ProductSuggestQueryTest extends TestCase
             'slug' => '',
             'is_active' => true,
         ]);
+        $this->product('Accessory Hook', 'SUGGEST-ACC-1', [$accessories->id]);
 
         $categories = app(HomepageNavigationQuery::class)->shopFilterOptions();
         $result = app(ProductSuggestQuery::class)->suggest('ac', $categories);
@@ -413,7 +470,7 @@ final class ProductSuggestQueryTest extends TestCase
 
     public function test_category_word_prefix_uses_shop_filter_options_only(): void
     {
-        Category::query()->create([
+        $graphicTees = Category::query()->create([
             'name' => 'Graphic Tees',
             'slug' => 'graphic-tees',
             'is_active' => true,
@@ -423,6 +480,7 @@ final class ProductSuggestQueryTest extends TestCase
             'slug' => 'hidden-tees',
             'is_active' => false,
         ]);
+        $this->product('Graphic Print', 'SUGGEST-TEE-CAT', [$graphicTees->id]);
 
         $categories = app(HomepageNavigationQuery::class)->shopFilterOptions();
         $result = app(ProductSuggestQuery::class)->suggest('te', $categories);
@@ -433,7 +491,136 @@ final class ProductSuggestQueryTest extends TestCase
         );
     }
 
-    private function product(string $name, string $sku): Product
+    public function test_english_alias_swim_hits_visible_swim_leaves_only(): void
+    {
+        $this->visibleLeaf('ชุดว่ายน้ำเด็ก', 'kids-swimwear', 'SUGGEST-SWIM-1');
+        $this->visibleLeaf('เสื้อว่ายน้ำเด็ก', 'kids-swim-shirts', 'SUGGEST-SWIM-2');
+
+        $hits = $this->categoryHits('swim');
+
+        $this->assertContains(
+            ['ชุดว่ายน้ำเด็ก', route('storefront.shop.index', ['category' => 'kids-swimwear'])],
+            $hits,
+        );
+        $this->assertContains(
+            ['เสื้อว่ายน้ำเด็ก', route('storefront.shop.index', ['category' => 'kids-swim-shirts'])],
+            $hits,
+        );
+    }
+
+    public function test_english_alias_dress_hits_dresses_leaf(): void
+    {
+        $this->visibleLeaf('ชุดเดรส', 'kids-dresses', 'SUGGEST-DRESS-1');
+
+        $this->assertSame(
+            [['ชุดเดรส', route('storefront.shop.index', ['category' => 'kids-dresses'])]],
+            $this->categoryHits('dress'),
+        );
+    }
+
+    public function test_english_alias_toy_hits_toys_leaf_not_parent(): void
+    {
+        $parent = Category::query()->create([
+            'name' => 'ของเล่นและเครื่องนอนการตกแต่ง',
+            'slug' => 'item-4',
+            'is_active' => true,
+        ]);
+        $toys = Category::query()->create([
+            'name' => 'ของเล่น',
+            'slug' => 'toys',
+            'parent_id' => $parent->id,
+            'is_active' => true,
+        ]);
+        $this->product('Skill toys', 'SUGGEST-TOY-1', [$toys->id]);
+
+        $hits = $this->categoryHits('toy');
+
+        $this->assertSame(
+            [['ของเล่น', route('storefront.shop.index', ['category' => 'toys'])]],
+            $hits,
+        );
+        $this->assertNotContains(
+            'ของเล่นและเครื่องนอนการตกแต่ง',
+            array_column($hits, 0),
+        );
+    }
+
+    public function test_english_alias_book_and_shoes_hit_leaves(): void
+    {
+        $this->visibleLeaf('หนังสือเด็ก', 'kids-books', 'SUGGEST-BOOK-1');
+        $this->visibleLeaf('รองเท้า', 'kids-shoes', 'SUGGEST-SHOE-1');
+
+        $this->assertSame(
+            [['หนังสือเด็ก', route('storefront.shop.index', ['category' => 'kids-books'])]],
+            $this->categoryHits('book'),
+        );
+        $this->assertSame(
+            [['รองเท้า', route('storefront.shop.index', ['category' => 'kids-shoes'])]],
+            $this->categoryHits('shoes'),
+        );
+    }
+
+    public function test_thai_infix_matches_swimwear_and_dress_names(): void
+    {
+        $this->visibleLeaf('ชุดว่ายน้ำเด็ก', 'kids-swimwear', 'SUGGEST-INFIX-SWIM');
+        $this->visibleLeaf('ชุดเดรส', 'kids-dresses', 'SUGGEST-INFIX-DRESS');
+
+        $this->assertSame(
+            [['ชุดว่ายน้ำเด็ก', route('storefront.shop.index', ['category' => 'kids-swimwear'])]],
+            $this->categoryHits('ว่ายน้ำ'),
+        );
+        $this->assertSame(
+            [['ชุดเดรส', route('storefront.shop.index', ['category' => 'kids-dresses'])]],
+            $this->categoryHits('เดรส'),
+        );
+    }
+
+    public function test_dress_alias_skips_empty_or_inactive_dresses_leaf(): void
+    {
+        Category::query()->create([
+            'name' => 'ชุดเดรส',
+            'slug' => 'kids-dresses',
+            'is_active' => true,
+        ]);
+        Category::query()->create([
+            'name' => 'ชุดเดรสซ่อน',
+            'slug' => 'kids-dresses-hidden',
+            'is_active' => false,
+        ]);
+
+        $this->assertSame([], $this->categoryHits('dress'));
+    }
+
+    /**
+     * @return list<array{0: string, 1: string}>
+     */
+    private function categoryHits(string $q): array
+    {
+        $categories = app(HomepageNavigationQuery::class)->shopFilterOptions();
+        $result = app(ProductSuggestQuery::class)->suggest($q, $categories);
+
+        return array_map(
+            static fn (SuggestHit $hit): array => [$hit->label, $hit->url],
+            $result->categories,
+        );
+    }
+
+    private function visibleLeaf(string $name, string $slug, string $sku): Category
+    {
+        $category = Category::query()->create([
+            'name' => $name,
+            'slug' => $slug,
+            'is_active' => true,
+        ]);
+        $this->product($name.' product', $sku, [$category->id]);
+
+        return $category;
+    }
+
+    /**
+     * @param  list<int>  $categoryIds
+     */
+    private function product(string $name, string $sku, array $categoryIds = []): Product
     {
         $product = app(ProductServiceInterface::class)->create(new CreateProductData(
             name: $name,
@@ -441,6 +628,7 @@ final class ProductSuggestQueryTest extends TestCase
             visibility: 'public',
             sku: $sku,
             price: 2500,
+            categoryIds: $categoryIds,
         ));
 
         $variant = $product->defaultVariant();

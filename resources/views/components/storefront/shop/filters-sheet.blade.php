@@ -1,7 +1,6 @@
 @props([
     'filters',
     'filterCatalog',
-    'categories' => [],
 ])
 
 <div class="storefront-filters-sheet" data-filters-sheet hidden>
@@ -19,7 +18,6 @@
             <x-storefront.shop.filters-form
                 :filters="$filters"
                 :filter-catalog="$filterCatalog"
-                :categories="$categories"
                 form-id="shop-filters-mobile"
                 data-shop-filters
             >

@@ -211,7 +211,7 @@
                                             @endif
                                         </span>
                                         <span class="storefront-shipping-card__price">
-                                            {{ $quote->price === 0 ? __('storefront::storefront.free') : number_format($quote->price / 100, 2).' '.$cart->currency }}
+                                            {{ $quote->price === 0 ? __('storefront::storefront.free') : \Commerce\Currency\Support\MoneyDisplay::format((int) $quote->price, $cart->currency) }}
                                         </span>
                                     </label>
                                 @endforeach
@@ -235,7 +235,7 @@
                     <div class="storefront-checkout__actions">
                         <div class="storefront-checkout__actions-total">
                             <span class="storefront-muted">{{ __('storefront::storefront.total') }}</span>
-                            <strong id="checkout-total-mobile">{{ number_format($grandTotal / 100, 2) }} {{ $cart->currency }}</strong>
+                            <strong id="checkout-total-mobile">{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $grandTotal, $cart->currency) }}</strong>
                         </div>
                         <button type="submit" class="storefront-btn storefront-btn--block">{{ __('storefront::storefront.continue_to_payment') }}</button>
                     </div>
@@ -249,7 +249,7 @@
                         aria-expanded="false"
                     >
                         <span>{{ __('storefront::storefront.order_summary') }}</span>
-                        <span class="storefront-checkout__summary-toggle-total">{{ number_format($grandTotal / 100, 2) }} {{ $cart->currency }}</span>
+                        <span class="storefront-checkout__summary-toggle-total">{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $grandTotal, $cart->currency) }}</span>
                     </button>
                     <div class="storefront-checkout__summary-body">
                         <h2 class="storefront-panel__title">{{ __('storefront::storefront.order_summary') }}</h2>
@@ -284,36 +284,36 @@
                                         @endif
                                         <span class="storefront-muted">{{ __('storefront::storefront.qty') }} {{ $line->quantity }}</span>
                                     </div>
-                                    <span class="storefront-summary-line__price">{{ number_format($line->lineTotal / 100, 2) }}</span>
+                                    <span class="storefront-summary-line__price">{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $line->lineTotal, $cart->currency) }}</span>
                                 </li>
                             @endforeach
                         </ul>
                         <div class="storefront-summary-totals">
                             <div class="storefront-summary-row">
                                 <span class="storefront-muted">{{ trans_choice('storefront::storefront.subtotal_items', $itemCount, ['count' => $itemCount]) }}</span>
-                                <span id="checkout-subtotal" data-amount="{{ $cart->subtotal }}">{{ number_format($cart->subtotal / 100, 2) }}</span>
+                                <span id="checkout-subtotal" data-amount="{{ $cart->subtotal }}">{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $cart->subtotal, $cart->currency) }}</span>
                             </div>
                             @if ($cart->discountTotal > 0)
                                 <div class="storefront-summary-row storefront-success">
                                     <span>{{ __('storefront::storefront.discount') }} ({{ $cart->couponCode }})</span>
-                                    <span>-{{ number_format($cart->discountTotal / 100, 2) }}</span>
+                                    <span>-{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $cart->discountTotal, $cart->currency) }}</span>
                                 </div>
                             @endif
                             @if (($taxTotal ?? 0) > 0)
                                 <div class="storefront-summary-row">
                                     <span class="storefront-muted">{{ __('storefront::storefront.tax_est') }}</span>
-                                    <span id="checkout-tax">{{ number_format($taxTotal / 100, 2) }}</span>
+                                    <span id="checkout-tax">{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $taxTotal, $cart->currency) }}</span>
                                 </div>
                             @endif
                             @if ($shippingQuotes !== [])
                                 <div class="storefront-summary-row">
                                     <span class="storefront-muted">{{ __('storefront::storefront.shipping') }}</span>
-                                    <span id="checkout-shipping" data-free="{{ __('storefront::storefront.free') }}">{{ $shippingPrice === 0 ? __('storefront::storefront.free') : number_format($shippingPrice / 100, 2) }}</span>
+                                    <span id="checkout-shipping" data-free="{{ __('storefront::storefront.free') }}">{{ $shippingPrice === 0 ? __('storefront::storefront.free') : \Commerce\Currency\Support\MoneyDisplay::format((int) $shippingPrice, $cart->currency) }}</span>
                                 </div>
                             @endif
                             <div class="storefront-summary-row storefront-summary-row--total">
                                 <span>{{ __('storefront::storefront.total') }}</span>
-                                <span id="checkout-total">{{ number_format($grandTotal / 100, 2) }} {{ $cart->currency }}</span>
+                                <span id="checkout-total">{{ \Commerce\Currency\Support\MoneyDisplay::format((int) $grandTotal, $cart->currency) }}</span>
                             </div>
                         </div>
                         <p class="storefront-muted">{{ __('storefront::storefront.stock_reserved_after_payment') }}</p>

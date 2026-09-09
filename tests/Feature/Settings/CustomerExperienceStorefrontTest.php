@@ -7,6 +7,7 @@ namespace Tests\Feature\Settings;
 use Commerce\Core\Enums\ModuleStatus;
 use Commerce\Core\Models\SystemModule;
 use Commerce\Core\Modules\ModuleService;
+use Commerce\Currency\Database\Seeders\CurrencySeeder;
 use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Settings\Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,6 +24,7 @@ final class CustomerExperienceStorefrontTest extends TestCase
         parent::setUp();
         $this->seed(IamSeeder::class);
         $this->seed(SettingsSeeder::class);
+        $this->seed(CurrencySeeder::class);
         $this->withoutVite();
     }
 
@@ -46,7 +48,7 @@ final class CustomerExperienceStorefrontTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.uuid', $product->uuid)
             ->assertJsonPath('data.sku', 'CX-QV-001')
-            ->assertJsonPath('data.formatted_price', '25.00');
+            ->assertJsonPath('data.formatted_price', '฿25.00');
     }
 
     public function test_quick_view_keeps_untracked_variant_availability_unknown_and_purchasable(): void

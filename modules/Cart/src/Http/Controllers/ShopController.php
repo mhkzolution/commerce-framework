@@ -6,6 +6,7 @@ namespace Commerce\Cart\Http\Controllers;
 
 use Commerce\Cart\Contracts\CartServiceInterface;
 use Commerce\Cart\DTO\HomepageNavigationData;
+use Commerce\Cart\DTO\ShopCategoryStripData;
 use Commerce\Cart\DTO\ShopListingFilters;
 use Commerce\Cart\Services\HomepageNavigationQuery;
 use Commerce\Cart\Services\ProductCardMapper;
@@ -116,13 +117,9 @@ final class ShopController extends Controller
         }
 
         if (is_string($filters->category) && $filters->category !== '') {
-            foreach ($categories as $category) {
-                if ($category->slug === $filters->category) {
-                    return $category->name;
-                }
-            }
+            $match = ShopCategoryStripData::findInTree($categories, $filters->category);
 
-            return $filters->category;
+            return $match?->name ?? $filters->category;
         }
 
         if (is_string($filters->brand) && $filters->brand !== '') {
