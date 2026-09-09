@@ -25,9 +25,8 @@ final class ShopProductQuery
     ) {}
 
     /**
-     * @return LengthAwarePaginator<int, Product>
-     *
      * @param  list<string>|null  $searchUuids
+     * @return LengthAwarePaginator<int, Product>
      */
     public function paginate(
         ShopListingFilters $filters,
@@ -53,10 +52,7 @@ final class ShopProductQuery
         $this->applyBrand($query, $filters->brand);
         $this->applyPrice($query, $filters);
         $this->applyAttributeFilters($query, $filters->attributes);
-
-        if ($filters->availability === 'in_stock') {
-            $this->constrainInStock($query);
-        }
+        $this->constrainInStock($query);
 
         $this->applySort($query, $filters->sort, $discoveryUuids);
 

@@ -2,7 +2,7 @@
     "name": "Product Badge",
     "alias": "product-badge",
     "version": "1.0.0",
-    "description": "Adds promotional badges to storefront product cards via hooks.",
+    "description": "Shows a New badge on storefront product cards created in the last 14 days.",
     "providers": [
         "Plugins\\ProductBadge\\ProductBadgeServiceProvider"
     ],

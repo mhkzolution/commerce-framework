@@ -41,9 +41,10 @@ final class HomepageDtoRenderingTest extends TestCase
         $this->assertStringContainsString('https://cdn.test/mug.jpg', $html);
         $this->assertStringContainsString('12.50', $html);
         $this->assertStringContainsString('THB', $html);
-        $this->assertStringContainsString(__('storefront::storefront.in_stock'), $html);
         $this->assertStringContainsString('storefront-product-card', $html);
         $this->assertStringNotContainsString('defaultVariant', $html);
+        $this->assertStringNotContainsString(__('storefront::storefront.in_stock'), $html);
+        $this->assertStringNotContainsString(__('storefront::storefront.out_of_stock'), $html);
     }
 
     public function test_arrival_tabs_render_homepage_navigation_data(): void
@@ -102,7 +103,7 @@ final class HomepageDtoRenderingTest extends TestCase
         ])->render();
 
         $this->assertStringContainsString('Sold Out Tray', $html);
-        $this->assertStringContainsString(__('storefront::storefront.out_of_stock'), $html);
+        $this->assertStringNotContainsString(__('storefront::storefront.out_of_stock'), $html);
         $this->assertStringNotContainsString(__('storefront::storefront.in_stock'), $html);
     }
 }

@@ -55,7 +55,7 @@ final class Ws002ProductCardIsolationTest extends TestCase
         $this->assertNotFalse($contents);
         $this->assertStringContainsString('namespace Commerce\\Contracts\\Storefront;', $contents);
         $this->assertStringContainsString('final readonly class ProductCardData', $contents);
-        foreach (['uuid', 'name', 'slug', 'url', 'variantUuid', 'price', 'compareAtPrice', 'imageUrl', 'available', 'inStock'] as $field) {
+        foreach (['uuid', 'name', 'slug', 'url', 'variantUuid', 'price', 'compareAtPrice', 'imageUrl', 'available', 'inStock', 'createdAt'] as $field) {
             $this->assertStringContainsString('$'.$field, $contents);
         }
     }

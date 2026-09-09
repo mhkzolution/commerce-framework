@@ -42,12 +42,17 @@ final class ProductCardMapper
         $available = $this->available((string) $variant->uuid);
         foreach ($variants as $candidate) {
             $candidateAvailable = $this->available((string) $candidate->uuid);
-            if ($this->inStock($candidateAvailable, $product)) {
+            if ($this->inStock($candidateAvailable, $product, $candidate)) {
                 $variant = $candidate;
                 $available = $candidateAvailable;
                 break;
             }
         }
+
+        if (! $this->inStock($available, $product, $variant)) {
+            return null;
+        }
+
         $imageUrls = $this->imageUrls($product);
 
         return new ProductCardData(
@@ -60,10 +65,11 @@ final class ProductCardMapper
             compareAtPrice: $variant->compare_at_price !== null ? (int) $variant->compare_at_price : null,
             imageUrl: $imageUrls[0]['url'] ?? null,
             available: $available,
-            inStock: $this->inStock($available, $product),
+            inStock: true,
             secondaryImageUrl: $imageUrls[1]['url'] ?? null,
             imageSrcset: $imageUrls[0]['srcset'] ?? null,
             secondaryImageSrcset: $imageUrls[1]['srcset'] ?? null,
+            createdAt: $product->created_at,
         );
     }
 
@@ -125,8 +131,12 @@ final class ProductCardMapper
         }
     }
 
-    private function inStock(?int $available, Product $product): bool
+    private function inStock(?int $available, Product $product, ProductVariant $variant): bool
     {
+        if (! $variant->track_inventory) {
+            return true;
+        }
+
         return $available === null
             || $available > 0
             || in_array($product->backorder_policy, ['notify', 'allow'], true);

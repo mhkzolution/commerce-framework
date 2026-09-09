@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Commerce\Settings\Http\Controllers\Admin;
 
 use Commerce\Contracts\Settings\SettingQueryServiceInterface;
+use Commerce\Contracts\Settings\SettingRegistryServiceInterface;
 use Commerce\Settings\Contracts\SettingServiceInterface;
 use Commerce\Settings\DTO\UpdateSettingsGroupData;
 use Commerce\Settings\Http\Requests\UpdateAppearanceRequest;
@@ -31,10 +32,13 @@ final class AppearanceController extends Controller
     public function __construct(
         private readonly SettingQueryServiceInterface $settingQueryService,
         private readonly SettingServiceInterface $settingService,
+        private readonly SettingRegistryServiceInterface $registry,
     ) {}
 
     public function show(): View
     {
+        $this->ensureRegisteredKeys();
+
         $settings = $this->settingQueryService->getGroup('theme');
         $colors = [];
 
@@ -55,6 +59,8 @@ final class AppearanceController extends Controller
 
     public function update(UpdateAppearanceRequest $request): RedirectResponse
     {
+        $this->ensureRegisteredKeys();
+
         $values = [];
 
         foreach (array_keys(self::COLOR_FIELDS) as $key) {
@@ -70,5 +76,25 @@ final class AppearanceController extends Controller
         return redirect()
             ->route('admin.settings.appearance.show')
             ->with('status', __('settings::admin.appearance_saved'));
+    }
+
+    private function ensureRegisteredKeys(): void
+    {
+        foreach (self::COLOR_FIELDS as $key => $meta) {
+            $fullKey = "theme.{$key}";
+
+            if ($this->settingQueryService->has($fullKey)) {
+                continue;
+            }
+
+            $this->registry->register($fullKey, [
+                'type' => 'string',
+                'label' => $meta['label_key'],
+                'group' => 'theme',
+                'default' => $meta['default'],
+                'is_public' => true,
+                'module' => 'settings',
+            ]);
+        }
     }
 }

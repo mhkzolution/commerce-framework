@@ -90,7 +90,7 @@ final class HeaderViewModelBuilder
 
         $blogUrl = $this->url('storefront.cms.posts.index');
         if ($blogUrl !== null) {
-            $links[] = new NavigationLinkData('Blog', $blogUrl, 'blog');
+            $links[] = new NavigationLinkData(__('storefront::storefront.nav_blog'), $blogUrl, 'blog');
         }
 
         return $links;
@@ -176,6 +176,7 @@ final class HeaderViewModelBuilder
     {
         $seen = [];
         $shopUrl = rtrim((string) $this->url('storefront.shop.index'), '/');
+        $blogUrl = rtrim((string) $this->url('storefront.cms.posts.index'), '/');
 
         foreach ($nav['items'] as $item) {
             $seen[mb_strtolower((string) ($item['label'] ?? ''))] = true;
@@ -192,6 +193,14 @@ final class HeaderViewModelBuilder
                     $seen[$shopUrl] = true;
                 }
             }
+
+            if ($this->isBlogNavItem($item, $blogUrl)) {
+                $seen['blog'] = true;
+                $seen['บล็อก'] = true;
+                if ($blogUrl !== '') {
+                    $seen[$blogUrl] = true;
+                }
+            }
         }
 
         foreach ($this->navigation()->links as $link) {
@@ -203,6 +212,10 @@ final class HeaderViewModelBuilder
             }
 
             if (isset($seen['shop']) && ($this->isShopAlias($link->label) || ($shopUrl !== '' && $urlKey === $shopUrl))) {
+                continue;
+            }
+
+            if (isset($seen['blog']) && ($this->isBlogAlias($link->label) || ($blogUrl !== '' && $urlKey === $blogUrl))) {
                 continue;
             }
 
@@ -244,6 +257,29 @@ final class HeaderViewModelBuilder
     private function isShopAlias(string $label): bool
     {
         return in_array(mb_strtolower(trim($label)), ['shop', 'ร้านค้า'], true);
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     */
+    private function isBlogNavItem(array $item, string $blogUrl): bool
+    {
+        if (mb_strtolower((string) ($item['id'] ?? '')) === 'blog') {
+            return true;
+        }
+
+        if ($this->isBlogAlias((string) ($item['label'] ?? ''))) {
+            return true;
+        }
+
+        $url = rtrim((string) ($item['url'] ?? ''), '/');
+
+        return $blogUrl !== '' && $url === $blogUrl;
+    }
+
+    private function isBlogAlias(string $label): bool
+    {
+        return in_array(mb_strtolower(trim($label)), ['blog', 'บล็อก'], true);
     }
 
     private function customerName(): string

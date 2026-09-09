@@ -115,9 +115,6 @@
                     {{ \Commerce\Currency\Support\MoneyDisplay::format((int) $displayCompare, $displayCurrency !== '' ? $displayCurrency : 'THB') }}
                 </span>
             @endif
-            <span class="storefront-product-card__stock">
-                {{ $product->inStock ? __('storefront::storefront.in_stock') : __('storefront::storefront.out_of_stock') }}
-            </span>
         </div>
     </div>
 </article>

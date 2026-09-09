@@ -20,5 +20,6 @@ final readonly class ProductCardData
         public ?string $secondaryImageUrl = null,
         public ?string $imageSrcset = null,
         public ?string $secondaryImageSrcset = null,
+        public ?\DateTimeInterface $createdAt = null,
     ) {}
 }

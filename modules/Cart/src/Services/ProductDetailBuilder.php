@@ -474,6 +474,7 @@ final class ProductDetailBuilder
                 secondaryImageUrl: $card->secondaryImageUrl,
                 imageSrcset: $card->imageSrcset,
                 secondaryImageSrcset: $card->secondaryImageSrcset,
+                createdAt: $card->createdAt,
             );
         }
 

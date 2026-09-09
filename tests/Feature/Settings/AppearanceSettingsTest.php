@@ -8,8 +8,10 @@ use Commerce\Contracts\Settings\SettingQueryServiceInterface;
 use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
 use Commerce\Settings\Database\Seeders\SettingsSeeder;
+use Commerce\Settings\Models\Setting;
 use Commerce\Settings\Support\ThemeDesignTokens;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 final class AppearanceSettingsTest extends TestCase
@@ -84,6 +86,33 @@ final class AppearanceSettingsTest extends TestCase
             ])
             ->assertRedirect(route('admin.settings.appearance.show'))
             ->assertSessionHasErrors('money');
+    }
+
+    public function test_admin_can_save_money_color_when_setting_was_never_seeded(): void
+    {
+        Setting::query()
+            ->where('key', 'money')
+            ->whereHas('group', static fn ($query) => $query->where('code', 'theme'))
+            ->delete();
+        Cache::forget('settings.theme.money');
+
+        $this->assertFalse(app(SettingQueryServiceInterface::class)->has('theme.money'));
+
+        $this->actingAs(User::query()->first())
+            ->put(route('admin.settings.appearance.update'), [
+                'primary' => '#111827',
+                'primary_hover' => '#0f172a',
+                'primary_active' => '#020617',
+                'accent' => '#db2777',
+                'accent_hover' => '#be185d',
+                'background' => '#f8fafc',
+                'surface' => '#ffffff',
+                'money' => '#00aa00',
+            ])
+            ->assertRedirect(route('admin.settings.appearance.show'));
+
+        $this->assertSame('#00aa00', app(SettingQueryServiceInterface::class)->get('theme.money'));
+        $this->assertSame('#00aa00', ThemeDesignTokens::resolve()['money'] ?? null);
     }
 
     public function test_appearance_page_includes_money_token(): void

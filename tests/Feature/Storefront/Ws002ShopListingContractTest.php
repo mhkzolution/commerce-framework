@@ -68,6 +68,21 @@ final class Ws002ShopListingContractTest extends TestCase
             ->assertDontSee($other->product->name);
     }
 
+    public function test_shop_hides_out_of_stock_products_and_omits_stock_label(): void
+    {
+        $inStock = $this->createPurchasableProduct(price: 1500, stock: 2, sku: 'LIST-LIVE-1');
+        $soldOut = $this->createPurchasableProduct(price: 1500, stock: 1, sku: 'LIST-SOLD-1');
+        app(InventoryServiceInterface::class)->setOnHand($soldOut->uuid, 0);
+
+        $html = $this->get(route('storefront.shop.index'))
+            ->assertOk()
+            ->assertSee($inStock->product->name)
+            ->assertDontSee($soldOut->product->name)
+            ->getContent();
+
+        $this->assertStringNotContainsString('storefront-product-card__stock', $html);
+    }
+
     public function test_shop_search_still_finds_indexed_product(): void
     {
         $variant = $this->createPurchasableProduct(price: 1500, stock: 2, sku: 'SHOP-SEARCH-11');

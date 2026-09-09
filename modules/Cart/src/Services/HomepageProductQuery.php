@@ -18,6 +18,7 @@ final class HomepageProductQuery
     public function __construct(
         private readonly ProductQueryService $products,
         private readonly ProductCardMapper $cards,
+        private readonly ShopProductQuery $shopProducts,
         private readonly ?CategoryQueryServiceInterface $categories = null,
     ) {}
 
@@ -59,6 +60,7 @@ final class HomepageProductQuery
         }
 
         $query = Product::query()->visibleOnStorefront();
+        $this->shopProducts->constrainInStock($query);
 
         if (is_string($categorySlug) && $categorySlug !== '') {
             $ids = $this->categories?->idsForSlugIncludingDescendants($categorySlug) ?? [];
