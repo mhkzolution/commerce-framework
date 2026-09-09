@@ -8,7 +8,9 @@ use Commerce\Contracts\Product\ProductQueryServiceInterface;
 use Commerce\Core\Base\BaseModuleServiceProvider;
 use Commerce\Product\Console\ImportWooCommerceProductsCommand;
 use Commerce\Product\Console\PublishScheduledProductsCommand;
+use Commerce\Product\Console\RecoverProductAttributeValuesCommand;
 use Commerce\Product\Console\ReindexProductsCommand;
+use Commerce\Product\Console\RestoreProductAttributeValuesCommand;
 use Commerce\Product\Contracts\ProductServiceInterface;
 use Commerce\Product\Events\ProductCreated;
 use Commerce\Product\Events\ProductPublished;
@@ -64,6 +66,8 @@ final class ProductServiceProvider extends BaseModuleServiceProvider
                 PublishScheduledProductsCommand::class,
                 ReindexProductsCommand::class,
                 ImportWooCommerceProductsCommand::class,
+                RecoverProductAttributeValuesCommand::class,
+                RestoreProductAttributeValuesCommand::class,
             ]);
         }
 
