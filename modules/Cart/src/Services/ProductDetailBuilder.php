@@ -309,7 +309,7 @@ final class ProductDetailBuilder
             $values = collect($values)
                 ->map(static fn (string $value): string => trim($value))
                 ->filter(static fn (string $value): bool => $value !== '')
-                ->unique()
+                ->uniqueStrict()
                 ->values()
                 ->all();
 

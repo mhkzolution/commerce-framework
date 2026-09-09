@@ -322,6 +322,31 @@ final class ProductDetailBuilderTest extends TestCase
         $this->assertArrayNotHasKey('value', $spec);
     }
 
+    public function test_spec_list_keeps_labels_that_are_only_loosely_equal(): void
+    {
+        $variant = $this->createPurchasableProduct(sku: 'PDP-NUMERIC-SPEC');
+        $product = $variant->product;
+        $attribute = Attribute::query()->create([
+            'code' => 'spec-number-'.uniqid(),
+            'name' => 'Number',
+            'type' => 'select',
+            'is_filterable' => true,
+            'is_visible' => true,
+            'options' => [],
+        ]);
+        $one = $this->createAttributeValue($attribute, '1', 0);
+        $zeroPaddedOne = $this->createAttributeValue($attribute, '01', 1);
+        $this->attachMembership($product, $attribute, $one);
+        $this->attachMembership($product, $attribute, $zeroPaddedOne);
+
+        $data = app(ProductDetailBuilder::class)->fromSlug($product->slug);
+
+        $this->assertNotNull($data);
+        $spec = collect($data->attributes)->firstWhere('label', 'Number');
+        $this->assertIsArray($spec);
+        $this->assertSame(['1', '01'], $spec['values']);
+    }
+
     public function test_missing_blue_s_is_disabled_while_oos_blue_m_stays_selectable(): void
     {
         $setup = $this->variableProductWithColorSizeMaterial();
