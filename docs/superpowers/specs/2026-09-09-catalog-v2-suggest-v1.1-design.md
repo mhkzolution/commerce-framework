@@ -1,7 +1,7 @@
 # Catalog V2 Follow-up: Suggest V1.1
 
 **Date:** 2026-09-09  
-**Status:** Draft  
+**Status:** Locked  
 **Owner:** Storefront shop (`modules/Cart`) + product search read model (`modules/Product`)  
 **Related:** `docs/superpowers/specs/2026-09-08-catalog-v2-suggest-design.md`
 
@@ -184,13 +184,15 @@ Replace tests that treat `LIKE 'te%'` on the full title as the match rule.
 
 ## 7. Out of scope
 
-- Build-then-swap, skip-and-continue rebuild, candidate cap 500 (already locked elsewhere)
-- Synonym expand in suggest, Octane expander lifecycle
-- SKU / attribute / description product suggest
-- Query log, popular merchandising, redirect keywords
-- Substring inside a token, hyphen-splitting beyond `tokenize`
-- Meilisearch / Typesense
-- Overlay JS redesign (debounce / thumbnails)
+Do not change in this unit, even slightly:
+
+- Discovery ranking
+- Merchandising
+- Synonym expansion (`SearchSynonymExpander` / Octane lifecycle)
+- Search index rebuild lifecycle
+- Search engine replacement
+
+Also out: SKU / attribute / description product rows, query log, substring inside a token, overlay JS redesign (debounce / thumbnails). Task 2 overlay regression means existing V1 HTTP + listing tests stay green, not a new overlay UI.
 
 ---
 
@@ -198,8 +200,8 @@ Replace tests that treat `LIKE 'te%'` on the full title as the match rule.
 
 ```text
 Task 1  Word-prefix matcher + token gate + Suggest V1 amendment
-Task 2  Product SQL recall (optimization) + product/brand/category hits
-Task 3  Cross-group completion dedupe + sort/cap regression
+Task 2  Product recall query + brand/category matcher + overlay regression
+Task 3  Cross-group completion dedupe + sort/cap + acceptance sweep
 ```
 
-Human gate after each task. One spec, three tasks. Suggest V1.1 does not land ranking or merchandising.
+Human gate after each task, then whole-branch review. One spec, three tasks. Do not expand into ranking, merchandising, synonym expansion, search-index lifecycle, or search-engine replacement.
