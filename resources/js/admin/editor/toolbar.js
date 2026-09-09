@@ -59,6 +59,7 @@ export function mountToolbar(container, editor, media) {
             editor.chain().focus().setImage({
                 src: item.preview_url || item.url,
                 alt: item.filename || '',
+                width: '100%',
             }).run();
         }],
         ['• List', 'Bullet list', () => editor.chain().focus().toggleBulletList().run()],
