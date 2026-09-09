@@ -137,6 +137,13 @@
     border-color: var(--color-primary, #44403c);
 }
 
+.cms-editor-toolbar__btn.is-active,
+.cms-editor-toolbar__btn[aria-pressed="true"] {
+    border-color: var(--color-primary, #44403c);
+    background: var(--color-primary, #44403c);
+    color: var(--color-on-primary, #fff);
+}
+
 .cms-editor-canvas {
     position: relative;
     min-height: 43.75rem;
@@ -196,13 +203,86 @@
     border-radius: 0.75rem;
 }
 
-.cms-editor-prose img:not([width]) {
+.cms-editor-prose img:not([width$="%"]) {
     width: 100%;
 }
 
-.cms-editor-prose img[width$="%"] {
-    width: attr(width);
-}
+.cms-editor-prose img[width="25%"] { width: 25%; }
+.cms-editor-prose img[width="26%"] { width: 26%; }
+.cms-editor-prose img[width="27%"] { width: 27%; }
+.cms-editor-prose img[width="28%"] { width: 28%; }
+.cms-editor-prose img[width="29%"] { width: 29%; }
+.cms-editor-prose img[width="30%"] { width: 30%; }
+.cms-editor-prose img[width="31%"] { width: 31%; }
+.cms-editor-prose img[width="32%"] { width: 32%; }
+.cms-editor-prose img[width="33%"] { width: 33%; }
+.cms-editor-prose img[width="34%"] { width: 34%; }
+.cms-editor-prose img[width="35%"] { width: 35%; }
+.cms-editor-prose img[width="36%"] { width: 36%; }
+.cms-editor-prose img[width="37%"] { width: 37%; }
+.cms-editor-prose img[width="38%"] { width: 38%; }
+.cms-editor-prose img[width="39%"] { width: 39%; }
+.cms-editor-prose img[width="40%"] { width: 40%; }
+.cms-editor-prose img[width="41%"] { width: 41%; }
+.cms-editor-prose img[width="42%"] { width: 42%; }
+.cms-editor-prose img[width="43%"] { width: 43%; }
+.cms-editor-prose img[width="44%"] { width: 44%; }
+.cms-editor-prose img[width="45%"] { width: 45%; }
+.cms-editor-prose img[width="46%"] { width: 46%; }
+.cms-editor-prose img[width="47%"] { width: 47%; }
+.cms-editor-prose img[width="48%"] { width: 48%; }
+.cms-editor-prose img[width="49%"] { width: 49%; }
+.cms-editor-prose img[width="50%"] { width: 50%; }
+.cms-editor-prose img[width="51%"] { width: 51%; }
+.cms-editor-prose img[width="52%"] { width: 52%; }
+.cms-editor-prose img[width="53%"] { width: 53%; }
+.cms-editor-prose img[width="54%"] { width: 54%; }
+.cms-editor-prose img[width="55%"] { width: 55%; }
+.cms-editor-prose img[width="56%"] { width: 56%; }
+.cms-editor-prose img[width="57%"] { width: 57%; }
+.cms-editor-prose img[width="58%"] { width: 58%; }
+.cms-editor-prose img[width="59%"] { width: 59%; }
+.cms-editor-prose img[width="60%"] { width: 60%; }
+.cms-editor-prose img[width="61%"] { width: 61%; }
+.cms-editor-prose img[width="62%"] { width: 62%; }
+.cms-editor-prose img[width="63%"] { width: 63%; }
+.cms-editor-prose img[width="64%"] { width: 64%; }
+.cms-editor-prose img[width="65%"] { width: 65%; }
+.cms-editor-prose img[width="66%"] { width: 66%; }
+.cms-editor-prose img[width="67%"] { width: 67%; }
+.cms-editor-prose img[width="68%"] { width: 68%; }
+.cms-editor-prose img[width="69%"] { width: 69%; }
+.cms-editor-prose img[width="70%"] { width: 70%; }
+.cms-editor-prose img[width="71%"] { width: 71%; }
+.cms-editor-prose img[width="72%"] { width: 72%; }
+.cms-editor-prose img[width="73%"] { width: 73%; }
+.cms-editor-prose img[width="74%"] { width: 74%; }
+.cms-editor-prose img[width="75%"] { width: 75%; }
+.cms-editor-prose img[width="76%"] { width: 76%; }
+.cms-editor-prose img[width="77%"] { width: 77%; }
+.cms-editor-prose img[width="78%"] { width: 78%; }
+.cms-editor-prose img[width="79%"] { width: 79%; }
+.cms-editor-prose img[width="80%"] { width: 80%; }
+.cms-editor-prose img[width="81%"] { width: 81%; }
+.cms-editor-prose img[width="82%"] { width: 82%; }
+.cms-editor-prose img[width="83%"] { width: 83%; }
+.cms-editor-prose img[width="84%"] { width: 84%; }
+.cms-editor-prose img[width="85%"] { width: 85%; }
+.cms-editor-prose img[width="86%"] { width: 86%; }
+.cms-editor-prose img[width="87%"] { width: 87%; }
+.cms-editor-prose img[width="88%"] { width: 88%; }
+.cms-editor-prose img[width="89%"] { width: 89%; }
+.cms-editor-prose img[width="90%"] { width: 90%; }
+.cms-editor-prose img[width="91%"] { width: 91%; }
+.cms-editor-prose img[width="92%"] { width: 92%; }
+.cms-editor-prose img[width="93%"] { width: 93%; }
+.cms-editor-prose img[width="94%"] { width: 94%; }
+.cms-editor-prose img[width="95%"] { width: 95%; }
+.cms-editor-prose img[width="96%"] { width: 96%; }
+.cms-editor-prose img[width="97%"] { width: 97%; }
+.cms-editor-prose img[width="98%"] { width: 98%; }
+.cms-editor-prose img[width="99%"] { width: 99%; }
+.cms-editor-prose img[width="100%"] { width: 100%; }
 
 .cms-editor-prose img:not([data-align]),
 .cms-editor-prose img[data-align="left"] {
@@ -249,13 +329,86 @@
     max-width: 100%;
 }
 
-.cms-image-node:not([width]) {
+.cms-image-node:not([width$="%"]) {
     width: 100%;
 }
 
-.cms-image-node[width$="%"] {
-    width: attr(width);
-}
+.cms-image-node[width="25%"] { width: 25%; }
+.cms-image-node[width="26%"] { width: 26%; }
+.cms-image-node[width="27%"] { width: 27%; }
+.cms-image-node[width="28%"] { width: 28%; }
+.cms-image-node[width="29%"] { width: 29%; }
+.cms-image-node[width="30%"] { width: 30%; }
+.cms-image-node[width="31%"] { width: 31%; }
+.cms-image-node[width="32%"] { width: 32%; }
+.cms-image-node[width="33%"] { width: 33%; }
+.cms-image-node[width="34%"] { width: 34%; }
+.cms-image-node[width="35%"] { width: 35%; }
+.cms-image-node[width="36%"] { width: 36%; }
+.cms-image-node[width="37%"] { width: 37%; }
+.cms-image-node[width="38%"] { width: 38%; }
+.cms-image-node[width="39%"] { width: 39%; }
+.cms-image-node[width="40%"] { width: 40%; }
+.cms-image-node[width="41%"] { width: 41%; }
+.cms-image-node[width="42%"] { width: 42%; }
+.cms-image-node[width="43%"] { width: 43%; }
+.cms-image-node[width="44%"] { width: 44%; }
+.cms-image-node[width="45%"] { width: 45%; }
+.cms-image-node[width="46%"] { width: 46%; }
+.cms-image-node[width="47%"] { width: 47%; }
+.cms-image-node[width="48%"] { width: 48%; }
+.cms-image-node[width="49%"] { width: 49%; }
+.cms-image-node[width="50%"] { width: 50%; }
+.cms-image-node[width="51%"] { width: 51%; }
+.cms-image-node[width="52%"] { width: 52%; }
+.cms-image-node[width="53%"] { width: 53%; }
+.cms-image-node[width="54%"] { width: 54%; }
+.cms-image-node[width="55%"] { width: 55%; }
+.cms-image-node[width="56%"] { width: 56%; }
+.cms-image-node[width="57%"] { width: 57%; }
+.cms-image-node[width="58%"] { width: 58%; }
+.cms-image-node[width="59%"] { width: 59%; }
+.cms-image-node[width="60%"] { width: 60%; }
+.cms-image-node[width="61%"] { width: 61%; }
+.cms-image-node[width="62%"] { width: 62%; }
+.cms-image-node[width="63%"] { width: 63%; }
+.cms-image-node[width="64%"] { width: 64%; }
+.cms-image-node[width="65%"] { width: 65%; }
+.cms-image-node[width="66%"] { width: 66%; }
+.cms-image-node[width="67%"] { width: 67%; }
+.cms-image-node[width="68%"] { width: 68%; }
+.cms-image-node[width="69%"] { width: 69%; }
+.cms-image-node[width="70%"] { width: 70%; }
+.cms-image-node[width="71%"] { width: 71%; }
+.cms-image-node[width="72%"] { width: 72%; }
+.cms-image-node[width="73%"] { width: 73%; }
+.cms-image-node[width="74%"] { width: 74%; }
+.cms-image-node[width="75%"] { width: 75%; }
+.cms-image-node[width="76%"] { width: 76%; }
+.cms-image-node[width="77%"] { width: 77%; }
+.cms-image-node[width="78%"] { width: 78%; }
+.cms-image-node[width="79%"] { width: 79%; }
+.cms-image-node[width="80%"] { width: 80%; }
+.cms-image-node[width="81%"] { width: 81%; }
+.cms-image-node[width="82%"] { width: 82%; }
+.cms-image-node[width="83%"] { width: 83%; }
+.cms-image-node[width="84%"] { width: 84%; }
+.cms-image-node[width="85%"] { width: 85%; }
+.cms-image-node[width="86%"] { width: 86%; }
+.cms-image-node[width="87%"] { width: 87%; }
+.cms-image-node[width="88%"] { width: 88%; }
+.cms-image-node[width="89%"] { width: 89%; }
+.cms-image-node[width="90%"] { width: 90%; }
+.cms-image-node[width="91%"] { width: 91%; }
+.cms-image-node[width="92%"] { width: 92%; }
+.cms-image-node[width="93%"] { width: 93%; }
+.cms-image-node[width="94%"] { width: 94%; }
+.cms-image-node[width="95%"] { width: 95%; }
+.cms-image-node[width="96%"] { width: 96%; }
+.cms-image-node[width="97%"] { width: 97%; }
+.cms-image-node[width="98%"] { width: 98%; }
+.cms-image-node[width="99%"] { width: 99%; }
+.cms-image-node[width="100%"] { width: 100%; }
 
 .cms-image-node:not([data-align]),
 .cms-image-node[data-align="left"] {
@@ -360,6 +513,22 @@
 
 .cms-editor-inspector__field {
     display: grid;
+    gap: 0.35rem;
+}
+
+.cms-editor-inspector__controls {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.cms-editor-inspector__controls > span {
+    font-size: 0.8rem;
+    color: var(--color-muted, #78716c);
+}
+
+.cms-editor-inspector__controls-row {
+    display: flex;
+    flex-wrap: wrap;
     gap: 0.35rem;
 }
 

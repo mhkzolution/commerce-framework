@@ -19,7 +19,10 @@ final class CmsImageLayoutCssTest extends TestCase
 
             $this->assertStringContainsString('box-sizing: border-box', $css);
             $this->assertStringContainsString('padding-inline: 0.25rem', $css);
-            $this->assertStringContainsString('img:not([width])', $css);
+            $this->assertStringContainsString('img:not([width$="%"])', $css);
+            $this->assertStringContainsString('img[width="50%"]', $css);
+            $this->assertStringContainsString('width: 50%', $css);
+            $this->assertStringNotContainsString('width: attr(width)', $css);
             $this->assertStringContainsString('max-width: 1023px', $css);
         }
 
@@ -34,13 +37,10 @@ final class CmsImageLayoutCssTest extends TestCase
         $this->assertNotFalse($editorCss);
         $this->assertStringContainsString('.cms-editor-prose img', $editorCss);
         $this->assertStringContainsString('inline-block', $editorCss);
-        $this->assertTrue(
-            str_contains($editorCss, 'attr(width)') || str_contains($editorCss, '[width$="%"]'),
-            'Editor CSS should honor percent width via attr(width) or [width$="%"]',
-        );
 
         $this->assertStringContainsString('.cms-image-node', $editorCss);
-        $this->assertStringContainsString('.cms-image-node[width$="%"]', $editorCss);
+        $this->assertStringContainsString('.cms-image-node[width="50%"]', $editorCss);
+        $this->assertStringContainsString('.cms-image-node:not([width$="%"])', $editorCss);
         $this->assertStringContainsString('.cms-image-node:not([data-align])', $editorCss);
         $this->assertStringContainsString('.cms-image-node img', $editorCss);
         $this->assertStringContainsString('.cms-editor-prose .cms-image-node img', $editorCss);

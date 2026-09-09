@@ -95,7 +95,10 @@ HTML;
         $this->get(route('storefront.cms.pages.show', 'about-us'))
             ->assertOk()
             ->assertSee('About Us')
-            ->assertSee('Heading', false);
+            ->assertSee('class="storefront-prose mt-6 text-text-secondary"', false)
+            ->assertSee('<h2>Heading</h2>', false)
+            ->assertSee('<img src="/media/hero.jpg" alt="Library hero">', false)
+            ->assertDontSee(e('<h2>Heading</h2>'), false);
     }
 
     public function test_editor_form_uses_commerce_framework_media_picker_route(): void

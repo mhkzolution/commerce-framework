@@ -12,22 +12,28 @@ function field(label, value, onInput) {
     return wrap;
 }
 
-function action(label, onClick, selected = false) {
+function action(label, onClick, selected) {
     const el = document.createElement('button');
     el.type = 'button';
-    el.className = `cms-editor-toolbar__btn${selected ? ' is-active' : ''}`;
+    el.className = 'cms-editor-toolbar__btn';
     el.textContent = label;
-    el.setAttribute('aria-pressed', String(selected));
+    if (typeof selected === 'boolean') {
+        el.classList.toggle('is-active', selected);
+        el.setAttribute('aria-pressed', String(selected));
+    }
     el.addEventListener('click', onClick);
     return el;
 }
 
 function controls(label, items) {
     const wrap = document.createElement('div');
-    wrap.className = 'cms-editor-inspector__field';
+    wrap.className = 'cms-editor-inspector__controls';
     const heading = document.createElement('span');
     heading.textContent = label;
-    wrap.append(heading, ...items);
+    const row = document.createElement('div');
+    row.className = 'cms-editor-inspector__controls-row';
+    row.append(...items);
+    wrap.append(heading, row);
     return wrap;
 }
 
