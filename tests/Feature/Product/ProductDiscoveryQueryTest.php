@@ -64,6 +64,94 @@ final class ProductDiscoveryQueryTest extends TestCase
         $this->assertContains($productB->uuid, $uuids);
     }
 
+    public function test_coverage_uses_winning_field_only(): void
+    {
+        $bothInName = $this->product('Red Cotton Shirt', 'SKU-COV-BOTH');
+        $cottonInName = $this->product('Cotton Shirt', 'SKU-COV-NAME', 'Bright red finish');
+        $this->index($bothInName, $cottonInName);
+
+        $this->assertSame(
+            [$bothInName->uuid, $cottonInName->uuid],
+            app(ProductDiscoveryQuery::class)->candidateUuids('red cotton'),
+        );
+    }
+
+    public function test_same_field_higher_coverage_beats_title_order(): void
+    {
+        $parka = $this->product('Cotton Parka', 'SKU-COV-PARKA', 'Bright red finish');
+        $tee = $this->product('Red Cotton Tee', 'SKU-COV-TEE');
+        $this->index($parka, $tee);
+
+        $this->assertSame(
+            [$tee->uuid, $parka->uuid],
+            app(ProductDiscoveryQuery::class)->candidateUuids('red cotton'),
+        );
+    }
+
+    public function test_coverage_counts_distinct_query_tokens(): void
+    {
+        $two = $this->product('Red Cotton Tee', 'SKU-DIST-TWO');
+        $one = $this->product('Cotton Shirt', 'SKU-DIST-ONE', 'Bright red finish');
+        $this->index($two, $one);
+
+        $this->assertSame(
+            [$two->uuid, $one->uuid],
+            app(ProductDiscoveryQuery::class)->candidateUuids('red red cotton'),
+        );
+    }
+
+    public function test_equal_coverage_falls_back_to_title(): void
+    {
+        $zebra = $this->product('Zebra Cotton', 'SKU-EQ-ZEBRA');
+        $alpha = $this->product('Alpha Cotton', 'SKU-EQ-ALPHA');
+        $this->index($zebra, $alpha);
+
+        $this->assertSame(
+            [$alpha->uuid, $zebra->uuid],
+            app(ProductDiscoveryQuery::class)->candidateUuids('cotton'),
+        );
+    }
+
+    public function test_exact_sku_hits_sort_by_title_and_ignore_name_coverage(): void
+    {
+        SearchDocument::query()->create([
+            'index_name' => ProductSearchIndexer::INDEX,
+            'document_id' => 'sku-alpha',
+            'title' => 'Alpha Widget',
+            'body' => '',
+            'payload' => ['skus' => ['RED COTTON'], 'attributes' => []],
+        ]);
+        SearchDocument::query()->create([
+            'index_name' => ProductSearchIndexer::INDEX,
+            'document_id' => 'sku-zed',
+            'title' => 'Zed Red Cotton',
+            'body' => '',
+            'payload' => ['skus' => ['RED COTTON'], 'attributes' => []],
+        ]);
+
+        $this->assertSame(
+            ['sku-alpha', 'sku-zed'],
+            app(ProductDiscoveryQuery::class)->candidateUuids('RED COTTON'),
+        );
+    }
+
+    public function test_coverage_uses_replaced_expanded_tokens(): void
+    {
+        $cottonTee = $this->product('Cotton Tee', 'SKU-EXP-COTTON');
+        $teeShirt = $this->product('Tee Shirt', 'SKU-EXP-TEE', 'Premium cotton lining');
+        $this->index($cottonTee, $teeShirt);
+        SearchSynonym::query()->create([
+            'from_term' => 'ผ้าฝ้าย',
+            'to_term' => 'cotton',
+        ]);
+        app()->forgetInstance(SearchSynonymExpander::class);
+
+        $this->assertSame(
+            [$cottonTee->uuid, $teeShirt->uuid],
+            app(ProductDiscoveryQuery::class)->candidateUuids('ผ้าฝ้าย tee'),
+        );
+    }
+
     public function test_non_default_sku_exact_match_ranks_first(): void
     {
         $exactProduct = $this->product('Plain Product', 'SKU-DEFAULT-001');

@@ -44,8 +44,8 @@ Non-goals: suggest/autocomplete, popular searches, merchandising rules, redirect
 | Engine | Keep `SearchIndexInterface` + `search_documents`. No Meilisearch/Typesense. |
 | Split | Index: text, ranking, synonyms, candidate ids. Relations: facets, attribute/category/brand filters. |
 | Attribute search | Index `attribute_values.code` **and** `label`. Filter/URL/identity remain `code` only. |
-| Ranking | **Highest matched field, not cumulative.** Document rank = the single best (lowest number) field that matched at least one token. Matching name **and** description still ranks as name, not name+description. Tie-break: `title` ascending. |
-| Candidate cap | After rank (highest field, then title), `ProductDiscoveryQuery` returns at most 500 uuids. Facets for non-empty `q` use that same list. Not SQL LIMIT. Empty `q` does not query the index. |
+| Ranking | **Highest matched field, not cumulative.** Document rank = the single best (lowest number) field that matched at least one token. Matching name **and** description still ranks as name, not name+description. Same-field: distinct expanded query tokens that are exact tokens in the **winning** field (DESC), then `title` ASC. Exact SKU (rank 1) bypasses coverage entirely (two SKU hits: title only). No merchandising. |
+| Candidate cap | After that full order (not “highest field then title only”), return at most 500 uuids. Facets for non-empty `q` use that same list. Not SQL LIMIT. Empty `q` does not query the index. |
 | Exact SKU | Whole-query match, **NFC** + trim + uppercase both sides, full string equality. Not contains/prefix/hyphen-stripped. Wins over all text hits. Other hits may follow. |
 | Multi-term | Whitespace tokens. AND across tokens. OR across fields. |
 | Token match | Exact token only after shared **text** normalization. `cot` ≠ `cotton`. `tee` ≠ `t-shirt` unless a synonym maps them. |
@@ -204,7 +204,7 @@ Product B  description has both "red" and "cotton"
 A before B. A is not boosted for also matching description.
 ```
 
-Tie-break among the same highest field: `title` ascending.
+Same-field: distinct expanded query tokens that are exact tokens in the **winning** field (DESC), then `title` ASC. Two exact-SKU hits skip coverage (title only). Cap runs after this sort.
 
 No merchandising boosts, manual ranking rules, or popularity signals. Ranking does not change who matches; it only orders the AND set.
 
@@ -312,7 +312,13 @@ Do not merge Wave 3 storefront chrome with Wave 1 indexer. Do not change PDP or 
 14. Product matching query tokens in name **and** description ranks with name-only products that also match (highest field = name), above a product that matches only in description.  
 15. Empty or whitespace `q` does not query `search_documents`; listing is relation browse only.
 16. After a thrown full rebuild, documents already indexed in that run remain; pre-flush stale rows that were flushed stay gone; the pre-flush index is not restored.
-17. `candidateUuids` returns at most 500 uuids in Discovery rank order. Facets for that `q` use the same list.
+17. `candidateUuids` returns at most 500 uuids after `fieldRank`, then coverage DESC (text ranks), then title. Facets for that `q` use the same list.
+18. Query `red cotton`: name contains both tokens ranks above name-only `cotton` + `red` in description (coverage uses winning field only).
+19. Query `red red cotton`: name `Red Cotton Tee` is coverage 2, not 3, and ranks above a name-only cotton hit that matches `red` only in a worse field.
+20. Two search_documents with the same exact SKU: title ASC even when the later title contains more query tokens. Coverage is not computed for rank 1.
+21. `GET /shop?q=…&sort=price_asc` orders by price inside the capped set; default sort follows `candidateUuids`.
+22. Query `ผ้าฝ้าย tee` with replace `ผ้าฝ้าย → cotton`: `Cotton Tee` (name coverage 2) before `Tee Shirt` with cotton only in description. Not CUD / Octane.
+23. More than 500 same-fieldRank hits: a late title with higher coverage is inside the 500; an early title with lower coverage can be the omitted 501st (Task 2 test).
 
 ---
 

@@ -40,15 +40,23 @@ final class ProductDiscoveryQuery
                 continue;
             }
 
+            $rank = $isExactSku ? 1 : $this->highestMatchedFieldRank($tokens, $fields);
+
             $matches[] = [
                 'uuid' => (string) $document->document_id,
-                'rank' => $isExactSku ? 1 : $this->highestMatchedFieldRank($tokens, $fields),
+                'rank' => $rank,
+                'coverage' => $isExactSku ? 0 : $this->tokenCoverage($tokens, $fields[$rank] ?? []),
                 'title' => (string) $document->title,
             ];
         }
 
         usort($matches, static function (array $left, array $right): int {
-            return [$left['rank'], $left['title']] <=> [$right['rank'], $right['title']];
+            if ($left['rank'] === 1 && $right['rank'] === 1) {
+                return $left['title'] <=> $right['title'];
+            }
+
+            return [$left['rank'], -$left['coverage'], $left['title']]
+                <=> [$right['rank'], -$right['coverage'], $right['title']];
         });
 
         $matches = array_slice($matches, 0, self::CANDIDATE_CAP);
@@ -118,6 +126,23 @@ final class ProductDiscoveryQuery
         }
 
         return true;
+    }
+
+    /**
+     * @param  list<string>  $tokens
+     * @param  list<string>  $fieldTokens
+     */
+    private function tokenCoverage(array $tokens, array $fieldTokens): int
+    {
+        $count = 0;
+
+        foreach (array_unique($tokens) as $token) {
+            if (in_array($token, $fieldTokens, true)) {
+                $count++;
+            }
+        }
+
+        return $count;
     }
 
     /**

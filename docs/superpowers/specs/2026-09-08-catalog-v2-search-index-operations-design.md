@@ -77,7 +77,8 @@ rebuild()
 
 candidateUuids(q)
   → load documents, match tokens (unchanged)
-  → usort highest-field rank then title
+  → usort fieldRank, then coverage DESC for text ranks
+    (exact-SKU pair: title only; coverage not computed)
   → slice first 500 of that ordered list
   → return uuids
   → ShopController: that same array is listing searchUuids and facet searchUuids
@@ -139,7 +140,7 @@ Keep existing rebuild-flush-stale, label-change reindex, and Discovery ranking t
 
 ### Task 2 — Candidate cap (500)
 
-6. Rank order unchanged for the kept prefix: build a set of more than 500 matches; the first 500 uuids from `candidateUuids` equal the first 500 of the same query if the cap were not applied (same sort: exact SKU, then highest field, then title).
+6. Rank order unchanged for the kept prefix: build a set of more than 500 matches; the first 500 uuids from `candidateUuids` equal the first 500 of the same query if the cap were not applied (same sort as Ranking V1 (`fieldRank`, coverage DESC on text ranks, title; exact-SKU pairs title-only)). Cap still after that sort.
 7. Tail removed: a document that sorts as 501st is absent from the returned list.
 8. No SQL `LIMIT` on the `search_documents` scan in `ProductDiscoveryQuery`. Cap is `array_slice` (or equivalent) **after** `usort`.
 9. Empty / whitespace `q` still returns `[]` without reading `search_documents`. Suggest tests stay green.
