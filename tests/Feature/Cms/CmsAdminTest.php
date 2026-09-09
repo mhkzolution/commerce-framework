@@ -113,4 +113,23 @@ final class CmsAdminTest extends TestCase
         $this->assertSame('<p>Safe</p>', $post->content);
         $this->assertStringNotContainsString('<script>', (string) $post->content);
     }
+
+    public function test_post_save_keeps_image_percent_width(): void
+    {
+        $admin = User::query()->first();
+
+        $this->actingAs($admin)
+            ->post(route('admin.cms.posts.store'), [
+                'title' => 'Width',
+                'slug' => 'width-attr',
+                'content' => '<p><img src="/media/hero.jpg" alt="Hero" width="50%"></p>',
+                'status' => 'draft',
+            ])
+            ->assertRedirect();
+
+        $post = Post::query()->where('slug', 'width-attr')->first();
+        $this->assertNotNull($post);
+        $this->assertStringContainsString('width="50%"', (string) $post->content);
+        $this->assertStringContainsString('src="/media/hero.jpg"', (string) $post->content);
+    }
 }
