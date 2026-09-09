@@ -887,6 +887,10 @@ function initShare(root) {
             close();
         });
 
+        menu?.querySelectorAll('a').forEach((link) => {
+            link.addEventListener('click', close);
+        });
+
         document.addEventListener('click', (event) => {
             if (!wrap.contains(event.target)) {
                 close();

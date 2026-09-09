@@ -51,8 +51,20 @@ final class StorefrontMoneyLayoutCssTest extends TestCase
             ".storefront-pdp .storefront-breadcrumb__list {\n    display: flex;",
             $pdp,
         );
+        $this->assertMatchesRegularExpression(
+            '/\.storefront-pdp__panel--gallery\s*\{[^}]*overflow:\s*visible/s',
+            $pdp,
+        );
 
         $this->assertStringContainsString('color: var(--color-money)', $shopper);
+        $this->assertMatchesRegularExpression(
+            '/\.storefront-table__num\s*\{(?![^}]*color:\s*var\(--color-money\))[^}]*\}/s',
+            $shopper,
+        );
+        $this->assertMatchesRegularExpression(
+            '/\.storefront-money\s*\{[^}]*color:\s*var\(--color-money\)/s',
+            $shopper,
+        );
         $this->assertStringContainsString('color: var(--color-money)', $header);
     }
 }

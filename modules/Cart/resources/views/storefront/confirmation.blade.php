@@ -29,7 +29,8 @@
                 {{ __('storefront::storefront.status') }}: {{ $statuses[$order->status] ?? $order->status }}
             </p>
             <p class="storefront-confirmation__total">
-                {{ __('storefront::storefront.total') }}: {{ number_format($order->grand_total / 100, 2) }} {{ $order->currency }}
+                {{ __('storefront::storefront.total') }}:
+                <span class="storefront-money">{{ number_format($order->grand_total / 100, 2) }} {{ $order->currency }}</span>
             </p>
 
             @if ($addressLines !== [])
@@ -47,7 +48,7 @@
                     @foreach ($order->lineItems as $line)
                         <li class="storefront-summary-row">
                             <span>{{ $line->name }} × {{ $line->quantity }}</span>
-                            <span>{{ number_format($line->line_total / 100, 2) }} {{ $order->currency }}</span>
+                            <span class="storefront-money">{{ number_format($line->line_total / 100, 2) }} {{ $order->currency }}</span>
                         </li>
                     @endforeach
                 </ul>

@@ -254,6 +254,9 @@
 .storefront-table__num {
     text-align: right;
     font-variant-numeric: tabular-nums;
+}
+
+.storefront-money {
     color: var(--color-money);
 }
 
@@ -1051,7 +1054,6 @@
     font-size: 1.125rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
-    color: var(--color-money);
 }
 
 .storefront-confirmation__actions {

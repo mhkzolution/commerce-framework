@@ -19,7 +19,7 @@
                         <a href="{{ route('storefront.account.orders.show', $order) }}" class="storefront-link">{{ $order->order_number }}</a>
                     </td>
                     <td class="storefront-muted">{{ $order->created_at?->format('Y-m-d') }}</td>
-                    <td>{{ $formatMoney($order) }}</td>
+                    <td class="storefront-money">{{ $formatMoney($order) }}</td>
                     <td>{{ $orderStatuses[$order->status] ?? $order->status }}</td>
                 </tr>
             @empty

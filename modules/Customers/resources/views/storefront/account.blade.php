@@ -112,7 +112,7 @@
                                         <a href="{{ route('storefront.account.orders.show', $order) }}" class="storefront-link">{{ $order->order_number }}</a>
                                     </td>
                                     <td class="storefront-muted">{{ $order->created_at?->format('Y-m-d') }}</td>
-                                    <td>{{ number_format($order->grand_total / 100, 2) }} {{ $order->currency }}</td>
+                                    <td class="storefront-money">{{ number_format($order->grand_total / 100, 2) }} {{ $order->currency }}</td>
                                     <td>{{ $orderStatuses[$order->status] ?? $order->status }}</td>
                                 </tr>
                             @empty

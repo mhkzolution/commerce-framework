@@ -35,7 +35,7 @@
         <a class="storefront-share__item" role="menuitem" href="https://social-plugins.line.me/lineit/share?url={{ $shareUrl }}" target="_blank" rel="noopener noreferrer">
             {{ __('storefront::storefront.share_line') }}
         </a>
-        <a class="storefront-share__item" role="menuitem" href="https://twitter.com/intent/tweet?url={{ $shareUrl }}&text={{ $shareTitle }}" target="_blank" rel="noopener noreferrer">
+        <a class="storefront-share__item" role="menuitem" href="https://twitter.com/intent/tweet?url={{ $shareUrl }}&amp;text={{ $shareTitle }}" target="_blank" rel="noopener noreferrer">
             {{ __('storefront::storefront.share_x') }}
         </a>
         <button type="button" class="storefront-share__item" role="menuitem" data-share-copy>

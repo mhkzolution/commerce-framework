@@ -76,6 +76,7 @@
 
 .storefront-pdp__panel--gallery {
     padding: 0 0 1rem;
+    overflow: visible;
 }
 
 .storefront-pdp__panel--buy {
