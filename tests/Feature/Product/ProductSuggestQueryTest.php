@@ -235,12 +235,72 @@ final class ProductSuggestQueryTest extends TestCase
         $this->assertSame(['Tee', 'Tee Shirt', 'Team Jersey'], $labels);
     }
 
+    public function test_completions_dedupe_across_product_and_brand_labels(): void
+    {
+        $this->product('Acme', 'SUGGEST-ACME-PRODUCT');
+        app(BrandService::class)->create(new CreateBrandData(
+            name: 'Acme',
+            slug: 'acme',
+            isActive: true,
+        ));
+
+        $result = app(ProductSuggestQuery::class)->suggest('ac');
+        $labels = array_map(
+            static fn (SuggestHit $hit): string => $hit->label,
+            $result->completions,
+        );
+
+        $this->assertSame(['Acme'], $labels);
+        $this->assertSame(
+            route('storefront.shop.index', ['q' => 'Acme']),
+            $result->completions[0]->url,
+        );
+    }
+
+    public function test_tee_products_sort_and_team_jersey_is_not_a_tee_hit(): void
+    {
+        $this->product('Team Jersey', 'SUGGEST-SORT-TEAM');
+        $this->product('Tee Shirt', 'SUGGEST-SORT-SHIRT');
+        $this->product('Classic Tee', 'SUGGEST-SORT-CLASSIC');
+        $this->product('Tee', 'SUGGEST-SORT-TEE');
+
+        $labels = array_map(
+            static fn (SuggestHit $hit): string => $hit->label,
+            app(ProductSuggestQuery::class)->suggest('tee')->products,
+        );
+
+        $this->assertSame(['Tee', 'Tee Shirt', 'Classic Tee'], $labels);
+    }
+
     public function test_sixth_prefix_product_is_omitted(): void
     {
         foreach (range(1, 6) as $i) {
             $this->product('Tea '.$i, 'SUGGEST-TEA-'.$i);
         }
         $this->assertCount(5, app(ProductSuggestQuery::class)->suggest('te')->products);
+    }
+
+    public function test_classic_tea_sixth_product_is_omitted(): void
+    {
+        foreach (range(1, 6) as $i) {
+            $this->product('Classic Tea '.$i, 'SUGGEST-TEA-CAP-'.$i);
+        }
+
+        $this->assertCount(5, app(ProductSuggestQuery::class)->suggest('te')->products);
+    }
+
+    public function test_completion_url_uses_full_classic_tee_label(): void
+    {
+        $this->product('Classic Tee', 'SUGGEST-COMPLETION-URL');
+
+        $hits = app(ProductSuggestQuery::class)->suggest('te')->completions;
+        $classic = array_values(array_filter(
+            $hits,
+            static fn (SuggestHit $hit): bool => $hit->label === 'Classic Tee',
+        ));
+
+        $this->assertNotSame([], $classic);
+        $this->assertSame(route('storefront.shop.index', ['q' => 'Classic Tee']), $classic[0]->url);
     }
 
     public function test_product_candidate_window_keeps_shorter_higher_id_title(): void
