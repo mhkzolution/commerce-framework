@@ -164,16 +164,10 @@ final class ProductSuggestQueryTest extends TestCase
         $this->assertNotNull($productQuery);
         $this->assertStringContainsString('suggest_documents.title like ? escape \'!\'', $productQuery['query']);
         $bindings = $productQuery['bindings'];
-        $this->assertTrue(
-            collect($bindings)->contains(static fn (mixed $binding): bool => is_string($binding) && str_contains($binding, 'te')),
-        );
-        $this->assertFalse(
-            collect($bindings)->contains(static fn (mixed $binding): bool => $binding === 'te%' && count($bindings) === 1),
-            'Recall must not be only whole-title te%.',
-        );
+        $this->assertContains('%te%', $bindings);
     }
 
-    public function test_product_query_escapes_like_wildcards_in_title_prefix(): void
+    public function test_product_query_escapes_like_wildcards_in_title_contains_pattern(): void
     {
         $this->product('\%_ Tee', 'SUGGEST-LIKE-WILDCARDS');
         DB::flushQueryLog();
@@ -187,7 +181,7 @@ final class ProductSuggestQueryTest extends TestCase
 
         $this->assertNotNull($productQuery);
         $this->assertStringContainsString('suggest_documents.title like ? escape \'!\'', $productQuery['query']);
-        $this->assertContains('!\\!%!_%', $productQuery['bindings']);
+        $this->assertContains('%!\\!%!_%', $productQuery['bindings']);
         $this->assertSame(['\%_ Tee'], array_map(
             static fn (SuggestHit $hit): string => $hit->label,
             $result->products,
@@ -316,6 +310,21 @@ final class ProductSuggestQueryTest extends TestCase
         );
 
         $this->assertContains('Tee', $labels);
+    }
+
+    public function test_product_candidate_window_requires_every_query_token(): void
+    {
+        foreach (range(1, 100) as $i) {
+            $this->product('Tea '.$i, 'SUGGEST-AND-WINDOW-'.$i);
+        }
+        $this->product('Classic Tee', 'SUGGEST-AND-WINDOW-CLASSIC');
+
+        $labels = array_map(
+            static fn (SuggestHit $hit): string => $hit->label,
+            app(ProductSuggestQuery::class)->suggest('classic te')->products,
+        );
+
+        $this->assertContains('Classic Tee', $labels);
     }
 
     public function test_product_hit_uses_pdp_url_and_excludes_non_storefront_product(): void

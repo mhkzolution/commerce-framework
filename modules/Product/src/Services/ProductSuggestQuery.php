@@ -60,7 +60,7 @@ final class ProductSuggestQuery
     private function productCandidates(array $tokens): array
     {
         $candidates = [];
-        $titlePatterns = $this->titlePrefilterPatterns($tokens);
+        $titlePatternGroups = $this->titlePrefilterPatterns($tokens);
         $products = Product::query()
             ->visibleOnStorefront()
             ->join('search_documents as suggest_documents', function (JoinClause $join): void {
@@ -69,13 +69,17 @@ final class ProductSuggestQuery
             })
             ->select('products.*')
             ->addSelect('suggest_documents.title as suggest_title')
-            ->where(function ($query) use ($titlePatterns): void {
-                foreach ($titlePatterns as $index => $pattern) {
-                    $method = $index === 0 ? 'whereRaw' : 'orWhereRaw';
-                    $query->{$method}(
-                        'suggest_documents.title like ? escape \'!\'',
-                        [$pattern],
-                    );
+            ->where(function ($query) use ($titlePatternGroups): void {
+                foreach ($titlePatternGroups as $patterns) {
+                    $query->where(function ($query) use ($patterns): void {
+                        foreach ($patterns as $index => $pattern) {
+                            $method = $index === 0 ? 'whereRaw' : 'orWhereRaw';
+                            $query->{$method}(
+                                'suggest_documents.title like ? escape \'!\'',
+                                [$pattern],
+                            );
+                        }
+                    });
                 }
             })
             ->orderByRaw('length(suggest_documents.title)')
@@ -102,25 +106,28 @@ final class ProductSuggestQuery
 
     /**
      * @param  list<string>  $tokens
-     * @return list<string>
+     * @return list<list<string>>
      */
     private function titlePrefilterPatterns(array $tokens): array
     {
-        $patterns = [];
+        $groups = [];
 
         foreach ($tokens as $token) {
+            $patterns = [];
+
             foreach ($this->unicodeForms($token) as $form) {
                 $escaped = str_replace(
                     ['!', '\\', '%', '_'],
                     ['!!', '!\\', '!%', '!_'],
                     $form,
                 );
-                $patterns[] = $escaped.'%';
                 $patterns[] = '%'.$escaped.'%';
             }
+
+            $groups[] = array_values(array_unique($patterns));
         }
 
-        return array_values(array_unique($patterns));
+        return $groups;
     }
 
     /**
