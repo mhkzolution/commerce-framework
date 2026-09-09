@@ -116,7 +116,7 @@ Write these into the Discovery spec in-place. Known amendment targets (do not on
 
 **§10 Admin rebuild row** — replace “Flush + rebuild all product documents” with: Flush + rebuild all product documents. After flush, an aborted rebuild leaves empty or partial documents; documents indexed before the exception remain present; there is no rollback. CLI exits non-zero; admin does not flash success. Operator re-runs the command or button.
 
-**§3 ranking / candidate row:** After rank (highest matched field, then `title` ascending), `ProductDiscoveryQuery` returns at most 500 uuids. Facets for non-empty `q` use that same list. SQL document load is not `LIMIT`ed. Empty `q` still does not query the index.
+**§3 ranking / candidate row:** After rank (`fieldRank`, then coverage DESC on text ranks, then `title`; exact-SKU pairs title-only), `ProductDiscoveryQuery` returns at most 500 uuids. Facets for non-empty `q` use that same list. SQL document load is not `LIMIT`ed. Empty `q` still does not query the index.
 
 **§8 discovery flow** — replace “After the index returns candidate product ids” so it means: when `q` is non-empty, listing and facet aggregation use the same post-rank capped set (≤ 500). Empty `q` is still the full published catalog via relations.
 
