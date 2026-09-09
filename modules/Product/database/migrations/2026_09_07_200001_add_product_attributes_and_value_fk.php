@@ -71,6 +71,13 @@ return new class extends Migration
         }
 
         if (Schema::hasIndex('product_attribute_values', 'product_attribute_values_unique')) {
+            // InnoDB uses this unique as the product_id FK index. Cover the FK first or drop fails (error 1553).
+            if (! Schema::hasIndex('product_attribute_values', 'product_attribute_values_product_id_fk_cover')) {
+                Schema::table('product_attribute_values', function (Blueprint $table): void {
+                    $table->index('product_id', 'product_attribute_values_product_id_fk_cover');
+                });
+            }
+
             Schema::table('product_attribute_values', function (Blueprint $table): void {
                 $table->dropUnique('product_attribute_values_unique');
             });
@@ -82,6 +89,12 @@ return new class extends Migration
                     ['product_id', 'attribute_id', 'product_variant_id', 'attribute_value_id'],
                     'product_attribute_values_value_unique',
                 );
+            });
+        }
+
+        if (Schema::hasIndex('product_attribute_values', 'product_attribute_values_product_id_fk_cover')) {
+            Schema::table('product_attribute_values', function (Blueprint $table): void {
+                $table->dropIndex('product_attribute_values_product_id_fk_cover');
             });
         }
     }
