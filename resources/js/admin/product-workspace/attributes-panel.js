@@ -101,7 +101,7 @@ export function bindAttributesPanel(root, state) {
             wrapper.className = values.length > 6 || usedForVariations ? 'md:col-span-2' : '';
 
             const options = values.map((value) => {
-                const inputType = usedForVariations ? 'checkbox' : 'radio';
+                const inputType = 'checkbox';
                 const checked = selectedIds.has(Number(value.id)) ? 'checked' : '';
 
                 return `
