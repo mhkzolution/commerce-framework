@@ -811,27 +811,86 @@ function initQuantityStepper(page) {
     });
 }
 
+function isDesktopShare() {
+    return window.matchMedia('(min-width: 1024px)').matches;
+}
+
+function copyShareUrl(url, copiedEl) {
+    const markCopied = () => {
+        copiedEl?.classList.add('storefront-share-btn--copied');
+        window.setTimeout(() => copiedEl?.classList.remove('storefront-share-btn--copied'), 1500);
+    };
+
+    return navigator.clipboard.writeText(url).then(markCopied).catch(() => {
+        window.prompt('Copy link:', url);
+    });
+}
+
 function initShare(root) {
-    root.querySelectorAll('[data-share-button]').forEach((button) => {
-        button.addEventListener('click', async () => {
+    root.querySelectorAll('[data-share-root]').forEach((wrap) => {
+        const button = wrap.querySelector('[data-share-button]');
+        const menu = wrap.querySelector('[data-share-menu]');
+        const copyBtn = wrap.querySelector('[data-share-copy]');
+        if (!button) {
+            return;
+        }
+
+        const close = () => {
+            if (!menu) {
+                return;
+            }
+            menu.hidden = true;
+            button.setAttribute('aria-expanded', 'false');
+        };
+
+        const open = () => {
+            if (!menu) {
+                return;
+            }
+            menu.hidden = false;
+            button.setAttribute('aria-expanded', 'true');
+        };
+
+        button.addEventListener('click', async (event) => {
+            event.preventDefault();
             const url = button.dataset.shareUrl;
             const title = button.dataset.shareTitle;
+
+            if (isDesktopShare()) {
+                if (menu?.hidden) {
+                    open();
+                } else {
+                    close();
+                }
+                return;
+            }
 
             if (navigator.share) {
                 try {
                     await navigator.share({ title, url });
                     return;
                 } catch {
-                    // fall through
+                    // fall through to copy
                 }
             }
 
-            try {
-                await navigator.clipboard.writeText(url);
-                button.classList.add('storefront-share-btn--copied');
-                window.setTimeout(() => button.classList.remove('storefront-share-btn--copied'), 1500);
-            } catch {
-                window.prompt('Copy link:', url);
+            await copyShareUrl(url, button);
+        });
+
+        copyBtn?.addEventListener('click', async () => {
+            await copyShareUrl(button.dataset.shareUrl, button);
+            close();
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!wrap.contains(event.target)) {
+                close();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                close();
             }
         });
     });
