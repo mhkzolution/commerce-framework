@@ -100,7 +100,7 @@ final class WooCommerceProductExporter
     public function query(?string $search = null, ?string $status = null): Builder
     {
         return Product::query()
-            ->with(['variants', 'media', 'categories', 'tags', 'attributeValues.attribute'])
+            ->with(['variants', 'media', 'categories', 'tags', 'collections', 'attributeValues.attribute'])
             ->when($status === 'published', static fn ($query) => $query->published())
             ->when($status && $status !== 'published', static fn ($query) => $query->where('status', $status))
             ->when($search, static function ($query, string $search): void {
@@ -368,7 +368,10 @@ final class WooCommerceProductExporter
 
     private function resolveCollections(Product $product): string
     {
-        return '';
+        return $product->collections
+            ->pluck('name')
+            ->filter()
+            ->implode(', ');
     }
 
     /**

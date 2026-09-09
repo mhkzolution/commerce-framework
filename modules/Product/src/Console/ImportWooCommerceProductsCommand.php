@@ -42,8 +42,10 @@ final class ImportWooCommerceProductsCommand extends Command
         $this->table(
             ['Metric', 'Count'],
             [
-                ['Imported', (string) $stats['imported']],
+                ['Created', (string) $stats['created']],
+                ['Updated', (string) $stats['updated']],
                 ['Skipped', (string) $stats['skipped']],
+                ['Warnings', (string) $stats['warnings']],
                 ['Images linked', (string) $stats['linked_images']],
                 ['Errors', (string) $stats['errors']],
             ],

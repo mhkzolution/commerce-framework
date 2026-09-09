@@ -38,6 +38,7 @@
 
           <div class="flex flex-wrap gap-2">
             <x-admin.button type="submit" variant="primary">Import products</x-admin.button>
+            <x-admin.button variant="secondary" :href="route('admin.products.import.template')">Download CSV template</x-admin.button>
             <x-admin.button variant="secondary" :href="route('admin.products.index')">Back to products</x-admin.button>
           </div>
         </form>
@@ -45,16 +46,17 @@
 
       <x-admin.card title="CSV format">
         <div class="space-y-3 text-sm text-muted">
-          <p>Use a WooCommerce product export with columns such as SKU, Name, Type, Regular price, Sale price, Categories, Tags, Brands, Seller, Images, and Attribute columns.</p>
-          <p>Existing products are matched by SKU and updated. Rows with duplicate SKUs in the same file are skipped.</p>
-          <p>Imported fields include name, images, SKU, price, type, attributes, tags, brand, seller, and categories. Seller can be a name, slug, or UUID; new sellers are created automatically when needed.</p>
+          <p>Use the WooCommerce product CSV from <strong>Export</strong> or <strong>Download CSV template</strong>. Column names must stay the same. Excel files are not supported.</p>
+          <p>SKU is the match key: new SKU creates a product, existing SKU updates it. Duplicate SKUs later in the same file are skipped with a warning; the first row wins.</p>
+          <p>Imported fields: Name, Type, Parent, Published, Visibility in catalog, prices, Stock, Categories, Tags, Collections, Images, Brands, Seller, Attribute 1–4, and Meta: condition. Search ranking, synonyms, and suggest terms are not CSV columns.</p>
+          <p>Do not put reserved search names (Brand, category, sort, q, availability, price_min, price_max, page) in Attribute columns. Use the Brands column for brand. WooCommerce color is often named สี.</p>
         </div>
       </x-admin.card>
     </div>
 
     @if (is_array($importResult))
       <x-admin.card title="Import result" class="mt-6">
-        <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
           <div class="rounded-lg border border-border px-4 py-3">
             <div class="text-xs uppercase tracking-wide text-muted">Created</div>
             <div class="text-2xl font-semibold text-text">{{ $importResult['created'] ?? 0 }}</div>
@@ -70,6 +72,10 @@
           <div class="rounded-lg border border-border px-4 py-3">
             <div class="text-xs uppercase tracking-wide text-muted">Skipped</div>
             <div class="text-2xl font-semibold text-text">{{ $importResult['skipped'] ?? 0 }}</div>
+          </div>
+          <div class="rounded-lg border border-border px-4 py-3">
+            <div class="text-xs uppercase tracking-wide text-muted">Warnings</div>
+            <div class="text-2xl font-semibold text-text">{{ $importResult['warnings'] ?? 0 }}</div>
           </div>
           <div class="rounded-lg border border-border px-4 py-3">
             <div class="text-xs uppercase tracking-wide text-muted">Images linked</div>

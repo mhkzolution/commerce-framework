@@ -29,6 +29,7 @@ final class ProductCsvImportResultTest extends TestCase
         $this->assertSame(4, $next->skipped);
         $this->assertSame(5, $next->duplicates);
         $this->assertSame(6, $next->linkedImages);
+        $this->assertSame(1, $next->warnings);
         $this->assertSame(['SKU-1'], $next->duplicateSkus);
         $this->assertSame(['err'], $next->errors);
         $this->assertSame(
@@ -41,6 +42,6 @@ final class ProductCsvImportResultTest extends TestCase
 
         $this->assertSame(2, $original->created);
         $this->assertSame(['existing'], $original->messages);
-        $this->assertSame(2 + 3 + 4 + 5, $next->totalProcessed());
+        $this->assertSame(2 + 3 + 4, $next->totalProcessed());
     }
 }

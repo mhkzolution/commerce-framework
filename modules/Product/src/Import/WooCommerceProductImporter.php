@@ -8,16 +8,19 @@ use Commerce\Catalog\DTO\CreateAttributeData;
 use Commerce\Catalog\DTO\CreateAttributeSetData;
 use Commerce\Catalog\DTO\CreateBrandData;
 use Commerce\Catalog\DTO\CreateCategoryData;
+use Commerce\Catalog\DTO\CreateCollectionData;
 use Commerce\Catalog\DTO\CreateTagData;
 use Commerce\Catalog\Models\Attribute;
 use Commerce\Catalog\Models\AttributeSet;
 use Commerce\Catalog\Models\Brand;
 use Commerce\Catalog\Models\Category;
+use Commerce\Catalog\Models\Collection;
 use Commerce\Catalog\Models\Tag;
 use Commerce\Catalog\Services\AttributeService;
 use Commerce\Catalog\Services\AttributeSetService;
 use Commerce\Catalog\Services\BrandService;
 use Commerce\Catalog\Services\CategoryService;
+use Commerce\Catalog\Services\CollectionService;
 use Commerce\Catalog\Services\TagService;
 use Commerce\Inventory\Contracts\InventoryServiceInterface;
 use Commerce\Media\Services\MediaUploadService;
@@ -52,6 +55,9 @@ final class WooCommerceProductImporter
     /** @var list<string> */
     private array $pendingAttributeWarnings = [];
 
+    /** @var array<string, true> */
+    private array $seenSkus = [];
+
     private ?int $attributeSetId = null;
 
     public function __construct(
@@ -59,6 +65,7 @@ final class WooCommerceProductImporter
         private readonly ProductWorkspaceSaveService $workspaceSaveService,
         private readonly CategoryService $categoryService,
         private readonly TagService $tagService,
+        private readonly CollectionService $collectionService,
         private readonly BrandService $brandService,
         private readonly AttributeService $attributeService,
         private readonly AttributeSetService $attributeSetService,
@@ -68,7 +75,7 @@ final class WooCommerceProductImporter
     ) {}
 
     /**
-     * @return array{imported: int, skipped: int, linked_images: int, errors: int}
+     * @return array{imported: int, created: int, updated: int, skipped: int, warnings: int, linked_images: int, errors: int}
      */
     public function import(
         string $path,
@@ -78,9 +85,14 @@ final class WooCommerceProductImporter
         ?int $limit = null,
         bool $linkImagesOnly = false,
     ): array {
+        $this->resetFileState();
+
         $stats = [
             'imported' => 0,
+            'created' => 0,
+            'updated' => 0,
             'skipped' => 0,
+            'warnings' => 0,
             'linked_images' => 0,
             'errors' => 0,
         ];
@@ -100,11 +112,7 @@ final class WooCommerceProductImporter
         }
 
         [$standaloneRows, $parentRows, $variationRows] = $this->partitionImportRows($rows);
-        $variationsByParent = [];
-
-        foreach ($variationRows as $row) {
-            $variationsByParent[$this->variationParentKey($row)][] = $row;
-        }
+        $variationsByParent = $this->groupVariationsByParent($variationRows);
 
         foreach ($standaloneRows as $row) {
             $stats = $this->importCliStandaloneRow($row, $output, $dryRun, $skipExisting, $stats);
@@ -113,7 +121,7 @@ final class WooCommerceProductImporter
         foreach ($parentRows as $parentRow) {
             $stats = $this->importCliVariableParentRow(
                 $parentRow,
-                $variationsByParent[$this->parentKey($parentRow)] ?? [],
+                $this->variationRowsForParent($parentRow, $variationsByParent),
                 $output,
                 $dryRun,
                 $skipExisting,
@@ -144,6 +152,12 @@ final class WooCommerceProductImporter
             return $stats;
         }
 
+        $sku = $this->normalizeSku($row);
+
+        if (! $this->claimSku($sku)) {
+            return $this->recordCliDuplicate($stats, $output, $sku, $row);
+        }
+
         if ($skipExisting && $this->productExists($row)) {
             $stats['skipped']++;
             $output->writeln('<comment>Skipping existing SKU '.($row['SKU'] ?? 'n/a').'</comment>');
@@ -155,15 +169,24 @@ final class WooCommerceProductImporter
             if ($dryRun) {
                 $output->writeln('[dry-run] Would import: '.($row['Name'] ?? 'n/a').' (SKU: '.($row['SKU'] ?? 'n/a').')');
                 $stats['imported']++;
+                $stats['created']++;
 
                 return $stats;
             }
 
-            $product = $this->importRow($row);
-            $this->applyPendingAttributeWarningsToCli($output);
+            $existing = $this->findImportedProduct($row);
+            $product = $this->upsertRow($row, $existing);
+            $stats['warnings'] += $this->applyPendingAttributeWarningsToCli($output);
             $linked = $this->linkProductImages($product, $row);
             $stats['linked_images'] += $linked;
             $stats['imported']++;
+
+            if ($existing === null) {
+                $stats['created']++;
+            } else {
+                $stats['updated']++;
+            }
+
             $output->writeln("Imported: {$product->name} ({$product->uuid})");
         } catch (\Throwable $exception) {
             $this->pullPendingAttributeWarnings();
@@ -187,6 +210,26 @@ final class WooCommerceProductImporter
         bool $skipExisting,
         array $stats,
     ): array {
+        $parentSku = $this->normalizeSku($parentRow);
+
+        if (! $this->claimSku($parentSku)) {
+            return $this->recordCliDuplicate($stats, $output, $parentSku, $parentRow);
+        }
+
+        $keptVariations = [];
+
+        foreach ($variationRows as $row) {
+            $sku = $this->normalizeSku($row);
+
+            if (! $this->claimSku($sku)) {
+                $stats = $this->recordCliDuplicate($stats, $output, $sku, $row);
+
+                continue;
+            }
+
+            $keptVariations[] = $row;
+        }
+
         if ($skipExisting && $this->findImportedProduct($parentRow) !== null) {
             $stats['skipped']++;
             $output->writeln('<comment>Skipping existing variable product '.$this->parentKey($parentRow).'</comment>');
@@ -196,21 +239,29 @@ final class WooCommerceProductImporter
 
         try {
             $label = $this->parentKey($parentRow);
-            $variationCount = max(1, count($variationRows));
+            $variationCount = max(1, count($keptVariations));
 
             if ($dryRun) {
                 $output->writeln('[dry-run] Would import variable product: '.($parentRow['Name'] ?? 'n/a')." ({$label}, {$variationCount} variation(s))");
                 $stats['imported']++;
+                $stats['created']++;
 
                 return $stats;
             }
 
             $existing = $this->findImportedProduct($parentRow);
-            $product = $this->upsertVariableRow($parentRow, $variationRows, $existing);
-            $this->applyPendingAttributeWarningsToCli($output);
+            $product = $this->upsertVariableRow($parentRow, $keptVariations, $existing);
+            $stats['warnings'] += $this->applyPendingAttributeWarningsToCli($output);
             $linked = $this->linkProductImages($product, $parentRow);
             $stats['linked_images'] += $linked;
             $stats['imported']++;
+
+            if ($existing === null) {
+                $stats['created']++;
+            } else {
+                $stats['updated']++;
+            }
+
             $output->writeln("Imported variable product: {$product->name} ({$product->uuid}, {$product->variants()->count()} variant(s))");
         } catch (\Throwable $exception) {
             $this->pullPendingAttributeWarnings();
@@ -223,27 +274,22 @@ final class WooCommerceProductImporter
 
     public function importForAdmin(string $path): ProductCsvImportResult
     {
+        $this->resetFileState();
         $result = new ProductCsvImportResult;
         $this->ensureAttributeSetSilently();
 
         $rows = iterator_to_array($this->reader->read($path));
         [$standaloneRows, $parentRows, $variationRows] = $this->partitionImportRows($rows);
-        $duplicateSkus = $this->findDuplicateSkus([...$standaloneRows, ...$variationRows]);
-
-        $variationsByParent = [];
-        foreach ($variationRows as $row) {
-            $variationsByParent[$this->variationParentKey($row)][] = $row;
-        }
+        $variationsByParent = $this->groupVariationsByParent($variationRows);
 
         foreach ($standaloneRows as $row) {
-            $result = $this->importStandaloneRow($row, $duplicateSkus, $result);
+            $result = $this->importStandaloneRow($row, $result);
         }
 
         foreach ($parentRows as $parentRow) {
             $result = $this->importVariableParentRow(
                 $parentRow,
-                $variationsByParent[$this->parentKey($parentRow)] ?? [],
-                $duplicateSkus,
+                $this->variationRowsForParent($parentRow, $variationsByParent),
                 $result,
             );
         }
@@ -251,10 +297,7 @@ final class WooCommerceProductImporter
         return $result;
     }
 
-    /**
-     * @param  array<string, true>  $duplicateSkus
-     */
-    private function importStandaloneRow(array $row, array $duplicateSkus, ProductCsvImportResult $result): ProductCsvImportResult
+    private function importStandaloneRow(array $row, ProductCsvImportResult $result): ProductCsvImportResult
     {
         $sku = $this->normalizeSku($row);
 
@@ -262,7 +305,7 @@ final class WooCommerceProductImporter
             return $this->appendError($result, 'Row '.$this->rowId($row).': SKU is required.');
         }
 
-        if (isset($duplicateSkus[$sku])) {
+        if (! $this->claimSku($sku)) {
             return $this->appendDuplicate($result, $sku, $row);
         }
 
@@ -297,21 +340,33 @@ final class WooCommerceProductImporter
 
     /**
      * @param  list<array<string, string>>  $variationRows
-     * @param  array<string, true>  $duplicateSkus
      */
     private function importVariableParentRow(
         array $parentRow,
         array $variationRows,
-        array $duplicateSkus,
         ProductCsvImportResult $result,
     ): ProductCsvImportResult {
+        $parentSku = $this->normalizeSku($parentRow);
+
+        if ($parentSku !== '' && ! $this->claimSku($parentSku)) {
+            return $this->appendDuplicate($result, $parentSku, $parentRow);
+        }
+
+        $keptVariations = [];
+
         foreach ($variationRows as $row) {
             $sku = $this->normalizeSku($row);
 
-            if ($sku !== '' && isset($duplicateSkus[$sku])) {
-                return $this->appendDuplicate($result, $sku, $row);
+            if ($sku !== '' && ! $this->claimSku($sku)) {
+                $result = $this->appendDuplicate($result, $sku, $row);
+
+                continue;
             }
+
+            $keptVariations[] = $row;
         }
+
+        $variationRows = $keptVariations;
 
         try {
             $existing = $this->findImportedProduct($parentRow);
@@ -333,57 +388,107 @@ final class WooCommerceProductImporter
     }
 
     /**
-     * @param  list<array<string, string>>  $rows
-     * @return array<string, true>
-     */
-    private function findDuplicateSkus(array $rows): array
-    {
-        $counts = [];
-
-        foreach ($rows as $row) {
-            $sku = $this->normalizeSku($row);
-
-            if ($sku === '') {
-                continue;
-            }
-
-            $counts[$sku] = ($counts[$sku] ?? 0) + 1;
-        }
-
-        return array_filter($counts, static fn (int $count): bool => $count > 1);
-    }
-
-    /**
      * @param  array<string, string>  $row
      */
     private function appendDuplicate(ProductCsvImportResult $result, string $sku, array $row): ProductCsvImportResult
     {
-        $message = 'Duplicate SKU '.$sku.' on row '.$this->rowId($row).'.';
-
-        return new ProductCsvImportResult(
-            created: $result->created,
-            updated: $result->updated,
-            skipped: $result->skipped,
-            duplicates: $result->duplicates + 1,
-            linkedImages: $result->linkedImages,
-            messages: [...$result->messages, $message],
-            duplicateSkus: in_array($sku, $result->duplicateSkus, true) ? $result->duplicateSkus : [...$result->duplicateSkus, $sku],
-            errors: $result->errors,
+        return $result->withDuplicateSku(
+            $sku,
+            'Duplicate SKU '.$sku.' on row '.$this->rowId($row).'.',
         );
     }
 
     private function appendError(ProductCsvImportResult $result, string $message): ProductCsvImportResult
     {
-        return new ProductCsvImportResult(
-            created: $result->created,
-            updated: $result->updated,
-            skipped: $result->skipped,
-            duplicates: $result->duplicates,
-            linkedImages: $result->linkedImages,
-            messages: $result->messages,
-            duplicateSkus: $result->duplicateSkus,
-            errors: [...$result->errors, $message],
-        );
+        return $result->withError($message);
+    }
+
+    private function resetFileState(): void
+    {
+        $this->seenSkus = [];
+        $this->pendingAttributeWarnings = [];
+        $this->categoryCache = [];
+        $this->tagCache = [];
+        $this->collectionCache = [];
+        $this->attributeCache = [];
+        $this->brandCache = [];
+        $this->attributeSetId = null;
+    }
+
+    private function claimSku(string $sku): bool
+    {
+        if ($sku === '') {
+            return true;
+        }
+
+        if (isset($this->seenSkus[$sku])) {
+            return false;
+        }
+
+        $this->seenSkus[$sku] = true;
+
+        return true;
+    }
+
+    /**
+     * @param  array<string, int>  $stats
+     * @param  array<string, string>  $row
+     * @return array<string, int>
+     */
+    private function recordCliDuplicate(array $stats, OutputStyle $output, string $sku, array $row): array
+    {
+        $stats['skipped']++;
+        $stats['warnings']++;
+        $output->writeln('<comment>Duplicate SKU '.$sku.' on row '.$this->rowId($row).'.</comment>');
+
+        return $stats;
+    }
+
+    /**
+     * @param  list<array<string, string>>  $variationRows
+     * @return array<string, list<array<string, string>>>
+     */
+    private function groupVariationsByParent(array $variationRows): array
+    {
+        $variationsByParent = [];
+
+        foreach ($variationRows as $row) {
+            $variationsByParent[$this->variationParentKey($row)][] = $row;
+        }
+
+        return $variationsByParent;
+    }
+
+    /**
+     * @param  array<string, string>  $parentRow
+     * @param  array<string, list<array<string, string>>>  $variationsByParent
+     * @return list<array<string, string>>
+     */
+    private function variationRowsForParent(array $parentRow, array $variationsByParent): array
+    {
+        $keys = array_values(array_unique(array_filter([
+            $this->parentKey($parentRow),
+            ($id = trim($parentRow['ID'] ?? '')) !== '' ? 'id:'.$id : null,
+        ])));
+
+        $rows = [];
+        $seen = [];
+
+        foreach ($keys as $key) {
+            foreach ($variationsByParent[$key] ?? [] as $row) {
+                $sku = $this->normalizeSku($row);
+                $signature = $sku !== '' ? 'sku:'.$sku : 'row:'.$this->rowId($row);
+
+                if (isset($seen[$signature])) {
+                    continue;
+                }
+
+                $seen[$signature] = true;
+                $rows[] = $row;
+            }
+        }
+
+        return $rows;
     }
 
     private function ensureAttributeSetSilently(): void
@@ -457,14 +562,6 @@ final class WooCommerceProductImporter
         }
 
         return $stats;
-    }
-
-    /**
-     * @param  array<string, string>  $row
-     */
-    private function importRow(array $row): Product
-    {
-        return $this->upsertRow($row);
     }
 
     /**
@@ -807,11 +904,15 @@ final class WooCommerceProductImporter
         return $warnings;
     }
 
-    private function applyPendingAttributeWarningsToCli(OutputStyle $output): void
+    private function applyPendingAttributeWarningsToCli(OutputStyle $output): int
     {
-        foreach ($this->pullPendingAttributeWarnings() as $message) {
+        $messages = $this->pullPendingAttributeWarnings();
+
+        foreach ($messages as $message) {
             $output->writeln('<comment>'.$message.'</comment>');
         }
+
+        return count($messages);
     }
 
     private function applyPendingAttributeWarningsToResult(ProductCsvImportResult $result): ProductCsvImportResult
@@ -888,7 +989,33 @@ final class WooCommerceProductImporter
      */
     private function resolveCollectionIds(string $raw): array
     {
-        return [];
+        if (trim($raw) === '') {
+            return [];
+        }
+
+        $ids = [];
+
+        foreach (explode(',', $raw) as $name) {
+            $name = trim($name);
+
+            if ($name === '') {
+                continue;
+            }
+
+            if (! isset($this->collectionCache[$name])) {
+                $collection = Collection::query()->where('name', $name)->first();
+
+                if ($collection === null) {
+                    $collection = $this->collectionService->create(new CreateCollectionData(name: $name));
+                }
+
+                $this->collectionCache[$name] = $collection->id;
+            }
+
+            $ids[] = $this->collectionCache[$name];
+        }
+
+        return array_values(array_unique($ids));
     }
 
     private function categoryId(string $name): int

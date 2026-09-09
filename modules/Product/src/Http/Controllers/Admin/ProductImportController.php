@@ -43,6 +43,22 @@ final class ProductImportController extends Controller
             ->with('import_result', $this->serializeResult($result));
     }
 
+    public function template(): StreamedResponse
+    {
+        return response()->streamDownload(function (): void {
+            $handle = fopen('php://output', 'wb');
+
+            if ($handle === false) {
+                return;
+            }
+
+            $this->exporter->writeHeaders($handle);
+            fclose($handle);
+        }, 'products-woocommerce-template.csv', [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
     public function export(Request $request): StreamedResponse
     {
         $search = $request->string('search')->toString() ?: null;
@@ -89,6 +105,7 @@ final class ProductImportController extends Controller
             'skipped' => $result->skipped,
             'duplicates' => $result->duplicates,
             'linked_images' => $result->linkedImages,
+            'warnings' => $result->warnings,
             'messages' => $result->messages,
             'duplicate_skus' => $result->duplicateSkus,
             'errors' => $result->errors,

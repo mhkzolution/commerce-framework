@@ -28,6 +28,7 @@ Route::middleware('web')->group(function (): void {
                 Route::get('/create', [ProductController::class, 'create'])->name('create');
                 Route::post('/', [ProductController::class, 'store'])->name('store');
                 Route::get('/import', [ProductImportController::class, 'show'])->name('import.show');
+                Route::get('/import/template', [ProductImportController::class, 'template'])->name('import.template');
                 Route::post('/import', [ProductImportController::class, 'store'])->name('import.store');
             });
 

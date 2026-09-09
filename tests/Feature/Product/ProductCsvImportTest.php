@@ -7,7 +7,9 @@ namespace Tests\Feature\Product;
 use Commerce\Catalog\Models\Attribute;
 use Commerce\Catalog\Models\AttributeSet;
 use Commerce\Catalog\Models\Category;
+use Commerce\Catalog\Models\Collection;
 use Commerce\Catalog\Models\Tag;
+use Commerce\Product\Export\WooCommerceProductExporter;
 use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
 use Commerce\Marketplace\Models\Seller;
@@ -41,7 +43,8 @@ final class ProductCsvImportTest extends TestCase
             ->get(route('admin.products.import.show'))
             ->assertOk()
             ->assertSee('Import products', false)
-            ->assertSee('Upload CSV', false);
+            ->assertSee('Upload CSV', false)
+            ->assertSee('Download CSV template', false);
     }
 
     public function test_admin_can_create_product_from_csv(): void
@@ -219,25 +222,29 @@ final class ProductCsvImportTest extends TestCase
         $this->assertTrue($product->categories->contains(fn (Category $category): bool => $category->name === 'Updated Category'));
     }
 
-    public function test_import_reports_duplicate_skus_in_csv(): void
+    public function test_import_keeps_first_duplicate_sku_and_skips_later_rows(): void
     {
         $csv = $this->makeCsv([
             $this->csvRow(['SKU' => 'CSV-DUP-001', 'Name' => 'First product']),
             $this->csvRow(['SKU' => 'CSV-DUP-001', 'Name' => 'Second product']),
         ]);
 
-        $response = $this->actingAs(User::query()->first())
-            ->post(route('admin.products.import.store'), [
-                'csv' => UploadedFile::fake()->createWithContent('products.csv', $csv),
-            ])
-            ->assertRedirect(route('admin.products.import.show'));
+        $result = $this->importCsv($csv);
 
-        $result = $response->getSession()->get('import_result');
-
-        $this->assertIsArray($result);
-        $this->assertSame(2, $result['duplicates']);
+        $this->assertSame(1, $result['created']);
+        $this->assertSame(1, $result['skipped']);
+        $this->assertGreaterThanOrEqual(1, $result['warnings']);
         $this->assertContains('CSV-DUP-001', $result['duplicate_skus']);
-        $this->assertSame(0, Product::query()->count());
+        $this->assertTrue(
+            collect($result['messages'])->contains(
+                fn (string $message): bool => str_contains($message, 'Duplicate SKU CSV-DUP-001'),
+            ),
+        );
+
+        $product = ProductVariant::query()->where('sku', 'CSV-DUP-001')->first()?->product;
+        $this->assertNotNull($product);
+        $this->assertSame('First product', $product->name);
+        $this->assertSame(1, Product::query()->count());
     }
 
     public function test_admin_can_export_variable_product_with_variation_rows(): void
@@ -262,6 +269,116 @@ final class ProductCsvImportTest extends TestCase
         $this->assertStringContainsString('variation', $content);
         $this->assertStringContainsString('HOODIE-RED-S', $content);
         $this->assertStringContainsString('HOODIE-RED-M', $content);
+    }
+
+    public function test_import_creates_simple_product_when_type_is_empty(): void
+    {
+        $result = $this->importCsv($this->makeCsv([
+            $this->csvRow([
+                'SKU' => 'TEE-001',
+                'Type' => '',
+                'Name' => 'Plain Tee',
+            ]),
+        ]));
+
+        $this->assertSame(1, $result['created']);
+        $this->assertSame('simple', ProductVariant::query()->where('sku', 'TEE-001')->first()?->product->type);
+    }
+
+    public function test_import_attaches_and_creates_collections(): void
+    {
+        $result = $this->importCsv($this->makeCsv([
+            $this->csvRow([
+                'SKU' => 'CSV-COL-001',
+                'Name' => 'Collection Tee',
+                'Collections' => 'Summer Drop',
+            ]),
+        ]));
+
+        $this->assertSame(1, $result['created']);
+
+        $product = ProductVariant::query()->where('sku', 'CSV-COL-001')->first()?->product;
+        $this->assertNotNull($product);
+        $product->load('collections');
+        $this->assertTrue($product->collections->contains(fn (Collection $collection): bool => $collection->name === 'Summer Drop'));
+    }
+
+    public function test_admin_can_export_product_with_collections_column(): void
+    {
+        $variant = $this->createPurchasableProduct(price: 12000, stock: 4, sku: 'CSV-COL-EXP');
+        $collection = Collection::query()->create([
+            'name' => 'Export Collection',
+            'slug' => 'export-collection',
+        ]);
+        $variant->product->collections()->attach($collection->id);
+
+        $response = $this->actingAs(User::query()->first())
+            ->get(route('admin.products.export'));
+
+        $response->assertOk();
+        $content = $response->streamedContent();
+
+        $this->assertStringContainsString('Collections', $content);
+        $this->assertStringContainsString('Export Collection', $content);
+        $this->assertStringContainsString('CSV-COL-EXP', $content);
+    }
+
+    public function test_admin_can_download_woocommerce_csv_template(): void
+    {
+        $response = $this->actingAs(User::query()->first())
+            ->get(route('admin.products.import.template'));
+
+        $response->assertOk();
+        $this->assertStringStartsWith('text/csv', (string) $response->headers->get('content-type'));
+
+        $firstLine = str_getcsv(strtok($response->streamedContent(), "\n") ?: '');
+
+        $this->assertSame(app(WooCommerceProductExporter::class)->headers(), $firstLine);
+    }
+
+    public function test_import_links_variations_when_parent_is_id_reference(): void
+    {
+        $result = $this->importCsv($this->makeCsv([
+            $this->csvRow([
+                'ID' => '123',
+                'Type' => 'variable',
+                'SKU' => 'TSHIRT',
+                'Name' => 'Parent Tee',
+                'Attribute 1 name' => 'สี',
+                'Attribute 1 value(s)' => 'Red,Blue',
+            ]),
+            $this->csvRow([
+                'ID' => '',
+                'Type' => 'variation',
+                'SKU' => 'TSHIRT-RED',
+                'Name' => 'Red',
+                'Parent' => 'id:123',
+                'Sale price' => '100',
+                'Regular price' => '120',
+                'Attribute 1 name' => 'สี',
+                'Attribute 1 value(s)' => 'Red',
+            ]),
+            $this->csvRow([
+                'ID' => '',
+                'Type' => 'variation',
+                'SKU' => 'TSHIRT-BLUE',
+                'Name' => 'Blue',
+                'Parent' => 'id:123',
+                'Sale price' => '110',
+                'Regular price' => '130',
+                'Attribute 1 name' => 'สี',
+                'Attribute 1 value(s)' => 'Blue',
+            ]),
+        ]));
+
+        $this->assertSame(1, $result['created']);
+        $this->assertSame([], $result['errors']);
+
+        $product = Product::query()->where('name', 'Parent Tee')->with('variants')->firstOrFail();
+        $this->assertSame('variable', $product->type);
+        $this->assertCount(2, $product->variants);
+        $this->assertNotNull($product->variants->firstWhere('sku', 'TSHIRT-RED'));
+        $this->assertNotNull($product->variants->firstWhere('sku', 'TSHIRT-BLUE'));
     }
 
     public function test_admin_can_import_variable_product_from_parent_and_variation_rows(): void
@@ -365,6 +482,7 @@ final class ProductCsvImportTest extends TestCase
         $this->assertSame(1, $result['created']);
         $this->assertSame(0, $result['skipped']);
         $this->assertSame([], $result['errors']);
+        $this->assertGreaterThanOrEqual(1, $result['warnings']);
         $this->assertContains(
             'Row 11: skipped reserved attribute column "Brand" (code "brand").',
             $result['messages'],
@@ -598,6 +716,30 @@ final class ProductCsvImportTest extends TestCase
         $this->assertDatabaseMissing('attributes', ['code' => 'brand']);
     }
 
+    public function test_cli_import_keeps_first_duplicate_sku_even_with_force(): void
+    {
+        $csv = $this->makeCsv([
+            $this->csvRow(['SKU' => 'CLI-DUP-001', 'Name' => 'First CLI product']),
+            $this->csvRow(['SKU' => 'CLI-DUP-001', 'Name' => 'Second CLI product']),
+        ]);
+
+        $path = sys_get_temp_dir().'/wc-import-dup-'.uniqid('', true).'.csv';
+        file_put_contents($path, $csv);
+
+        try {
+            $this->artisan('product:import-woocommerce', ['file' => $path, '--force' => true])
+                ->expectsOutputToContain('Duplicate SKU CLI-DUP-001')
+                ->assertSuccessful();
+        } finally {
+            @unlink($path);
+        }
+
+        $product = ProductVariant::query()->where('sku', 'CLI-DUP-001')->first()?->product;
+        $this->assertNotNull($product);
+        $this->assertSame('First CLI product', $product->name);
+        $this->assertSame(1, Product::query()->count());
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -647,7 +789,7 @@ final class ProductCsvImportTest extends TestCase
         $header = implode(',', [
             'ID', 'Type', 'SKU', 'Name', 'Published', 'Visibility in catalog',
             'Short description', 'Description', 'Sale price', 'Regular price',
-            'Categories', 'Tags', 'Images', 'Brands', 'Seller', 'Parent',
+            'Categories', 'Tags', 'Collections', 'Images', 'Brands', 'Seller', 'Parent',
             'Attribute 1 name', 'Attribute 1 value(s)',
             'Attribute 2 name', 'Attribute 2 value(s)',
             'Attribute 3 name', 'Attribute 3 value(s)',
@@ -676,6 +818,7 @@ final class ProductCsvImportTest extends TestCase
             'Regular price' => '200',
             'Categories' => '',
             'Tags' => '',
+            'Collections' => '',
             'Images' => '',
             'Brands' => '',
             'Seller' => '',
@@ -707,6 +850,7 @@ final class ProductCsvImportTest extends TestCase
             $row['Regular price'],
             '"'.$row['Categories'].'"',
             '"'.$row['Tags'].'"',
+            '"'.$row['Collections'].'"',
             '"'.$row['Images'].'"',
             '"'.$row['Brands'].'"',
             '"'.$row['Seller'].'"',
