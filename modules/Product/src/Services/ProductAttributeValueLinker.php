@@ -10,6 +10,7 @@ use Commerce\Catalog\Services\AttributeValueService;
 use Commerce\Product\Models\Product;
 use Commerce\Product\Models\ProductAttributeValue;
 use Commerce\Product\Support\AttributeTokenNormalizer;
+use Illuminate\Support\Facades\DB;
 
 final class ProductAttributeValueLinker
 {
@@ -23,39 +24,46 @@ final class ProductAttributeValueLinker
      */
     public function syncProductLevel(Product $product, array $valuesByAttributeId): void
     {
-        foreach ($valuesByAttributeId as $attributeId => $rawValues) {
-            $attribute = Attribute::query()->find((int) $attributeId);
-            if ($attribute === null) {
-                continue;
-            }
+        DB::transaction(function () use ($product, $valuesByAttributeId): void {
+            Product::query()
+                ->whereKey($product->getKey())
+                ->lockForUpdate()
+                ->first();
 
-            $tokens = [];
-            $seen = [];
-            $values = is_array($rawValues) ? $rawValues : [$rawValues];
-
-            foreach ($values as $rawValue) {
-                if (! is_scalar($rawValue) && $rawValue !== null) {
+            foreach ($valuesByAttributeId as $attributeId => $rawValues) {
+                $attribute = Attribute::query()->find((int) $attributeId);
+                if ($attribute === null) {
                     continue;
                 }
 
-                foreach ($this->normalizer->tokens((string) $rawValue, $attribute->code) as $token) {
-                    $folded = mb_strtolower($token);
-                    if (isset($seen[$folded])) {
+                $tokens = [];
+                $seen = [];
+                $values = is_array($rawValues) ? $rawValues : [$rawValues];
+
+                foreach ($values as $rawValue) {
+                    if (! is_scalar($rawValue) && $rawValue !== null) {
                         continue;
                     }
 
-                    $seen[$folded] = true;
-                    $tokens[] = $token;
+                    foreach ($this->normalizer->tokens((string) $rawValue, $attribute->code) as $token) {
+                        $folded = mb_strtolower($token);
+                        if (isset($seen[$folded])) {
+                            continue;
+                        }
+
+                        $seen[$folded] = true;
+                        $tokens[] = $token;
+                    }
                 }
-            }
 
-            $valueIds = [];
-            foreach ($tokens as $token) {
-                $valueIds[] = $this->resolveOrCreateAttributeValue($attribute, $token)->id;
-            }
+                $valueIds = [];
+                foreach ($tokens as $token) {
+                    $valueIds[] = $this->resolveOrCreateAttributeValue($attribute, $token)->id;
+                }
 
-            $this->syncProductLevelValues($product, $attribute, $valueIds);
-        }
+                $this->syncProductLevelValues($product, $attribute, $valueIds);
+            }
+        });
     }
 
     /**
@@ -92,6 +100,8 @@ final class ProductAttributeValueLinker
             $query->whereNotIn('attribute_value_id', $keepIds)
                 ->orWhereNull('attribute_value_id');
         })->delete();
+
+        $this->collapseDuplicateProductLevelValues($product, $attribute, $keepIds);
     }
 
     public function resolveOrCreateAttributeValue(Attribute $attribute, string $label): AttributeValue
@@ -142,5 +152,29 @@ final class ProductAttributeValueLinker
             'attribute_value_id' => $value->id,
             'value' => $value->label,
         ]);
+    }
+
+    /**
+     * @param  list<int>  $keepIds
+     */
+    private function collapseDuplicateProductLevelValues(
+        Product $product,
+        Attribute $attribute,
+        array $keepIds,
+    ): void {
+        $duplicateIds = ProductAttributeValue::query()
+            ->where('product_id', $product->id)
+            ->where('attribute_id', $attribute->id)
+            ->whereNull('product_variant_id')
+            ->whereIn('attribute_value_id', $keepIds)
+            ->orderBy('id')
+            ->get(['id', 'attribute_value_id'])
+            ->groupBy('attribute_value_id')
+            ->flatMap(static fn ($rows) => $rows->skip(1)->pluck('id'))
+            ->all();
+
+        if ($duplicateIds !== []) {
+            ProductAttributeValue::query()->whereKey($duplicateIds)->delete();
+        }
     }
 }
