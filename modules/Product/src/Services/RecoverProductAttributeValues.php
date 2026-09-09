@@ -97,20 +97,19 @@ final class RecoverProductAttributeValues
     public function apply(bool $dryRun = false, bool $force = false): array
     {
         $attributes = $this->coveredAttributes();
+        $this->assertRecoveryPrerequisites($attributes);
         $attributeIds = $attributes->pluck('id')->map(static fn ($id): int => (int) $id)->all();
-        $set = AttributeSet::query()->where('code', self::SET_CODE)->first();
+        $set = AttributeSet::query()->where('code', self::SET_CODE)->firstOrFail();
         $touchedProductIds = ProductAttributeValue::query()
             ->whereIn('attribute_id', $attributeIds)
             ->distinct()
             ->pluck('product_id')
             ->map(static fn ($id): int => (int) $id);
 
-        if ($set !== null) {
-            $touchedProductIds = $touchedProductIds
-                ->merge(Product::query()->where('attribute_set_id', $set->id)->pluck('id'))
-                ->unique()
-                ->values();
-        }
+        $touchedProductIds = $touchedProductIds
+            ->merge(Product::query()->where('attribute_set_id', $set->id)->pluck('id'))
+            ->unique()
+            ->values();
 
         $baseSuffix = now()->format('Ymd');
         if ($this->isAlreadyApplied($attributes, $set)) {
@@ -149,16 +148,14 @@ final class RecoverProductAttributeValues
         Attribute::query()->whereIn('id', $attributeIds)->update(['type' => 'select']);
         $this->attachMissingSetAttributes($set, $attributes);
 
-        if ($set !== null) {
-            Product::query()
-                ->where('attribute_set_id', $set->id)
-                ->orderBy('id')
-                ->chunkById(100, function ($products): void {
-                    foreach ($products as $product) {
-                        $this->attributeSetSync->syncProductAttributesFromSet($product);
-                    }
-                });
-        }
+        Product::query()
+            ->where('attribute_set_id', $set->id)
+            ->orderBy('id')
+            ->chunkById(100, function ($products): void {
+                foreach ($products as $product) {
+                    $this->attributeSetSync->syncProductAttributesFromSet($product);
+                }
+            });
 
         Product::query()
             ->whereIn('id', $touchedProductIds->all())
@@ -265,6 +262,32 @@ final class RecoverProductAttributeValues
     /**
      * @param  Collection<int, Attribute>  $attributes
      */
+    private function assertRecoveryPrerequisites(Collection $attributes): void
+    {
+        $attributesByName = $attributes->keyBy('name');
+        $missing = [];
+
+        foreach (self::COVERED_ATTRIBUTES as $name => $code) {
+            $attribute = $attributesByName->get($name);
+            if ($attribute === null || $attribute->code !== $code) {
+                $missing[] = "{$name} ({$code})";
+            }
+        }
+
+        if ($missing !== []) {
+            throw new RuntimeException(
+                'Attribute recovery requires all covered attributes; missing or mismatched: '.implode(', ', $missing).'.',
+            );
+        }
+
+        if (! AttributeSet::query()->where('code', self::SET_CODE)->exists()) {
+            throw new RuntimeException('Attribute recovery requires attribute set ['.self::SET_CODE.'].');
+        }
+    }
+
+    /**
+     * @param  Collection<int, Attribute>  $attributes
+     */
     private function normalizeSizeAndAgeRows(Collection $attributes): void
     {
         $attributesById = $attributes
@@ -295,6 +318,7 @@ final class RecoverProductAttributeValues
     private function linkTextRows(Collection $attributes): void
     {
         $attributeIds = $attributes->pluck('id')->all();
+        $attributesById = $attributes->keyBy('id');
         ProductAttributeValue::query()
             ->whereIn('attribute_id', $attributeIds)
             ->whereNull('attribute_value_id')
@@ -302,25 +326,58 @@ final class RecoverProductAttributeValues
             ->select('product_id')
             ->distinct()
             ->orderBy('product_id')
-            ->chunkById(100, function ($productRows) use ($attributeIds): void {
+            ->chunkById(100, function ($productRows) use ($attributeIds, $attributesById): void {
                 foreach ($productRows as $productRow) {
-                    DB::transaction(function () use ($productRow, $attributeIds): void {
+                    DB::transaction(function () use ($productRow, $attributeIds, $attributesById): void {
                         $product = Product::query()->findOrFail($productRow->product_id);
                         $values = ProductAttributeValue::query()
-                            ->where('product_id', $product->id)
-                            ->whereIn('attribute_id', $attributeIds)
-                            ->whereNull('attribute_value_id')
-                            ->whereNull('product_variant_id')
-                            ->get(['attribute_id', 'value'])
+                            ->where('product_attribute_values.product_id', $product->id)
+                            ->whereIn('product_attribute_values.attribute_id', $attributeIds)
+                            ->whereNull('product_attribute_values.product_variant_id')
+                            ->leftJoin(
+                                'attribute_values',
+                                'attribute_values.id',
+                                '=',
+                                'product_attribute_values.attribute_value_id',
+                            )
+                            ->get([
+                                'product_attribute_values.attribute_id',
+                                'product_attribute_values.attribute_value_id',
+                                'product_attribute_values.value',
+                                'attribute_values.label as linked_label',
+                            ])
                             ->groupBy('attribute_id')
-                            ->map(static fn ($rows): array => $rows->pluck('value')->all())
+                            ->map(function ($rows, $attributeId) use ($attributesById): array {
+                                $tokens = [];
+                                foreach ($rows as $row) {
+                                    if ($row->attribute_value_id !== null && $row->linked_label !== null) {
+                                        $tokens[] = (string) $row->linked_label;
+
+                                        continue;
+                                    }
+
+                                    if ($row->attribute_value_id === null) {
+                                        foreach ($this->normalizer->tokens(
+                                            (string) $row->value,
+                                            $attributesById->get((int) $attributeId)->code,
+                                        ) as $token) {
+                                            $tokens[] = $token;
+                                        }
+                                    }
+                                }
+
+                                return $tokens;
+                            })
+                            ->filter(static fn (array $tokens): bool => $tokens !== [])
                             ->all();
 
-                        $this->linker->syncProductLevel(
-                            $product,
-                            $values,
-                            replaceUnusedAttributes: false,
-                        );
+                        if ($values !== []) {
+                            $this->linker->syncProductLevel(
+                                $product,
+                                $values,
+                                replaceUnusedAttributes: false,
+                            );
+                        }
                     });
                 }
             }, 'product_id', 'product_id');
@@ -412,6 +469,15 @@ final class RecoverProductAttributeValues
                 ]);
             }
         }
+
+        Schema::create($tables['meta'], function (Blueprint $table): void {
+            $table->string('suffix', 30)->primary();
+            $table->timestamp('created_at');
+        });
+        DB::table($tables['meta'])->insert([
+            'suffix' => $suffix,
+            'created_at' => now(),
+        ]);
     }
 
     /**
@@ -500,15 +566,29 @@ final class RecoverProductAttributeValues
 
     private function latestSuffix(string $baseSuffix): ?string
     {
-        if (Schema::hasTable($this->backupTables($baseSuffix)['pav'])) {
-            return $baseSuffix;
+        $latest = null;
+        $sequence = 0;
+
+        do {
+            $suffix = $sequence === 0 ? $baseSuffix : $baseSuffix.'_'.$sequence;
+            $tables = $this->backupTables($suffix);
+            if (! Schema::hasTable($tables['pav'])) {
+                break;
+            }
+
+            $latest = $suffix;
+            $sequence++;
+        } while (true);
+
+        if ($latest !== null) {
+            return $latest;
         }
 
         return null;
     }
 
     /**
-     * @return array{pav: string, attributes: string, set: string}
+     * @return array{pav: string, attributes: string, set: string, meta: string}
      */
     private function backupTables(string $suffix): array
     {
@@ -516,6 +596,7 @@ final class RecoverProductAttributeValues
             'pav' => '_bak_product_attribute_values_attr_recovery_'.$suffix,
             'attributes' => '_bak_attributes_attr_recovery_'.$suffix,
             'set' => '_bak_attribute_set_attributes_attr_recovery_'.$suffix,
+            'meta' => '_bak_attr_recovery_meta_'.$suffix,
         ];
     }
 

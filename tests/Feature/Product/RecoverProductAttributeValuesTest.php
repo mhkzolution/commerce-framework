@@ -11,8 +11,10 @@ use Commerce\Product\Models\Product;
 use Commerce\Product\Models\ProductAttribute;
 use Commerce\Product\Models\ProductAttributeValue;
 use Commerce\Product\Services\RecoverProductAttributeValues;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
+use RuntimeException;
 use Tests\Concerns\CreatesPurchasableProduct;
 use Tests\TestCase;
 
@@ -88,6 +90,76 @@ final class RecoverProductAttributeValuesTest extends TestCase
             'value' => 'Cotton',
             'attribute_value_id' => null,
         ]);
+    }
+
+    public function test_apply_preserves_linked_values_when_the_same_attribute_has_raw_text(): void
+    {
+        [$product, $attributes] = $this->seedRecoveryFixture();
+        $color = $attributes['สี'];
+        $blue = AttributeValue::query()->create([
+            'attribute_id' => $color->id,
+            'code' => 'blue',
+            'label' => 'Blue',
+            'position' => 1,
+        ]);
+        ProductAttributeValue::query()->create([
+            'product_id' => $product->id,
+            'attribute_id' => $color->id,
+            'product_variant_id' => null,
+            'attribute_value_id' => $blue->id,
+            'value' => 'Blue',
+        ]);
+        $this->textValue($product->id, $color->id, 'Red');
+
+        app(RecoverProductAttributeValues::class)->apply();
+
+        $this->assertEqualsCanonicalizing(
+            ['Blue', 'Red'],
+            ProductAttributeValue::query()
+                ->where('product_id', $product->id)
+                ->where('attribute_id', $color->id)
+                ->pluck('value')
+                ->all(),
+        );
+    }
+
+    public function test_apply_returns_the_numbered_suffix_of_the_backup_created_this_run(): void
+    {
+        $this->seedRecoveryFixture();
+        $baseSuffix = now()->format('Ymd');
+        Schema::create('_bak_product_attribute_values_attr_recovery_'.$baseSuffix, function (Blueprint $table): void {
+            $table->unsignedBigInteger('id');
+        });
+
+        $result = app(RecoverProductAttributeValues::class)->apply(force: true);
+
+        $this->assertSame($baseSuffix.'_1', $result['suffix']);
+        $this->assertTrue(Schema::hasTable(
+            '_bak_product_attribute_values_attr_recovery_'.$result['suffix'],
+        ));
+        $this->assertTrue(Schema::hasTable('_bak_attr_recovery_meta_'.$result['suffix']));
+        $this->assertSame(
+            $result['suffix'],
+            app(RecoverProductAttributeValues::class)->apply()['suffix'],
+        );
+    }
+
+    public function test_apply_fails_before_writing_backups_when_attribute_set_is_missing(): void
+    {
+        [, , $set] = $this->seedRecoveryFixture();
+        $set->delete();
+        $suffix = now()->format('Ymd');
+
+        try {
+            app(RecoverProductAttributeValues::class)->apply();
+            $this->fail('Expected recovery to reject a missing attribute set.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringContainsString('woocommerce_default', $exception->getMessage());
+        }
+
+        $this->assertFalse(Schema::hasTable(
+            '_bak_product_attribute_values_attr_recovery_'.$suffix,
+        ));
     }
 
     public function test_apply_attaches_language_and_shoe_size_and_set_syncs_products(): void
