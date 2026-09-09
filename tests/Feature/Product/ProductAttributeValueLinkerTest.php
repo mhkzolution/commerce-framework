@@ -47,6 +47,36 @@ final class ProductAttributeValueLinkerTest extends TestCase
         );
     }
 
+    public function test_flattens_an_array_of_attribute_value_labels(): void
+    {
+        $product = $this->createPurchasableProduct(sku: 'LNK-ARRAY')->product;
+        $color = Attribute::query()->create([
+            'code' => 'color',
+            'name' => 'สี',
+            'type' => 'select',
+            'is_filterable' => true,
+            'is_visible' => true,
+        ]);
+
+        app(ProductAttributeValueLinker::class)->syncProductLevel($product, [
+            $color->id => ['แดง', 'น้ำเงิน'],
+        ]);
+
+        $rows = ProductAttributeValue::query()
+            ->where('product_id', $product->id)
+            ->where('attribute_id', $color->id)
+            ->whereNull('product_variant_id')
+            ->with('attributeValue')
+            ->get();
+
+        $this->assertCount(2, $rows);
+        $this->assertTrue($rows->every(fn ($row) => $row->attribute_value_id !== null));
+        $this->assertEqualsCanonicalizing(
+            ['แดง', 'น้ำเงิน'],
+            $rows->pluck('attributeValue.label')->all(),
+        );
+    }
+
     public function test_size_top_canonicalizes_before_insert(): void
     {
         $product = $this->createPurchasableProduct(sku: 'LNK-SIZE')->product;

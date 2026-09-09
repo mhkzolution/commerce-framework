@@ -123,7 +123,7 @@ final class CatalogV2CutoverTest extends TestCase
         $this->assertSame(['Red'], $pdp->variantAxes[0]['values'] ?? []);
         $this->assertNotContains('Green', $pdp->variantAxes[0]['values'] ?? []);
         $this->assertNotContains(
-            ['label' => 'From JSON', 'value' => 'Should be ignored'],
+            ['label' => 'From JSON', 'values' => ['Should be ignored']],
             $pdp->attributes,
         );
 

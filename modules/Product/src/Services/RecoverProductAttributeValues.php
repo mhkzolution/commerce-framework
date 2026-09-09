@@ -144,6 +144,7 @@ final class RecoverProductAttributeValues
         $this->createBackups($suffix, $attributes, $set);
         $this->normalizeSizeAndAgeRows($attributes);
         $this->linkTextRows($attributes);
+        $this->deleteRemainingNullProductValues($attributes);
 
         Attribute::query()->whereIn('id', $attributeIds)->update(['type' => 'select']);
         $this->attachMissingSetAttributes($set, $attributes);
@@ -381,6 +382,18 @@ final class RecoverProductAttributeValues
                     });
                 }
             }, 'product_id', 'product_id');
+    }
+
+    /**
+     * @param  Collection<int, Attribute>  $attributes
+     */
+    private function deleteRemainingNullProductValues(Collection $attributes): void
+    {
+        ProductAttributeValue::query()
+            ->whereIn('attribute_id', $attributes->pluck('id')->all())
+            ->whereNull('attribute_value_id')
+            ->whereNull('product_variant_id')
+            ->delete();
     }
 
     /**

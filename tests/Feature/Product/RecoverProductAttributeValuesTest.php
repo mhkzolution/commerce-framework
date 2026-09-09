@@ -92,6 +92,22 @@ final class RecoverProductAttributeValuesTest extends TestCase
         ]);
     }
 
+    public function test_apply_drops_covered_attribute_values_that_tokenize_to_nothing(): void
+    {
+        [$product, $attributes] = $this->seedRecoveryFixture();
+        $color = $attributes['สี'];
+        $this->textValue($product->id, $color->id, ',');
+
+        app(RecoverProductAttributeValues::class)->apply();
+
+        $this->assertSame(0, ProductAttributeValue::query()
+            ->where('product_id', $product->id)
+            ->where('attribute_id', $color->id)
+            ->whereNull('product_variant_id')
+            ->count());
+        $this->assertSame('select', $color->fresh()->type);
+    }
+
     public function test_apply_preserves_linked_values_when_the_same_attribute_has_raw_text(): void
     {
         [$product, $attributes] = $this->seedRecoveryFixture();
