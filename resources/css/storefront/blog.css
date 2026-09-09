@@ -655,11 +655,56 @@
 }
 
 .storefront-prose img {
-    display: block;
-    width: 100%;
+    box-sizing: border-box;
     height: auto;
-    margin: 1.75rem 0;
+    max-width: 100%;
     border-radius: 0.75rem;
+}
+
+.storefront-prose img:not([width]) {
+    width: 100%;
+}
+
+.storefront-prose img[width$="%"] {
+    width: attr(width);
+}
+
+.storefront-prose img:not([data-align]),
+.storefront-prose img[data-align="left"] {
+    display: inline-block;
+    vertical-align: top;
+    margin: 0.5rem 0;
+    margin-inline: 0;
+    padding-inline: 0.25rem;
+}
+
+.storefront-prose img[data-align="center"] {
+    display: block;
+    margin: 1.75rem auto;
+}
+
+.storefront-prose img[data-align="right"] {
+    display: block;
+    margin: 1.75rem 0 1.75rem auto;
+}
+
+@media (max-width: 1023px) {
+    .storefront-prose img,
+    .storefront-prose img[width$="%"] {
+        display: block;
+        width: 100%;
+        padding-inline: 0;
+        margin: 1.75rem 0;
+    }
+
+    .storefront-prose img[data-align="center"] {
+        margin-inline: auto;
+    }
+
+    .storefront-prose img[data-align="right"] {
+        margin-left: auto;
+        margin-right: 0;
+    }
 }
 
 .storefront-prose table {
