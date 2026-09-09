@@ -1,11 +1,11 @@
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
-import Image from '@tiptap/extension-image';
 import Table from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
+import { CmsImage } from './cms-image';
 import { mountToolbar } from './toolbar';
 import { mountInspector } from './inspector';
 import { mountSlashMenu } from './slash-menu';
@@ -40,9 +40,12 @@ export function mountEditor(root) {
             }
             const chain = editor.chain().focus();
             if (typeof position === 'number') {
-                chain.insertContentAt(position, { type: 'image', attrs: { src, alt: file.name || '' } });
+                chain.insertContentAt(position, {
+                    type: 'image',
+                    attrs: { src, alt: file.name || '', width: '100%' },
+                });
             } else {
-                chain.setImage({ src, alt: file.name || '' });
+                chain.setImage({ src, alt: file.name || '', width: '100%' });
             }
             chain.run();
         }
@@ -56,6 +59,7 @@ export function mountEditor(root) {
         editor.chain().focus().setImage({
             src: item.preview_url || item.url,
             alt: item.filename || '',
+            width: '100%',
         }).run();
     };
 
@@ -71,7 +75,7 @@ export function mountEditor(root) {
                 autolink: true,
                 defaultProtocol: 'https',
             }),
-            Image.configure({ allowBase64: false }),
+            CmsImage.configure({ allowBase64: false }),
             Table.configure({ resizable: false }),
             TableRow,
             TableHeader,

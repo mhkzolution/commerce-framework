@@ -1,3 +1,5 @@
+import { WIDTH_PRESETS, percentAttr } from './cms-image';
+
 function field(label, value, onInput) {
     const wrap = document.createElement('label');
     wrap.className = 'cms-editor-inspector__field';
@@ -10,13 +12,23 @@ function field(label, value, onInput) {
     return wrap;
 }
 
-function action(label, onClick) {
+function action(label, onClick, selected = false) {
     const el = document.createElement('button');
     el.type = 'button';
-    el.className = 'cms-editor-toolbar__btn';
+    el.className = `cms-editor-toolbar__btn${selected ? ' is-active' : ''}`;
     el.textContent = label;
+    el.setAttribute('aria-pressed', String(selected));
     el.addEventListener('click', onClick);
     return el;
+}
+
+function controls(label, items) {
+    const wrap = document.createElement('div');
+    wrap.className = 'cms-editor-inspector__field';
+    const heading = document.createElement('span');
+    heading.textContent = label;
+    wrap.append(heading, ...items);
+    return wrap;
 }
 
 export function mountInspector(container, editor, media) {
@@ -47,6 +59,34 @@ export function mountInspector(container, editor, media) {
             container.append(field('Alt text', attrs.alt, (value) => {
                 editor.chain().focus().updateAttributes('image', { alt: value }).run();
             }));
+            const width = Number(percentAttr(attrs.width || '100%').replace('%', ''));
+            container.append(controls('Width', WIDTH_PRESETS.map((preset) => action(
+                `${preset}%`,
+                () => editor.chain().focus().updateAttributes('image', { width: `${preset}%` }).run(),
+                width === preset,
+            ))));
+            const currentWidth = document.createElement('span');
+            currentWidth.textContent = `${width}%`;
+            container.append(currentWidth);
+
+            const align = ['center', 'right'].includes(attrs['data-align']) ? attrs['data-align'] : 'left';
+            container.append(controls('Align', [
+                action(
+                    'Left',
+                    () => editor.chain().focus().updateAttributes('image', { 'data-align': null }).run(),
+                    align === 'left',
+                ),
+                action(
+                    'Center',
+                    () => editor.chain().focus().updateAttributes('image', { 'data-align': 'center' }).run(),
+                    align === 'center',
+                ),
+                action(
+                    'Right',
+                    () => editor.chain().focus().updateAttributes('image', { 'data-align': 'right' }).run(),
+                    align === 'right',
+                ),
+            ]));
             container.append(action('Replace image', async () => {
                 const item = await media.pickImage();
                 if (!item) {
