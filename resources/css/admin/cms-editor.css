@@ -244,12 +244,58 @@
 
 .cms-image-node {
     position: relative;
-    display: inline-block;
+    box-sizing: border-box;
+    height: auto;
     max-width: 100%;
-    vertical-align: top;
 }
 
-.cms-image-node img {
+.cms-image-node:not([width]) {
+    width: 100%;
+}
+
+.cms-image-node[width$="%"] {
+    width: attr(width);
+}
+
+.cms-image-node:not([data-align]),
+.cms-image-node[data-align="left"] {
+    display: inline-block;
+    vertical-align: top;
+    margin: 0.5rem 0;
+    margin-inline: 0;
+    padding-inline: 0.25rem;
+}
+
+.cms-image-node[data-align="center"] {
+    display: block;
+    margin: 1.75rem auto;
+}
+
+.cms-image-node[data-align="right"] {
+    display: block;
+    margin: 1.75rem 0 1.75rem auto;
+}
+
+@media (max-width: 1023px) {
+    .cms-image-node,
+    .cms-image-node[width$="%"] {
+        display: block;
+        width: 100%;
+        padding-inline: 0;
+        margin: 1.75rem 0;
+    }
+
+    .cms-image-node[data-align="center"] {
+        margin-inline: auto;
+    }
+
+    .cms-image-node[data-align="right"] {
+        margin-left: auto;
+        margin-right: 0;
+    }
+}
+
+.cms-editor-prose .cms-image-node img {
     display: block;
     width: 100%;
     height: auto;

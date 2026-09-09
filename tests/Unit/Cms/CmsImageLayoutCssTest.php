@@ -38,5 +38,27 @@ final class CmsImageLayoutCssTest extends TestCase
             str_contains($editorCss, 'attr(width)') || str_contains($editorCss, '[width$="%"]'),
             'Editor CSS should honor percent width via attr(width) or [width$="%"]',
         );
+
+        $this->assertStringContainsString('.cms-image-node', $editorCss);
+        $this->assertStringContainsString('.cms-image-node[width$="%"]', $editorCss);
+        $this->assertStringContainsString('.cms-image-node:not([data-align])', $editorCss);
+        $this->assertStringContainsString('.cms-image-node img', $editorCss);
+        $this->assertStringContainsString('.cms-editor-prose .cms-image-node img', $editorCss);
+
+        preg_match(
+            '/\.cms-image-node(?:\[|:|\s|\{|\})(.*?)(?=\.cms-image-node__handle)/s',
+            $editorCss,
+            $nodeBlockMatches,
+        );
+        $nodeBlock = $nodeBlockMatches[0] ?? '';
+        $this->assertNotSame('', $nodeBlock, 'Editor CSS should define a .cms-image-node layout block');
+
+        $this->assertStringContainsString('box-sizing: border-box', $nodeBlock);
+        $this->assertStringContainsString('padding-inline: 0.25rem', $nodeBlock);
+        $this->assertStringContainsString('max-width: 1023px', $nodeBlock);
+
+        preg_match('/\.cms-editor-prose \.cms-image-node img\s*\{[^}]+\}/s', $editorCss, $nodeImgMatches);
+        $this->assertNotEmpty($nodeImgMatches, 'Editor CSS should define inner NodeView img sizing');
+        $this->assertStringContainsString('width: 100%', $nodeImgMatches[0]);
     }
 }
