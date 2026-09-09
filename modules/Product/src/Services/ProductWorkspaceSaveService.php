@@ -345,7 +345,11 @@ final class ProductWorkspaceSaveService
      */
     private function syncProductAttributeValues(Product $product, array $values): void
     {
-        $this->attributeValueLinker->syncProductLevel($product, $values);
+        $this->attributeValueLinker->syncProductLevel(
+            $product,
+            $values,
+            replaceUnusedAttributes: true,
+        );
     }
 
     private function syncAssignedAttributes(Product $product, SaveProductWorkspaceData $data): void

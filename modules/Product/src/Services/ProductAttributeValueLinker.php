@@ -22,13 +22,33 @@ final class ProductAttributeValueLinker
     /**
      * @param  array<int, mixed>  $valuesByAttributeId  attribute id => raw string|list
      */
-    public function syncProductLevel(Product $product, array $valuesByAttributeId): void
-    {
-        DB::transaction(function () use ($product, $valuesByAttributeId): void {
+    public function syncProductLevel(
+        Product $product,
+        array $valuesByAttributeId,
+        bool $replaceUnusedAttributes = false,
+    ): void {
+        DB::transaction(function () use ($product, $valuesByAttributeId, $replaceUnusedAttributes): void {
             Product::query()
                 ->whereKey($product->getKey())
                 ->lockForUpdate()
                 ->first();
+
+            if ($replaceUnusedAttributes) {
+                $submittedAttributeIds = array_map(
+                    static fn (int|string $attributeId): int => (int) $attributeId,
+                    array_keys($valuesByAttributeId),
+                );
+
+                $staleAttributes = ProductAttributeValue::query()
+                    ->where('product_id', $product->id)
+                    ->whereNull('product_variant_id');
+
+                if ($submittedAttributeIds !== []) {
+                    $staleAttributes->whereNotIn('attribute_id', $submittedAttributeIds);
+                }
+
+                $staleAttributes->delete();
+            }
 
             foreach ($valuesByAttributeId as $attributeId => $rawValues) {
                 $attribute = Attribute::query()->find((int) $attributeId);

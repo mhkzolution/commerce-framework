@@ -314,7 +314,11 @@ final class ProductService extends BaseService implements ProductServiceInterfac
      */
     private function syncAttributeValues(Product $product, array $values): void
     {
-        $this->attributeValueLinker->syncProductLevel($product, $values);
+        $this->attributeValueLinker->syncProductLevel(
+            $product,
+            $values,
+            replaceUnusedAttributes: true,
+        );
     }
 
     private function syncSeo(Product $product, ?SeoData $seo): void

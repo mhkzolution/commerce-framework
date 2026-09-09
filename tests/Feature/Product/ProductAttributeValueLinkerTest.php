@@ -126,4 +126,100 @@ final class ProductAttributeValueLinkerTest extends TestCase
             ->whereNull('product_variant_id')
             ->count());
     }
+
+    public function test_replace_removes_product_level_attributes_missing_from_payload(): void
+    {
+        $variant = $this->createPurchasableProduct(sku: 'LNK-REPLACE');
+        $product = $variant->product;
+        $color = Attribute::query()->create([
+            'code' => 'color',
+            'name' => 'สี',
+            'type' => 'select',
+            'is_filterable' => true,
+            'is_visible' => true,
+        ]);
+        $size = Attribute::query()->create([
+            'code' => 'size_top',
+            'name' => 'Size (เสื้อ)',
+            'type' => 'select',
+            'is_filterable' => true,
+            'is_visible' => true,
+        ]);
+        $linker = app(ProductAttributeValueLinker::class);
+        $linker->syncProductLevel($product, [
+            $color->id => 'สีฟ้า',
+            $size->id => '4-5 Y',
+        ]);
+
+        $blue = AttributeValue::query()
+            ->where('attribute_id', $color->id)
+            ->where('label', 'สีฟ้า')
+            ->firstOrFail();
+        ProductAttributeValue::query()->create([
+            'product_id' => $product->id,
+            'attribute_id' => $color->id,
+            'product_variant_id' => $variant->id,
+            'attribute_value_id' => $blue->id,
+            'value' => $blue->label,
+        ]);
+
+        $linker->syncProductLevel(
+            $product,
+            [$color->id => 'สีฟ้า'],
+            replaceUnusedAttributes: true,
+        );
+
+        $this->assertSame(
+            [$color->id],
+            ProductAttributeValue::query()
+                ->where('product_id', $product->id)
+                ->whereNull('product_variant_id')
+                ->pluck('attribute_id')
+                ->all(),
+        );
+        $this->assertDatabaseHas('product_attribute_values', [
+            'product_id' => $product->id,
+            'attribute_id' => $color->id,
+            'product_variant_id' => $variant->id,
+            'attribute_value_id' => $blue->id,
+        ]);
+    }
+
+    public function test_replace_with_empty_payload_removes_all_product_level_attributes(): void
+    {
+        $variant = $this->createPurchasableProduct(sku: 'LNK-EMPTY');
+        $product = $variant->product;
+        $color = Attribute::query()->create([
+            'code' => 'color',
+            'name' => 'สี',
+            'type' => 'select',
+            'is_filterable' => true,
+            'is_visible' => true,
+        ]);
+        $linker = app(ProductAttributeValueLinker::class);
+        $linker->syncProductLevel($product, [$color->id => 'สีฟ้า']);
+
+        $blue = AttributeValue::query()
+            ->where('attribute_id', $color->id)
+            ->firstOrFail();
+        ProductAttributeValue::query()->create([
+            'product_id' => $product->id,
+            'attribute_id' => $color->id,
+            'product_variant_id' => $variant->id,
+            'attribute_value_id' => $blue->id,
+            'value' => $blue->label,
+        ]);
+
+        $linker->syncProductLevel($product, [], replaceUnusedAttributes: true);
+
+        $this->assertSame(0, ProductAttributeValue::query()
+            ->where('product_id', $product->id)
+            ->whereNull('product_variant_id')
+            ->count());
+        $this->assertDatabaseHas('product_attribute_values', [
+            'product_id' => $product->id,
+            'product_variant_id' => $variant->id,
+            'attribute_value_id' => $blue->id,
+        ]);
+    }
 }
