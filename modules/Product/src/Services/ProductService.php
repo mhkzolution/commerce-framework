@@ -19,7 +19,6 @@ use Commerce\Product\DTO\UpdateProductData;
 use Commerce\Product\Events\ProductCreated;
 use Commerce\Product\Events\ProductPublished;
 use Commerce\Product\Models\Product;
-use Commerce\Product\Models\ProductAttributeValue;
 use Commerce\Product\Models\ProductMedia;
 use Commerce\Product\Models\ProductVariant;
 use Illuminate\Support\Carbon;
@@ -36,6 +35,7 @@ final class ProductService extends BaseService implements ProductServiceInterfac
         private readonly UrlRedirectServiceInterface $urlRedirectService,
         private readonly ProductSearchIndexer $searchIndexer,
         private readonly VariableProductPublishGuard $publishGuard,
+        private readonly ProductAttributeValueLinker $attributeValueLinker,
     ) {}
 
     public function create(CreateProductData $data): Product
@@ -314,21 +314,7 @@ final class ProductService extends BaseService implements ProductServiceInterfac
      */
     private function syncAttributeValues(Product $product, array $values): void
     {
-        $product->attributeValues()->whereNull('product_variant_id')->delete();
-
-        foreach ($values as $attributeId => $value) {
-            if ($value === null || $value === '' || $value === []) {
-                continue;
-            }
-
-            $stored = is_array($value) ? json_encode(array_values($value)) : (string) $value;
-
-            ProductAttributeValue::query()->create([
-                'product_id' => $product->id,
-                'attribute_id' => (int) $attributeId,
-                'value' => $stored,
-            ]);
-        }
+        $this->attributeValueLinker->syncProductLevel($product, $values);
     }
 
     private function syncSeo(Product $product, ?SeoData $seo): void

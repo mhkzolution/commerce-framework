@@ -571,6 +571,50 @@ final class ProductCsvImportTest extends TestCase
         $this->assertHasAttributeValue($product, 'color', 'Red');
     }
 
+    public function test_import_writes_attribute_value_id_for_color(): void
+    {
+        $this->importCsv($this->makeCsv([
+            $this->csvRow([
+                'ID' => '80',
+                'SKU' => 'CSV-ATTR-FK-1',
+                'Name' => 'Blue Tee',
+                'Attribute 1 name' => 'สี',
+                'Attribute 1 value(s)' => 'สีฟ้า, สีเทา',
+            ]),
+        ]));
+
+        $product = ProductVariant::query()->where('sku', 'CSV-ATTR-FK-1')->first()?->product;
+        $this->assertNotNull($product);
+        $rows = ProductAttributeValue::query()
+            ->where('product_id', $product->id)
+            ->whereHas('attribute', fn ($query) => $query->where('code', 'color'))
+            ->get();
+
+        $this->assertCount(2, $rows);
+        $this->assertTrue($rows->every(fn (ProductAttributeValue $row): bool => $row->attribute_value_id !== null));
+    }
+
+    public function test_import_canonicalizes_size_top(): void
+    {
+        $this->importCsv($this->makeCsv([
+            $this->csvRow([
+                'ID' => '81',
+                'SKU' => 'CSV-ATTR-SIZE-1',
+                'Name' => 'Sized Tee',
+                'Attribute 1 name' => 'Size (เสื้อ)',
+                'Attribute 1 value(s)' => '4-5 Y',
+            ]),
+        ]));
+
+        $product = ProductVariant::query()->where('sku', 'CSV-ATTR-SIZE-1')->first()?->product;
+        $this->assertNotNull($product);
+        $row = $product->attributeValues()
+            ->whereHas('attribute', fn ($query) => $query->where('code', 'size_top'))
+            ->first();
+
+        $this->assertSame('4-5Y', $row?->attributeValue?->label);
+    }
+
     public function test_import_creates_product_when_only_reserved_attribute_column_is_present(): void
     {
         $result = $this->importCsv($this->makeCsv([

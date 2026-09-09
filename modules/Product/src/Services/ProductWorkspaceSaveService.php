@@ -345,21 +345,7 @@ final class ProductWorkspaceSaveService
      */
     private function syncProductAttributeValues(Product $product, array $values): void
     {
-        $product->attributeValues()->whereNull('product_variant_id')->delete();
-
-        foreach ($values as $attributeId => $value) {
-            if ($value === null || $value === '' || $value === []) {
-                continue;
-            }
-
-            $stored = is_array($value) ? json_encode(array_values($value)) : (string) $value;
-
-            ProductAttributeValue::query()->create([
-                'product_id' => $product->id,
-                'attribute_id' => (int) $attributeId,
-                'value' => $stored,
-            ]);
-        }
+        $this->attributeValueLinker->syncProductLevel($product, $values);
     }
 
     private function syncAssignedAttributes(Product $product, SaveProductWorkspaceData $data): void

@@ -818,7 +818,7 @@ final class WooCommerceProductImporter
                 $attribute = $this->attributeService->create(new CreateAttributeData(
                     code: $definition['code'],
                     name: $definition['name'],
-                    type: 'text',
+                    type: 'select',
                     isFilterable: true,
                     isVisible: true,
                 ));
@@ -860,7 +860,7 @@ final class WooCommerceProductImporter
                 $attribute = $this->attributeService->create(new CreateAttributeData(
                     code: $code,
                     name: $name,
-                    type: 'text',
+                    type: 'select',
                     isFilterable: true,
                     isVisible: true,
                 ));
