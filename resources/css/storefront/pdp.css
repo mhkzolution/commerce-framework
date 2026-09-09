@@ -261,6 +261,20 @@
     color: var(--color-text);
 }
 
+.storefront-buy-box__category {
+    display: inline-block;
+    margin-top: -0.25rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+}
+
+.storefront-buy-box__category:hover {
+    color: var(--color-text);
+    text-decoration: underline;
+}
+
 .storefront-buy-box__price-panel {
     padding: 0.875rem 1rem;
     border-radius: var(--pdp-radius, var(--radius-store));
@@ -753,6 +767,15 @@
 .storefront-mobile-buy-bar__button--buy {
     background: var(--color-primary);
     color: var(--color-on-primary);
+}
+
+.storefront-mobile-buy-bar__button--cart:hover {
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+}
+
+.storefront-mobile-buy-bar__button--buy:hover {
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
 }
 
 .storefront-gallery-lightbox {

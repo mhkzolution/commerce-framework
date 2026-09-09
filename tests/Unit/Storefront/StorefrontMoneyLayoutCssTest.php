@@ -34,6 +34,10 @@ final class StorefrontMoneyLayoutCssTest extends TestCase
         $this->assertStringContainsString('color: var(--color-money)', $pdp);
         $this->assertStringContainsString('.storefront-buy-box__cta--cart', $pdp);
         $this->assertStringContainsString('var(--color-primary)', $pdp);
+        $this->assertMatchesRegularExpression(
+            '/\.storefront-mobile-buy-bar__button--buy:hover\s*\{[^}]*--color-primary-hover/s',
+            $pdp,
+        );
         $this->assertStringNotContainsString(
             '.storefront-buy-box__cta--cart {
     border: 1px solid var(--pdp-accent, var(--color-primary));',
