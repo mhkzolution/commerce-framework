@@ -114,6 +114,7 @@ final class Ws002PdpIsolationTest extends TestCase
         $this->assertStringContainsString('.storefront-pdp', $css);
         $this->assertStringContainsString('var(--store-gutter)', $css);
         $this->assertStringContainsString('var(--space-32)', $css);
+        $this->assertStringContainsString('.storefront-pdp-toc', $css);
         $this->assertStringNotContainsString('77.5rem', $css);
         $this->assertStringNotContainsString('87.5rem', $css);
     }

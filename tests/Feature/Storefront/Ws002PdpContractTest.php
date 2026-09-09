@@ -54,6 +54,21 @@ final class Ws002PdpContractTest extends TestCase
         $this->assertStringNotContainsString('Add to cart', $html);
     }
 
+    public function test_pdp_page_contents_lists_description(): void
+    {
+        $variant = $this->createPurchasableProduct(price: 2100, stock: 2, sku: 'PDP-TOC-1');
+        $variant->product->update(['description' => 'Soft cotton body for daily wear.']);
+
+        $html = $this->get(route('storefront.products.show', $variant->product->slug))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('storefront-pdp-toc', $html);
+        $this->assertStringContainsString('data-pdp-toc-link="pdp-description-heading"', $html);
+        $this->assertStringContainsString(__('storefront::storefront.section_description'), $html);
+        $this->assertStringContainsString(__('storefront::storefront.page_contents'), $html);
+    }
+
     public function test_pdp_renders_primary_image_when_media_url_exists(): void
     {
         $variant = $this->createPurchasableProduct(price: 2100, stock: 2, sku: 'PDP-IMG-2');

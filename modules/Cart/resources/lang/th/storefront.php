@@ -234,6 +234,7 @@ return [
     'product_gallery' => 'แกลเลอรีสินค้า',
     'share' => 'แชร์',
     'enlarge_image' => 'ขยายรูป',
+    'page_contents' => 'สารบัญหน้า',
     'section_specifications' => 'คุณสมบัติ',
     'section_description' => 'รายละเอียดสินค้า',
     'recently_viewed' => 'สินค้าที่เพิ่งดู',

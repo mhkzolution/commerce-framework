@@ -128,10 +128,57 @@
                 </section>
             </div>
 
+            @php
+                $pageToc = [];
+                if ($product->attributes !== []) {
+                    $pageToc[] = ['id' => 'pdp-specs-heading', 'label' => __('storefront::storefront.section_specifications')];
+                }
+                if ($product->description) {
+                    $pageToc[] = ['id' => 'pdp-description-heading', 'label' => __('storefront::storefront.section_description')];
+                }
+                $pageToc[] = [
+                    'id' => 'pdp-recent-heading',
+                    'label' => __('storefront::storefront.recently_viewed'),
+                    'optional' => true,
+                ];
+                if ($product->relatedProducts !== []) {
+                    $pageToc[] = ['id' => 'pdp-related-heading', 'label' => __('storefront::storefront.related_products')];
+                }
+                $visibleTocCount = count(array_filter(
+                    $pageToc,
+                    static fn (array $item): bool => empty($item['optional']),
+                ));
+            @endphp
+
+            <nav
+                class="storefront-pdp-toc"
+                data-pdp-toc
+                aria-label="{{ __('storefront::storefront.page_contents') }}"
+                @if ($visibleTocCount === 0) hidden @endif
+            >
+                <ol class="storefront-pdp-toc__list">
+                    @foreach ($pageToc as $item)
+                        <li
+                            class="storefront-pdp-toc__item"
+                            @if (! empty($item['optional']))
+                                hidden
+                                data-pdp-toc-recent
+                            @endif
+                        >
+                            <a
+                                href="#{{ $item['id'] }}"
+                                class="storefront-pdp-toc__link"
+                                data-pdp-toc-link="{{ $item['id'] }}"
+                            >{{ $item['label'] }}</a>
+                        </li>
+                    @endforeach
+                </ol>
+            </nav>
+
             @if ($product->attributes !== [] || $product->description)
-                <div class="storefront-pdp-details">
+                <div class="storefront-pdp-details storefront-pdp__panel">
                     @if ($product->attributes !== [])
-                        <section class="storefront-pdp-details__section storefront-pdp__panel" aria-labelledby="pdp-specs-heading">
+                        <section class="storefront-pdp-details__section" aria-labelledby="pdp-specs-heading">
                             <h2 id="pdp-specs-heading" class="storefront-pdp-details__heading">
                                 {{ __('storefront::storefront.section_specifications') }}
                             </h2>
@@ -147,7 +194,7 @@
                     @endif
 
                     @if ($product->description)
-                        <section class="storefront-pdp-details__section storefront-pdp__panel" aria-labelledby="pdp-description-heading">
+                        <section class="storefront-pdp-details__section" aria-labelledby="pdp-description-heading">
                             <h2 id="pdp-description-heading" class="storefront-pdp-details__heading">
                                 {{ __('storefront::storefront.section_description') }}
                             </h2>

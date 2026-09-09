@@ -205,6 +205,7 @@ function renderRecentlyViewed(page) {
 
     if (items.length === 0) {
         section.hidden = true;
+        syncPdpTocRecent(page, false);
         return;
     }
 
@@ -226,7 +227,44 @@ function renderRecentlyViewed(page) {
     }
 
     section.hidden = false;
+    syncPdpTocRecent(page, true);
     initPdpPagination(page);
+}
+
+function syncPdpTocRecent(page, visible) {
+    const toc = page.querySelector('[data-pdp-toc]');
+    const recentItem = page.querySelector('[data-pdp-toc-recent]');
+    if (!toc || !recentItem) {
+        return;
+    }
+
+    recentItem.hidden = !visible;
+    const visibleItems = [...toc.querySelectorAll('.storefront-pdp-toc__item')].filter((item) => !item.hidden);
+    toc.hidden = visibleItems.length === 0;
+}
+
+function initPdpToc(page) {
+    const links = page.querySelectorAll('[data-pdp-toc-link]');
+    const headings = [...links]
+        .map((link) => document.getElementById(link.dataset.pdpTocLink))
+        .filter(Boolean);
+
+    if (headings.length === 0) {
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (!entry.isIntersecting) {
+                return;
+            }
+            links.forEach((link) => {
+                link.classList.toggle('is-active', link.dataset.pdpTocLink === entry.target.id);
+            });
+        });
+    }, { rootMargin: '-18% 0px -70% 0px', threshold: 0 });
+
+    headings.forEach((heading) => observer.observe(heading));
 }
 
 function getGalleryItems(gallery) {
@@ -841,6 +879,7 @@ function initProductPage() {
     initShare(page);
     initMobileBuyBar(page);
     initPdpPagination(page);
+    initPdpToc(page);
 }
 
 if (document.readyState === 'loading') {

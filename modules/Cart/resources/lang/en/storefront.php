@@ -234,6 +234,7 @@ return [
     'product_gallery' => 'Product gallery',
     'share' => 'Share',
     'enlarge_image' => 'Enlarge image',
+    'page_contents' => 'On this page',
     'section_specifications' => 'Specifications',
     'section_description' => 'Description',
     'recently_viewed' => 'Recently viewed',
