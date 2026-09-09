@@ -27,3 +27,7 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Local WooCommerce upload archive (~9GB). Keep on disk, not in git.
+/doc/uploads/*
+!/doc/uploads/.gitkeep
