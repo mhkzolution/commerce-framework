@@ -48,7 +48,7 @@ final class AdminLocaleSwitcherTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.dashboard'))
             ->assertOk()
-            ->assertSee('แดชบอร์ด', false)
+            ->assertSee('หน้าแรก', false)
             ->assertSee('สินค้า', false);
 
         $this->assertSame('th', app()->getLocale());
@@ -70,8 +70,8 @@ final class AdminLocaleSwitcherTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.dashboard'))
             ->assertOk()
-            ->assertSee('Dashboard', false)
-            ->assertSee('Catalog', false)
+            ->assertSee('Home', false)
+            ->assertSee('Products', false)
             ->assertDontSee('แดชบอร์ด', false);
 
         $this->assertSame('en', app()->getLocale());

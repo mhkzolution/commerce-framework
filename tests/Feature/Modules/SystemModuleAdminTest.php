@@ -97,7 +97,7 @@ final class SystemModuleAdminTest extends TestCase
             ->get(route('admin.system.modules.index', ['search' => 'market']))
             ->assertOk()
             ->assertSee('Marketplace', false)
-            ->assertDontSee('>Blog<', false);
+            ->assertDontSee('>blog<', false);
     }
 
     public function test_modules_index_empty_state_when_search_misses(): void
@@ -148,7 +148,7 @@ final class SystemModuleAdminTest extends TestCase
     public function test_hidden_module_is_removed_from_admin_navigation(): void
     {
         $nav = app(AdminNavigationBuilderInterface::class)->build(User::query()->first());
-        $this->assertContains('Posts', $this->collectLabels($nav));
+        $this->assertContains('Blog', $this->collectLabels($nav));
         $this->assertContains('Marketplace', $this->collectLabels($nav));
 
         $blog = SystemModule::query()->where('code', 'blog')->firstOrFail();
@@ -157,7 +157,7 @@ final class SystemModuleAdminTest extends TestCase
         $hiddenNav = app(AdminNavigationBuilderInterface::class)->build(User::query()->first());
         $labels = $this->collectLabels($hiddenNav);
 
-        $this->assertNotContains('Posts', $labels);
+        $this->assertNotContains('Blog', $labels);
         $this->assertContains('Pages', $labels);
         $this->assertContains('Marketplace', $labels);
     }
@@ -172,7 +172,7 @@ final class SystemModuleAdminTest extends TestCase
         );
 
         $this->assertNotContains('Marketplace', $labels);
-        $this->assertContains('Posts', $labels);
+        $this->assertContains('Blog', $labels);
     }
 
     public function test_dashboard_blog_widget_renders_only_when_active(): void

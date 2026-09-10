@@ -76,15 +76,16 @@ final class PosHostWiringTest extends TestCase
     public function test_admin_nav_points_pos_at_terminal_and_gates_modules(): void
     {
         $admin = require base_path('config/admin.php');
-        $sales = collect($admin['navigation'])->firstWhere('id', 'sales');
-        $catalog = collect($admin['navigation'])->firstWhere('id', 'catalog');
+        $posGroup = collect($admin['navigation'])->firstWhere('id', 'pos');
+        $warehouse = collect($admin['navigation'])->firstWhere('id', 'warehouse');
 
-        $pos = collect($sales['children'])->firstWhere('label', 'POS');
-        $scanner = collect($catalog['children'])->firstWhere('label', 'Warehouse Scanner');
+        $pos = collect($posGroup['children'])->firstWhere('label', 'POS');
+        $scanner = collect($warehouse['children'])->firstWhere('label', 'Scanner');
 
+        $this->assertSame('pos', $posGroup['module']);
         $this->assertSame('pos.index', $pos['route']);
         $this->assertSame('pos', $pos['module']);
-        $registers = collect($sales['children'])->firstWhere('label', 'POS Registers');
+        $registers = collect($posGroup['children'])->firstWhere('label', 'Registers');
         $this->assertSame('admin.pos.registers.index', $registers['route']);
         $this->assertSame('pos', $registers['module']);
         $this->assertSame('warehouse.index', $scanner['route']);
