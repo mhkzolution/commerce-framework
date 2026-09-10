@@ -25,6 +25,7 @@ final class OrdersReportController extends BaseReportController
         $filter = ReportFilter::fromRequest();
 
         return view('reports::admin.reports.orders', array_merge($this->sharedViewData($filter), [
+            'activeTab' => 'orders',
             'orders' => $this->orders->orders($filter),
             'byStatus' => $this->orders->byStatus($filter),
         ]));

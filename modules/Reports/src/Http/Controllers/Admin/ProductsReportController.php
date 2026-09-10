@@ -27,6 +27,7 @@ final class ProductsReportController extends BaseReportController
         $filter = ReportFilter::fromRequest();
 
         return view('reports::admin.reports.products', array_merge($this->sharedViewData($filter), [
+            'activeTab' => 'products',
             'products' => $this->products->products($filter),
             'summary' => $this->sales->summary($filter),
         ]));
