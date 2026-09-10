@@ -216,6 +216,15 @@ final class AdminNavigationBuilder implements AdminNavigationBuilderInterface
             }
         }
 
+        $aliases = [];
+        if (isset($entry['aliases']) && is_array($entry['aliases'])) {
+            foreach ($entry['aliases'] as $alias) {
+                if (is_string($alias) && trim($alias) !== '') {
+                    $aliases[] = $alias;
+                }
+            }
+        }
+
         return new AdminNavigationItem(
             id: $id,
             label: $this->labelResolver->resolve($entry),
@@ -231,6 +240,8 @@ final class AdminNavigationBuilder implements AdminNavigationBuilderInterface
             defaultOpen: (bool) ($entry['default_open'] ?? false),
             children: $children,
             module: isset($entry['module']) ? (string) $entry['module'] : $module,
+            pinned: (bool) ($entry['pinned'] ?? false),
+            aliases: $aliases,
         );
     }
 
@@ -267,6 +278,8 @@ final class AdminNavigationBuilder implements AdminNavigationBuilderInterface
                 defaultOpen: $item->defaultOpen,
                 children: $children,
                 module: $item->module,
+                pinned: $item->pinned,
+                aliases: $item->aliases,
             );
         }
 
@@ -342,15 +355,26 @@ final class AdminNavigationBuilder implements AdminNavigationBuilderInterface
             return;
         }
 
+        $aliases = [];
+        if (isset($item['aliases']) && is_array($item['aliases'])) {
+            foreach ($item['aliases'] as $alias) {
+                if (is_string($alias) && trim($alias) !== '') {
+                    $aliases[] = $alias;
+                }
+            }
+        }
+
         $entries[] = [
             'label' => (string) $item['label'],
             'route' => $route,
             'url' => $url !== null ? $url : ($route !== null && Route::has($route) ? route($route) : null),
             'group' => $group,
+            'aliases' => $aliases,
             'keywords' => strtolower(trim(implode(' ', array_filter([
                 $item['label'] ?? '',
                 $group,
                 $item['module'] ?? '',
+                ...$aliases,
             ])))),
         ];
     }

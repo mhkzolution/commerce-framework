@@ -37,11 +37,31 @@
                     <x-admin.search-input id="admin-menu-search" placeholder="Search menu..." name="menu_search" :value="null" />
                 </div>
 
+                @php
+                    $adminNavItems = $adminNavigation ?? [];
+                    $adminMainNav = array_values(array_filter(
+                        $adminNavItems,
+                        static fn (array $item): bool => empty($item['pinned']),
+                    ));
+                    $adminPinnedNav = array_values(array_filter(
+                        $adminNavItems,
+                        static fn (array $item): bool => ! empty($item['pinned']),
+                    ));
+                @endphp
+
                 <nav class="flex-1 space-y-1 overflow-y-auto p-3" aria-label="Main">
-                    @foreach ($adminNavigation ?? [] as $item)
+                    @foreach ($adminMainNav as $item)
                         <x-admin.nav-item :item="$item" />
                     @endforeach
                 </nav>
+
+                @if ($adminPinnedNav !== [])
+                    <nav class="border-t border-border p-3 space-y-1" aria-label="Settings">
+                        @foreach ($adminPinnedNav as $item)
+                            <x-admin.nav-item :item="$item" />
+                        @endforeach
+                    </nav>
+                @endif
 
                 <div class="border-t border-border p-3 text-xs text-muted">
                     <span class="admin-brand-text">v{{ config('commerce.version', '1.0.0-alpha') }}</span>
