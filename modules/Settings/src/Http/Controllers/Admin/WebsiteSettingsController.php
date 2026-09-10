@@ -19,7 +19,15 @@ final class WebsiteSettingsController extends Controller
      * @var array<string, array<string, mixed>>
      */
     private const KEYS = [
+        'store.name' => ['type' => 'string', 'label' => 'Store Name', 'group' => 'store', 'default' => null, 'is_public' => true],
+        'store.description' => ['type' => 'string', 'label' => 'Store Description', 'group' => 'store', 'default' => null, 'is_public' => true],
+        'store.logo_media_uuid' => ['type' => 'string', 'label' => 'Store Logo', 'group' => 'store', 'default' => null, 'is_public' => true],
+        'store.email' => ['type' => 'string', 'label' => 'Store Email', 'group' => 'store', 'default' => null, 'is_public' => true],
         'store.phone' => ['type' => 'string', 'label' => 'Store Phone', 'group' => 'store', 'default' => null, 'is_public' => true],
+        'social.facebook' => ['type' => 'string', 'label' => 'Facebook', 'group' => 'social', 'default' => null, 'is_public' => true],
+        'social.instagram' => ['type' => 'string', 'label' => 'Instagram', 'group' => 'social', 'default' => null, 'is_public' => true],
+        'social.tiktok' => ['type' => 'string', 'label' => 'TikTok', 'group' => 'social', 'default' => null, 'is_public' => true],
+        'social.line' => ['type' => 'string', 'label' => 'LINE', 'group' => 'social', 'default' => null, 'is_public' => true],
         'website.seo.title_suffix' => ['type' => 'string', 'label' => 'SEO title suffix', 'group' => 'website', 'default' => null, 'is_public' => true],
         'website.seo.default_description' => ['type' => 'string', 'label' => 'SEO default description', 'group' => 'website', 'default' => null, 'is_public' => true],
         'website.seo.default_og_image_media_uuid' => ['type' => 'string', 'label' => 'SEO default OG image', 'group' => 'website', 'default' => null, 'is_public' => true],

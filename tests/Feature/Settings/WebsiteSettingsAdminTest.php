@@ -10,6 +10,7 @@ use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
 use Commerce\Media\Models\Media;
 use Commerce\Settings\Database\Seeders\SettingsSeeder;
+use Commerce\Settings\Models\SettingGroup;
 use Commerce\Settings\Services\FooterSocialQuery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -111,6 +112,31 @@ final class WebsiteSettingsAdminTest extends TestCase
                 'key' => 'tiktok',
             ],
         ], app(FooterSocialQuery::class)->links());
+    }
+
+    public function test_website_settings_save_registers_missing_social_group(): void
+    {
+        SettingGroup::query()->where('code', 'social')->delete();
+
+        $this->assertFalse(app(SettingQueryServiceInterface::class)->has('social.facebook'));
+
+        $this->actingAs(User::query()->first())
+            ->put(route('admin.settings.website.update'), [
+                'name' => 'Harbor Shop',
+                'description' => 'Harbor on the coast',
+                'email' => 'hello@harbor.test',
+                'phone' => '+66 2 123 4567',
+                'social' => [
+                    'facebook' => 'https://facebook.com/harbor',
+                    'instagram' => '',
+                    'tiktok' => '',
+                    'line' => '',
+                ],
+            ])
+            ->assertRedirect(route('admin.settings.website.show'));
+
+        $this->assertSame('https://facebook.com/harbor', app(SettingQueryServiceInterface::class)->get('social.facebook'));
+        $this->assertSame('Harbor on the coast', app(SettingQueryServiceInterface::class)->get('store.description'));
     }
 
     public function test_legacy_site_identity_route_shows_site_identity_page(): void
