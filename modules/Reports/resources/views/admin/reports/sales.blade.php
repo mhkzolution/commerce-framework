@@ -1,13 +1,15 @@
 @extends('layouts.admin')
 
-@section('title', 'รายงานยอดขายรายวัน')
+@section('title', __('admin::nav.groups.analytics'))
 
 @section('page')
-    <x-admin.page title="รายงานยอดขายรายวัน" description="สรุปยอดขายและจำนวนออเดอร์แยกตามวัน">
+    <x-admin.page
+        :title="__('admin::nav.groups.analytics')"
+        description="สรุปยอดขายและจำนวนออเดอร์แยกตามวัน"
+    >
         <x-slot:breadcrumb>
             <x-admin.breadcrumb :items="[
-                ['label' => 'รายงาน', 'url' => route('admin.reports.index')],
-                ['label' => 'ยอดขายรายวัน', 'active' => true],
+                ['label' => __('admin::nav.groups.analytics'), 'active' => true],
             ]" />
         </x-slot:breadcrumb>
 
@@ -20,10 +22,12 @@
             />
         </x-slot:secondaryActions>
 
+        <x-reports::analytics-tabs :filter="$filter" :active-tab="$activeTab" />
+
         <x-slot:filters>
             <x-reports::filters
                 :filter="$filter"
-                :action="route('admin.reports.sales.index')"
+                :action="$filterAction"
                 :channels="$channels"
             />
         </x-slot:filters>

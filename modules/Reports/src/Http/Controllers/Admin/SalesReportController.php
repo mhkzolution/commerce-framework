@@ -22,9 +22,18 @@ final class SalesReportController extends BaseReportController
 
     public function index(): View
     {
+        return $this->canvas();
+    }
+
+    public function canvas(): View
+    {
         $filter = ReportFilter::fromRequest();
 
         return view('reports::admin.reports.sales', array_merge($this->sharedViewData($filter), [
+            'activeTab' => 'sales',
+            'filterAction' => request()->routeIs('admin.reports.index')
+                ? route('admin.reports.index')
+                : route('admin.reports.sales.index'),
             'summary' => $this->sales->summary($filter),
             'dailySeries' => $this->sales->dailySeries($filter),
             'byChannel' => $this->sales->byChannel($filter),
