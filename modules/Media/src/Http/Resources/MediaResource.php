@@ -8,7 +8,6 @@ use Commerce\Contracts\Media\MediaQueryServiceInterface;
 use Commerce\Media\Models\Media;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 /** @mixin Media */
 final class MediaResource extends JsonResource
@@ -46,7 +45,7 @@ final class MediaResource extends JsonResource
             'srcset' => $query->getSrcset($this->uuid),
             'variants' => $this->variants->map(fn ($variant): array => [
                 'name' => $variant->name,
-                'url' => Storage::disk($this->disk)->url($variant->path),
+                'url' => $query->getUrl($this->uuid, $variant->name),
                 'width' => $variant->width,
                 'height' => $variant->height,
                 'size' => $variant->size,

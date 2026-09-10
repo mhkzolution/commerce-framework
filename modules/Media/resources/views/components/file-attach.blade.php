@@ -155,8 +155,8 @@
                         const isImage = (item.mime_type || '').startsWith('image/');
 
                         preview.innerHTML = isImage && url
-                            ? `<img src="${url}" alt="${item.filename || 'Attached file'}" class="h-full w-full object-cover">`
-                            : `<div class="px-2 text-center text-xs text-muted"><div class="font-medium">${item.filename || 'File attached'}</div><div class="mt-1">${item.mime_type || ''}</div></div>`;
+                            ? `<img src="${url}" alt="${item.original_filename || item.filename || 'Attached file'}" class="h-full w-full object-cover">`
+                            : `<div class="px-2 text-center text-xs text-muted"><div class="font-medium">${item.original_filename || item.filename || 'File attached'}</div><div class="mt-1">${item.mime_type || ''}</div></div>`;
                     };
 
                     const applySelection = (item) => {
@@ -188,10 +188,10 @@
                                 button.innerHTML = `
                                     <div class="aspect-square bg-surface-muted flex items-center justify-center">
                                         ${(item.mime_type || '').startsWith('image/') && (item.url || item.preview_url)
-                                            ? `<img src="${item.url || item.preview_url}" alt="${item.filename || 'Media'}" class="h-full w-full object-cover" loading="lazy">`
-                                            : `<span class="px-2 text-xs text-muted">${item.filename || 'File'}</span>`}
+                                            ? `<img src="${item.url || item.preview_url}" alt="${item.original_filename || item.filename || 'Media'}" class="h-full w-full object-cover" loading="lazy">`
+                                            : `<span class="px-2 text-xs text-muted">${item.original_filename || item.filename || 'File'}</span>`}
                                     </div>
-                                    <div class="truncate p-2 text-xs text-muted">${item.filename || 'Untitled'}</div>
+                                    <div class="truncate p-2 text-xs text-muted">${item.original_filename || item.filename || 'Untitled'}</div>
                                 `;
                                 button.addEventListener('click', () => {
                                     applySelection(item);

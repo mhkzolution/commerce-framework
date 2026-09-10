@@ -100,7 +100,7 @@ export function mountInspector(container, editor, media) {
                 }
                 editor.chain().focus().updateAttributes('image', {
                     src: item.preview_url || item.url,
-                    alt: item.filename || attrs.alt || '',
+                    alt: item.original_filename || item.filename || attrs.alt || '',
                 }).run();
             }));
             return;

@@ -10,6 +10,7 @@ use Commerce\Media\Models\Media;
 use Commerce\Media\Models\MediaFolder;
 use Commerce\Media\Models\MediaTag;
 use Commerce\Product\Models\Product;
+use Commerce\Product\Models\ProductVariant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -202,6 +203,87 @@ final class MediaLibraryV2Test extends TestCase
             ->getJson(route('admin.media.picker', ['recent' => 1]))
             ->assertOk()
             ->assertJsonPath('meta.total', 2);
+    }
+
+    public function test_picker_searches_stored_filename_when_original_name_differs(): void
+    {
+        $match = $this->createMedia('pretty-banner.jpg');
+        $match->update(['filename' => 'stored-uuid.jpg']);
+        $this->createMedia('other.jpg');
+
+        $this->actingAs(User::query()->first())
+            ->getJson(route('admin.media.picker', ['search' => 'stored-uuid', 'images_only' => 1]))
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.uuid', $match->uuid);
+    }
+
+    public function test_library_and_picker_search_wordpress_path_in_meta(): void
+    {
+        $uuidName = (string) Str::uuid().'.jpg';
+        $match = $this->createMedia('hidden.jpg');
+        $match->update([
+            'filename' => $uuidName,
+            'original_filename' => $uuidName,
+            'meta' => ['wordpress_path' => '2021/03/Image-from-iOS-187.jpg'],
+        ]);
+        $this->createMedia('other.jpg');
+
+        $this->actingAs(User::query()->first())
+            ->getJson(route('admin.media.index', ['search' => 'Image-from-iOS-187']))
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.uuid', $match->uuid);
+
+        $this->actingAs(User::query()->first())
+            ->getJson(route('admin.media.picker', ['search' => 'Image-from-iOS-187', 'images_only' => 1]))
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.uuid', $match->uuid);
+    }
+
+    public function test_library_and_picker_search_attached_product_name_and_sku(): void
+    {
+        $uuidName = (string) Str::uuid().'.jpg';
+        $match = $this->createMedia('uuid-only.jpg');
+        $match->update([
+            'filename' => $uuidName,
+            'original_filename' => $uuidName,
+        ]);
+        $this->createMedia('other.jpg');
+
+        $product = Product::query()->create([
+            'uuid' => (string) Str::uuid(),
+            'name' => 'Car Body suit ชุดบอดี้สูทลายรถ',
+            'slug' => 'car-body-suit',
+            'status' => 'draft',
+            'visibility' => 'public',
+        ]);
+        $product->media()->create([
+            'media_uuid' => $match->uuid,
+            'position' => 0,
+            'is_primary' => true,
+        ]);
+        ProductVariant::query()->create([
+            'uuid' => (string) Str::uuid(),
+            'product_id' => $product->id,
+            'sku' => '300058',
+            'price' => 100,
+            'is_default' => true,
+            'position' => 0,
+        ]);
+
+        $this->actingAs(User::query()->first())
+            ->getJson(route('admin.media.index', ['search' => 'ชุดบอดี้สูทลายรถ']))
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.uuid', $match->uuid);
+
+        $this->actingAs(User::query()->first())
+            ->getJson(route('admin.media.picker', ['search' => '300058', 'images_only' => 1]))
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.uuid', $match->uuid);
     }
 
     private function createMedia(

@@ -9,6 +9,8 @@ use Commerce\Core\Base\BaseQueryService;
 use Commerce\Media\Models\Media;
 use Commerce\Media\Models\MediaVariant;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 final class MediaQueryService extends BaseQueryService implements MediaQueryServiceInterface
@@ -33,11 +35,11 @@ final class MediaQueryService extends BaseQueryService implements MediaQueryServ
             $match = $this->findVariant($media, $variant);
 
             if ($match !== null) {
-                return Storage::disk($media->disk)->url($match->path);
+                return $this->diskUrl($media, $match->path);
             }
         }
 
-        return Storage::disk($media->disk)->url($media->path);
+        return $this->diskUrl($media, $media->path);
     }
 
     public function getSrcset(string $uuid): ?string
@@ -68,7 +70,13 @@ final class MediaQueryService extends BaseQueryService implements MediaQueryServ
             }
 
             $seen[$variant->width] = true;
-            $parts[] = Storage::disk($media->disk)->url($variant->path).' '.$variant->width.'w';
+            $url = $this->diskUrl($media, $variant->path);
+
+            if ($url === null) {
+                continue;
+            }
+
+            $parts[] = $url.' '.$variant->width.'w';
         }
 
         return $parts === [] ? null : implode(', ', $parts);
@@ -129,27 +137,7 @@ final class MediaQueryService extends BaseQueryService implements MediaQueryServ
 
         $query = Media::query()->with(['variants', 'folder', 'tags']);
 
-        if ($search !== null && trim($search) !== '') {
-            $term = trim($search);
-            $query->where(function ($inner) use ($term): void {
-                $inner->where('original_filename', 'like', "%{$term}%")
-                    ->orWhere('filename', 'like', "%{$term}%")
-                    ->orWhere('alt_text', 'like', "%{$term}%")
-                    ->orWhere('caption', 'like', "%{$term}%")
-                    ->orWhere('description', 'like', "%{$term}%")
-                    ->orWhere('mime_type', 'like', "%{$term}%")
-                    ->orWhere('uuid', 'like', "%{$term}%")
-                    ->orWhereHas('folder', static function ($folderQuery) use ($term): void {
-                        $folderQuery->where('name', 'like', "%{$term}%");
-                    })
-                    ->orWhereHas('tags', static function ($tagQuery) use ($term): void {
-                        $tagQuery->where(function ($match) use ($term): void {
-                            $match->where('name', 'like', "%{$term}%")
-                                ->orWhere('slug', 'like', "%{$term}%");
-                        });
-                    });
-            });
-        }
+        $this->applySearch($query, $search);
 
         if ($folderUuid === 'unfiled') {
             $query->whereNull('folder_id');
@@ -199,23 +187,13 @@ final class MediaQueryService extends BaseQueryService implements MediaQueryServ
         ?string $folderUuid = null,
         bool $recent = false,
     ) {
-        return Media::query()
+        $query = Media::query()
             ->with(['variants', 'folder', 'tags'])
-            ->when($imagesOnly, static fn ($query) => $query->where('media_type', 'image'))
-            ->when($search, static function ($query, string $search): void {
-                $query->where(function ($inner) use ($search): void {
-                    $inner->where('original_filename', 'like', "%{$search}%")
-                        ->orWhere('alt_text', 'like', "%{$search}%")
-                        ->orWhere('caption', 'like', "%{$search}%")
-                        ->orWhereHas('tags', static function ($tags) use ($search): void {
-                            $tags->where(function ($match) use ($search): void {
-                                $match->where('name', 'like', "%{$search}%")
-                                    ->orWhere('slug', 'like', "%{$search}%");
-                            });
-                        })
-                        ->orWhereHas('folder', static fn ($folder) => $folder->where('name', 'like', "%{$search}%"));
-                });
-            })
+            ->when($imagesOnly, static fn ($query) => $query->where('media_type', 'image'));
+
+        $this->applySearch($query, $search);
+
+        return $query
             ->when($folderUuid === 'unfiled', static fn ($query) => $query->whereNull('folder_id'))
             ->when(
                 is_string($folderUuid) && ! in_array($folderUuid, ['', 'all', 'unfiled'], true),
@@ -264,6 +242,127 @@ final class MediaQueryService extends BaseQueryService implements MediaQueryServ
         return $this->loaded[$uuid];
     }
 
+    private function applySearch($query, ?string $search): void
+    {
+        $term = is_string($search) ? trim($search) : '';
+
+        if ($term === '') {
+            return;
+        }
+
+        $like = '%'.$term.'%';
+        $usageUuids = $this->mediaUuidsMatchingUsage($like);
+
+        $query->where(function ($inner) use ($like, $usageUuids): void {
+            $inner->where('original_filename', 'like', $like)
+                ->orWhere('filename', 'like', $like)
+                ->orWhere('alt_text', 'like', $like)
+                ->orWhere('caption', 'like', $like)
+                ->orWhere('description', 'like', $like)
+                ->orWhere('mime_type', 'like', $like)
+                ->orWhere('uuid', 'like', $like)
+                ->orWhere('meta->wordpress_path', 'like', $like)
+                ->orWhereHas('folder', static function ($folderQuery) use ($like): void {
+                    $folderQuery->where('name', 'like', $like);
+                })
+                ->orWhereHas('tags', static function ($tagQuery) use ($like): void {
+                    $tagQuery->where(function ($match) use ($like): void {
+                        $match->where('name', 'like', $like)
+                            ->orWhere('slug', 'like', $like);
+                    });
+                });
+
+            if ($usageUuids !== []) {
+                $inner->orWhereIn('uuid', $usageUuids);
+            }
+        });
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function mediaUuidsMatchingUsage(string $like): array
+    {
+        $uuids = [];
+        $sources = config('media.usage_sources', []);
+
+        if (is_array($sources)) {
+            foreach ($sources as $source) {
+                if (! is_array($source)) {
+                    continue;
+                }
+
+                foreach ($this->usageSourceMediaUuids($source, $like) as $uuid) {
+                    $uuids[] = $uuid;
+                }
+            }
+        }
+
+        if (Schema::hasTable('product_media') && Schema::hasTable('product_variants')
+            && Schema::hasColumn('product_media', 'media_uuid')
+            && Schema::hasColumn('product_variants', 'sku')
+        ) {
+            foreach (DB::table('product_media')
+                ->join('product_variants', 'product_variants.product_id', '=', 'product_media.product_id')
+                ->where('product_variants.sku', 'like', $like)
+                ->whereNotNull('product_media.media_uuid')
+                ->pluck('product_media.media_uuid') as $uuid
+            ) {
+                if (is_string($uuid) && $uuid !== '') {
+                    $uuids[] = $uuid;
+                }
+            }
+        }
+
+        return array_values(array_unique($uuids));
+    }
+
+    /**
+     * @param  array<string, mixed>  $source
+     * @return list<string>
+     */
+    private function usageSourceMediaUuids(array $source, string $like): array
+    {
+        $table = $source['table'] ?? null;
+        $column = $source['column'] ?? null;
+
+        if (! is_string($table) || ! is_string($column) || $table === '' || $column === '') {
+            return [];
+        }
+
+        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, $column)) {
+            return [];
+        }
+
+        $ownerTable = $source['owner_table'] ?? null;
+        $foreignKey = $source['foreign_key'] ?? null;
+        $ownerKey = $source['owner_key'] ?? null;
+        $title = $source['title'] ?? null;
+        $query = DB::table($table);
+
+        if (is_string($ownerTable) && is_string($foreignKey) && is_string($ownerKey)
+            && Schema::hasTable($ownerTable)
+        ) {
+            $titleColumn = is_string($title) ? $title : 'name';
+
+            if (! Schema::hasColumn($ownerTable, $titleColumn)) {
+                return [];
+            }
+
+            $query->join($ownerTable, $table.'.'.$foreignKey, '=', $ownerTable.'.'.$ownerKey)
+                ->where($ownerTable.'.'.$titleColumn, 'like', $like);
+        } elseif (is_string($title) && Schema::hasColumn($table, $title)) {
+            $query->where($table.'.'.$title, 'like', $like);
+        } else {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $query->whereNotNull($table.'.'.$column)->pluck($table.'.'.$column)->all(),
+            static fn (mixed $uuid): bool => is_string($uuid) && $uuid !== '',
+        ));
+    }
+
     private function applySizeFilter($query, ?string $size): void
     {
         $filters = config('media.size_filters', []);
@@ -294,6 +393,27 @@ final class MediaQueryService extends BaseQueryService implements MediaQueryServ
             'folder' => $query->orderBy('folder_id', $direction),
             default => $query->orderBy('created_at', $direction),
         };
+    }
+
+    private function diskUrl(Media $media, string $path): ?string
+    {
+        $disk = is_string($media->disk) ? $media->disk : '';
+
+        if ($disk !== '' && is_array(config('filesystems.disks.'.$disk))) {
+            return Storage::disk($disk)->url($path);
+        }
+
+        $source = is_array($media->meta) ? ($media->meta['source_url'] ?? null) : null;
+
+        if (! is_string($source) || $source === '') {
+            return null;
+        }
+
+        if ($path === $media->path) {
+            return $source;
+        }
+
+        return rtrim(dirname($source), '/').'/'.ltrim($path, '/');
     }
 
     private function findVariant(Media $media, string $name): ?MediaVariant

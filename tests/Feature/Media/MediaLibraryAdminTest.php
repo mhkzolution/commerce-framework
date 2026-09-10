@@ -31,6 +31,29 @@ final class MediaLibraryAdminTest extends TestCase
             ->assertSee('data-media-library', false);
     }
 
+    public function test_media_library_index_renders_wordpress_uploads_disk(): void
+    {
+        Media::query()->create([
+            'filename' => 'wp.jpg',
+            'original_filename' => 'wordpress-import.jpg',
+            'mime_type' => 'image/jpeg',
+            'media_type' => 'image',
+            'size' => 1024,
+            'disk' => 'wordpress_uploads',
+            'path' => '2021/03/wordpress-import.jpg',
+            'width' => 400,
+            'height' => 400,
+            'meta' => [
+                'source_url' => 'https://punpunkun.com/wp-content/uploads/2021/03/wordpress-import.jpg',
+            ],
+        ]);
+
+        $this->actingAs(User::query()->first())
+            ->get(route('admin.media.index'))
+            ->assertOk()
+            ->assertSee('wordpress-import.jpg', false);
+    }
+
     public function test_media_library_index_renders_item_with_variants(): void
     {
         $media = Media::query()->create([

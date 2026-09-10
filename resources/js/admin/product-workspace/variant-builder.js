@@ -232,7 +232,7 @@ export function bindVariantBuilder(root, state) {
             button.type = 'button';
             button.className = 'cf-variant-image-dialog__item';
             button.innerHTML = `
-                <img src="${escapeHtml(item.url || item.preview_url)}" alt="${escapeHtml(item.filename)}" class="cf-variant-image-dialog__thumb">
+                <img src="${escapeHtml(item.url || item.preview_url)}" alt="${escapeHtml(item.original_filename || item.filename)}" class="cf-variant-image-dialog__thumb">
             `;
             button.addEventListener('click', () => {
                 if (bulkImageMode) {
