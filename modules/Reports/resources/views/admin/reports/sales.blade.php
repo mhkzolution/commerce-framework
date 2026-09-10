@@ -22,9 +22,8 @@
             />
         </x-slot:secondaryActions>
 
-        <x-reports::analytics-tabs :filter="$filter" :active-tab="$activeTab" />
-
         <x-slot:filters>
+            <x-reports::analytics-tabs :filter="$filter" :active-tab="$activeTab" />
             <x-reports::filters
                 :filter="$filter"
                 :action="$filterAction"

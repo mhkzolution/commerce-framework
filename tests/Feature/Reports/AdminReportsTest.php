@@ -30,6 +30,11 @@ final class AdminReportsTest extends TestCase
 
     public function test_reports_hub_renders_sales_canvas_not_card_launcher(): void
     {
+        $this->assertNotSame(
+            'admin::nav.groups.analytics',
+            __('admin::nav.groups.analytics'),
+        );
+
         $this->actingAs(User::query()->first())
             ->get(route('admin.reports.index'))
             ->assertOk()
