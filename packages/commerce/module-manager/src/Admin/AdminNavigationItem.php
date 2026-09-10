@@ -24,6 +24,9 @@ final readonly class AdminNavigationItem
         public bool $defaultOpen = false,
         public array $children = [],
         public ?string $module = null,
+        public bool $pinned = false,
+        /** @var list<string> */
+        public array $aliases = [],
     ) {}
 
     public function isGroup(): bool
@@ -55,6 +58,8 @@ final readonly class AdminNavigationItem
             'collapsible' => $this->collapsible,
             'default_open' => $this->defaultOpen,
             'module' => $this->module,
+            'pinned' => $this->pinned,
+            'aliases' => $this->aliases,
             'children' => array_map(
                 static fn (AdminNavigationItem $child): array => $child->toArray(),
                 $this->children,

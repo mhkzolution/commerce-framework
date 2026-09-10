@@ -62,7 +62,7 @@
     >
         <x-slot:breadcrumb>
             <x-admin.breadcrumb :items="[
-                ['label' => __('admin::nav.groups.website')],
+                ['label' => __('admin::nav.groups.settings')],
                 ['label' => __('settings::admin.customer_experience'), 'active' => true],
             ]" />
         </x-slot:breadcrumb>

@@ -38,7 +38,7 @@ final class SystemModuleSidebarTest extends TestCase
             $html,
         );
         $this->assertMatchesRegularExpression(
-            '/data-nav-label="(Posts|บทความ)"/',
+            '/data-nav-label="(Blog|บล็อก)"/',
             $html,
         );
     }
@@ -54,7 +54,7 @@ final class SystemModuleSidebarTest extends TestCase
             ->getContent();
 
         $this->assertDoesNotMatchRegularExpression(
-            '/data-nav-label="(Posts|บทความ)"/',
+            '/data-nav-label="(Blog|บล็อก)"/',
             $html,
         );
         $this->assertMatchesRegularExpression(
@@ -74,7 +74,7 @@ final class SystemModuleSidebarTest extends TestCase
 
         $response->assertNotFound();
         $this->assertDoesNotMatchRegularExpression(
-            '/data-nav-label="(Posts|บทความ)"/',
+            '/data-nav-label="(Blog|บล็อก)"/',
             $response->getContent(),
         );
     }
@@ -85,10 +85,10 @@ final class SystemModuleSidebarTest extends TestCase
             app(AdminNavigationBuilderInterface::class)->build(User::query()->first()),
         );
 
-        $this->assertContains('Users', $labels);
+        $this->assertContains('Staff', $labels);
         $this->assertContains('Roles', $labels);
         $this->assertContains('Permissions', $labels);
-        $this->assertContains('Media', $labels);
+        $this->assertContains('Files', $labels);
     }
 
     /**

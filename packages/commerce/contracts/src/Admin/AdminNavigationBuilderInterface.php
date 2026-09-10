@@ -14,7 +14,7 @@ interface AdminNavigationBuilderInterface
     /**
      * Flat searchable command palette entries.
      *
-     * @return list<array{label: string, route: ?string, url: ?string, group: ?string, keywords: string}>
+     * @return list<array{label: string, route: ?string, url: ?string, group: ?string, aliases: list<string>, keywords: string}>
      */
     public function searchableItems(?object $user = null): array;
 }
