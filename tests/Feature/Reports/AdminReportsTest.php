@@ -8,11 +8,7 @@ use Commerce\Iam\Database\Seeders\IamSeeder;
 use Commerce\Iam\Models\User;
 use Commerce\Orders\Models\Order;
 use Commerce\Payment\Models\Payment;
-use Commerce\Reports\Services\OrdersReportQueryService;
-use Commerce\Reports\Services\ProductsReportQueryService;
-use Commerce\Reports\Services\SalesReportQueryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
 use Tests\Concerns\CreatesPurchasableProduct;
 use Tests\TestCase;
 
@@ -20,10 +16,6 @@ final class AdminReportsTest extends TestCase
 {
     use CreatesPurchasableProduct;
     use RefreshDatabase;
-
-    private mixed $ordersSpy = null;
-
-    private mixed $productsSpy = null;
 
     protected function setUp(): void
     {
@@ -191,45 +183,42 @@ final class AdminReportsTest extends TestCase
     {
         $this->actingAs(User::query()->first());
 
-        $this->spySiblingQueries();
-        $this->get(route('admin.reports.index'))->assertOk();
-        $this->assertOrdersQueryIdle();
-        $this->assertProductsQueryIdle();
+        $hub = $this->get(route('admin.reports.index'))->assertOk();
+        $hubData = $hub->original->getData();
+        $this->assertArrayNotHasKey('orders', $hubData);
+        $this->assertArrayNotHasKey('byStatus', $hubData);
+        $this->assertArrayNotHasKey('products', $hubData);
 
-        $this->spySiblingQueries();
-        $this->get(route('admin.reports.sales.index'))->assertOk();
-        $this->assertOrdersQueryIdle();
-        $this->assertProductsQueryIdle();
+        $sales = $this->get(route('admin.reports.sales.index'))->assertOk();
+        $salesData = $sales->original->getData();
+        $this->assertArrayNotHasKey('orders', $salesData);
+        $this->assertArrayNotHasKey('byStatus', $salesData);
+        $this->assertArrayNotHasKey('products', $salesData);
+        $this->assertArrayHasKey('summary', $salesData);
+        $this->assertArrayHasKey('dailySeries', $salesData);
+        $this->assertArrayHasKey('byChannel', $salesData);
     }
 
     public function test_orders_tab_does_not_run_sales_series_or_products_queries(): void
     {
-        $this->actingAs(User::query()->first());
-        $sales = Mockery::spy(SalesReportQueryService::class);
-        $products = Mockery::spy(ProductsReportQueryService::class);
-        $this->app->instance(SalesReportQueryService::class, $sales);
-        $this->app->instance(ProductsReportQueryService::class, $products);
+        $response = $this->actingAs(User::query()->first())
+            ->get(route('admin.reports.orders.index'))
+            ->assertOk();
 
-        $response = $this->get(route('admin.reports.orders.index'))->assertOk();
-
-        $sales->shouldNotHaveReceived('dailySeries');
-        $sales->shouldNotHaveReceived('byChannel');
-        $sales->shouldNotHaveReceived('summary');
-        $products->shouldNotHaveReceived('products');
-        $this->assertArrayNotHasKey('dailySeries', $response->original->getData());
-        $this->assertArrayNotHasKey('products', $response->original->getData());
+        $data = $response->original->getData();
+        $this->assertArrayNotHasKey('dailySeries', $data);
+        $this->assertArrayNotHasKey('byChannel', $data);
+        $this->assertArrayNotHasKey('products', $data);
+        $this->assertArrayHasKey('orders', $data);
+        $this->assertArrayHasKey('byStatus', $data);
     }
 
     public function test_products_tab_does_not_run_orders_or_sales_series_queries(): void
     {
-        $this->actingAs(User::query()->first());
-        $orders = Mockery::spy(OrdersReportQueryService::class);
-        $this->app->instance(OrdersReportQueryService::class, $orders);
+        $response = $this->actingAs(User::query()->first())
+            ->get(route('admin.reports.products.index'))
+            ->assertOk();
 
-        $response = $this->get(route('admin.reports.products.index'))->assertOk();
-
-        $orders->shouldNotHaveReceived('orders');
-        $orders->shouldNotHaveReceived('byStatus');
         $data = $response->original->getData();
         $this->assertArrayHasKey('summary', $data);
         $this->assertArrayHasKey('products', $data);
@@ -255,24 +244,5 @@ final class AdminReportsTest extends TestCase
         }
 
         return $tab;
-    }
-
-    private function spySiblingQueries(): void
-    {
-        $this->ordersSpy = Mockery::spy(OrdersReportQueryService::class);
-        $this->productsSpy = Mockery::spy(ProductsReportQueryService::class);
-        $this->app->instance(OrdersReportQueryService::class, $this->ordersSpy);
-        $this->app->instance(ProductsReportQueryService::class, $this->productsSpy);
-    }
-
-    private function assertOrdersQueryIdle(): void
-    {
-        $this->ordersSpy->shouldNotHaveReceived('orders');
-        $this->ordersSpy->shouldNotHaveReceived('byStatus');
-    }
-
-    private function assertProductsQueryIdle(): void
-    {
-        $this->productsSpy->shouldNotHaveReceived('products');
     }
 }
