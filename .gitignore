@@ -31,3 +31,6 @@ Thumbs.db
 # Local WooCommerce upload archive (~9GB). Keep on disk, not in git.
 /doc/uploads/*
 !/doc/uploads/.gitkeep
+
+# Local store SQL dumps. Keep on disk, not in git.
+/doc/*.sql
