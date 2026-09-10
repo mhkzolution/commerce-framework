@@ -25,9 +25,9 @@
     <div class="flex flex-wrap gap-1" role="tablist">
         @foreach ($tabs as $key => $tab)
             <a
+                data-analytics-tab="{{ $key }}"
                 href="{{ route($tab['route'], $query) }}"
                 role="tab"
-                data-analytics-tab="{{ $key }}"
                 @if ($activeTab === $key) aria-current="page" @endif
                 @class([
                     'cf-tab rounded-t-md px-3 py-2 text-sm font-medium',
