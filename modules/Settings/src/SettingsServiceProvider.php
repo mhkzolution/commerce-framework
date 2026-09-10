@@ -71,7 +71,7 @@ final class SettingsServiceProvider extends BaseModuleServiceProvider
         MailConfigurator::apply();
         AuthConfigurator::apply();
 
-        View::composer(['layouts.admin', 'cart::layouts.storefront', 'cart::layouts.auth'], function ($view): void {
+        View::composer(['layouts.admin', 'iam::layouts.auth', 'cart::layouts.storefront', 'cart::layouts.auth'], function ($view): void {
             $brand = new WebsiteBrandData(name: '', logoUrl: null, description: null, faviconUrl: null);
 
             try {

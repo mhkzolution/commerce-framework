@@ -8,6 +8,7 @@ use Commerce\Iam\Http\Controllers\Admin\RoleController;
 use Commerce\Iam\Http\Controllers\Admin\SecurityController;
 use Commerce\Iam\Http\Controllers\Admin\TeamController;
 use Commerce\Iam\Http\Controllers\Admin\UserController;
+use Commerce\Iam\Http\Controllers\Auth\ForgotPasswordController;
 use Commerce\Iam\Http\Controllers\Auth\LoginController;
 use Commerce\Iam\Http\Controllers\Auth\TwoFactorChallengeController;
 use Illuminate\Support\Facades\Route;
@@ -16,6 +17,8 @@ Route::middleware('web')->group(function (): void {
     Route::middleware('guest')->group(function (): void {
         Route::get('/admin/login', [LoginController::class, 'create'])->name('admin.login');
         Route::post('/admin/login', [LoginController::class, 'store'])->name('admin.login.submit');
+        Route::get('/admin/forgot-password', [ForgotPasswordController::class, 'create'])->name('admin.password.request');
+        Route::post('/admin/forgot-password', [ForgotPasswordController::class, 'store'])->name('admin.password.email');
         Route::get('/admin/login/two-factor', [TwoFactorChallengeController::class, 'create'])->name('admin.login.two-factor');
         Route::post('/admin/login/two-factor', [TwoFactorChallengeController::class, 'store'])->name('admin.login.two-factor.submit');
         Route::get('/admin/login/oauth/{provider}', [LoginController::class, 'oauthRedirect'])->name('admin.login.oauth.redirect');

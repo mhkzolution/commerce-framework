@@ -4,6 +4,7 @@
 @import './tokens/compat.css';
 @import './admin/shell.css';
 @import './admin/components.css';
+@import './admin/auth.css';
 @import './admin/footer-settings.css';
 @import './admin/customer-experience.css';
 @import './admin/media-library.css';

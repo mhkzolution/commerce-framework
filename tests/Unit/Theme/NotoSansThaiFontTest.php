@@ -45,8 +45,7 @@ final class NotoSansThaiFontTest extends TestCase
             'storefront' => ['modules/Cart/resources/views/layouts/storefront.blade.php'],
             'pos' => ['modules/Pos/resources/views/layouts/pos.blade.php'],
             'scanner' => ['modules/WarehouseScanner/resources/views/layouts/scanner.blade.php'],
-            'login' => ['modules/Iam/resources/views/auth/login.blade.php'],
-            'two-factor' => ['modules/Iam/resources/views/auth/two-factor.blade.php'],
+            'admin-auth' => ['modules/Iam/resources/views/layouts/auth.blade.php'],
         ];
     }
 

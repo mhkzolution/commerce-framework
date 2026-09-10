@@ -6,7 +6,6 @@ namespace Commerce\Iam\Http\Controllers\Auth;
 
 use Commerce\Iam\Contracts\Authentication\AuthenticationServiceInterface;
 use Commerce\Iam\Contracts\OAuth\OAuthServiceInterface;
-use Commerce\Iam\Contracts\Token\ApiTokenServiceInterface;
 use Commerce\Iam\DTO\LoginCredentialsData;
 use Commerce\Iam\DTO\LoginStatus;
 use Commerce\Iam\Http\Requests\LoginRequest;
@@ -24,9 +23,7 @@ final class LoginController extends Controller
 
     public function create(): View
     {
-        return view('iam::auth.login', [
-            'oauthProviders' => $this->oauth->enabledProviders(),
-        ]);
+        return view('iam::auth.login');
     }
 
     public function store(LoginRequest $request): RedirectResponse
