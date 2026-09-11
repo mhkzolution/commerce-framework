@@ -17,6 +17,7 @@ use Commerce\Product\Events\ProductCreated;
 use Commerce\Product\Events\ProductPublished;
 use Commerce\Product\Listeners\SyncProductSearchIndex;
 use Commerce\Product\Services\CatalogVariantRelationMigrator;
+use Commerce\Product\Services\ProductFallbackImageQuery;
 use Commerce\Product\Services\ProductQueryService;
 use Commerce\Product\Services\ProductSearchIndexer;
 use Commerce\Product\Services\ProductService;
@@ -49,6 +50,7 @@ final class ProductServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(CatalogVariantRelationMigrator::class);
         $this->app->singleton(VariantIdentity::class);
         $this->app->singleton(VariantMatrixGenerator::class);
+        $this->app->singleton(ProductFallbackImageQuery::class);
 
         $this->app->bind(ProductQueryServiceInterface::class, ProductQueryService::class);
         $this->app->bind(ProductServiceInterface::class, ProductService::class);

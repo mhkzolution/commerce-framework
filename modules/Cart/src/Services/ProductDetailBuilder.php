@@ -15,6 +15,7 @@ use Commerce\Product\Models\ProductAttribute;
 use Commerce\Product\Models\ProductAttributeValue;
 use Commerce\Product\Models\ProductMedia;
 use Commerce\Product\Models\ProductVariant;
+use Commerce\Product\Services\ProductFallbackImageQuery;
 use Commerce\Product\Services\ProductQueryService;
 use Illuminate\Support\Facades\Route;
 use Throwable;
@@ -26,6 +27,7 @@ final class ProductDetailBuilder
         private readonly CartServiceInterface $cart,
         private readonly MediaQueryServiceInterface $media,
         private readonly ProductCardMapper $cards,
+        private readonly ProductFallbackImageQuery $fallbackImages,
         private readonly ?InventoryQueryServiceInterface $inventory = null,
         private readonly ?CurrencyConverterInterface $currencies = null,
     ) {}
@@ -133,6 +135,13 @@ final class ProductDetailBuilder
             $items[] = $item;
         }
 
+        if ($items === []) {
+            $fallback = $this->galleryItem($this->fallbackImages->uuid(), (string) $product->name);
+            if ($fallback !== null) {
+                $items[] = $fallback;
+            }
+        }
+
         return $items;
     }
 
@@ -181,7 +190,7 @@ final class ProductDetailBuilder
         $row = $mediaRows->firstWhere('is_primary', true) ?? $mediaRows->first();
         $uuid = is_string($row?->media_uuid) ? $row->media_uuid : null;
         if ($uuid === null || $uuid === '') {
-            return null;
+            return $this->fallbackImages->url('card') ?? $this->fallbackImages->url();
         }
 
         return $this->media->getUrl($uuid, 'card')

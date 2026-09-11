@@ -10,6 +10,7 @@ use Commerce\Contracts\Media\MediaQueryServiceInterface;
 use Commerce\Product\Models\Product;
 use Commerce\Product\Models\ProductMedia;
 use Commerce\Product\Models\ProductVariant;
+use Commerce\Product\Services\ProductFallbackImageQuery;
 use Commerce\Wishlist\DTO\WishlistItemReferenceData;
 use Commerce\Wishlist\DTO\WishlistItemViewData;
 use Commerce\Wishlist\Models\WishlistItem;
@@ -21,6 +22,7 @@ final class StorefrontWishlistPresenter
 {
     public function __construct(
         private readonly ?MediaQueryServiceInterface $media = null,
+        private readonly ?ProductFallbackImageQuery $fallbackImages = null,
     ) {}
 
     /**
@@ -169,7 +171,7 @@ final class StorefrontWishlistPresenter
         $uuid = is_string($row?->media_uuid) ? $row->media_uuid : null;
 
         if ($uuid === null || $uuid === '') {
-            return null;
+            return $this->fallbackImages?->url('card') ?? $this->fallbackImages?->url();
         }
 
         try {
@@ -177,7 +179,7 @@ final class StorefrontWishlistPresenter
                 ?? $this->media->getUrl($uuid, 'medium')
                 ?? $this->media->getUrl($uuid);
         } catch (Throwable) {
-            return null;
+            return $this->fallbackImages?->url('card') ?? $this->fallbackImages?->url();
         }
     }
 
@@ -196,13 +198,13 @@ final class StorefrontWishlistPresenter
         $uuid = is_string($row?->media_uuid) ? $row->media_uuid : null;
 
         if ($uuid === null || $uuid === '') {
-            return null;
+            return $this->fallbackImages?->srcset();
         }
 
         try {
             return $this->media->getSrcset($uuid);
         } catch (Throwable) {
-            return null;
+            return $this->fallbackImages?->srcset();
         }
     }
 

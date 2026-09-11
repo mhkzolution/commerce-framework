@@ -22,6 +22,7 @@ use Commerce\Core\Exceptions\EntityNotFoundException;
 use Commerce\Core\Pricing\PricingContext;
 use Commerce\Inventory\Services\StockPolicyEvaluator;
 use Commerce\Product\Models\ProductVariant;
+use Commerce\Product\Services\ProductFallbackImageQuery;
 
 final class CartService extends BaseService implements CartServiceInterface
 {
@@ -32,6 +33,7 @@ final class CartService extends BaseService implements CartServiceInterface
         private readonly PriceResolverInterface $priceResolver,
         private readonly StockPolicyEvaluator $stockPolicy,
         private readonly ?MediaQueryServiceInterface $media = null,
+        private readonly ?ProductFallbackImageQuery $fallbackImages = null,
     ) {}
 
     public function get(): CartData
@@ -312,7 +314,7 @@ final class CartService extends BaseService implements CartServiceInterface
         $row = $mediaRows->firstWhere('is_primary', true) ?? $mediaRows->first();
         $uuid = is_string($row?->media_uuid) ? $row->media_uuid : null;
         if ($uuid === null || $uuid === '') {
-            return null;
+            return $this->fallbackImages?->url('card') ?? $this->fallbackImages?->url();
         }
 
         return $this->media->getUrl($uuid, 'card')
@@ -339,7 +341,7 @@ final class CartService extends BaseService implements CartServiceInterface
         $row = $mediaRows->firstWhere('is_primary', true) ?? $mediaRows->first();
         $uuid = is_string($row?->media_uuid) ? $row->media_uuid : null;
         if ($uuid === null || $uuid === '') {
-            return null;
+            return $this->fallbackImages?->srcset();
         }
 
         return $this->media->getSrcset($uuid);

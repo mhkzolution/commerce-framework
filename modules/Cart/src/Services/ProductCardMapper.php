@@ -10,6 +10,7 @@ use Commerce\Contracts\Storefront\ProductCardData;
 use Commerce\Product\Models\Product;
 use Commerce\Product\Models\ProductMedia;
 use Commerce\Product\Models\ProductVariant;
+use Commerce\Product\Services\ProductFallbackImageQuery;
 use Illuminate\Support\Facades\Route;
 use Throwable;
 
@@ -17,6 +18,7 @@ final class ProductCardMapper
 {
     public function __construct(
         private readonly MediaQueryServiceInterface $media,
+        private readonly ProductFallbackImageQuery $fallbackImages,
     ) {}
 
     public function fromProduct(Product $product): ?ProductCardData
@@ -113,6 +115,17 @@ final class ProductCardMapper
                 'url' => $url,
                 'srcset' => $this->media->getSrcset($uuid),
             ];
+        }
+
+        if ($urls === []) {
+            $fallbackUrl = $this->fallbackImages->url('card') ?? $this->fallbackImages->url();
+
+            if (is_string($fallbackUrl) && $fallbackUrl !== '') {
+                $urls[] = [
+                    'url' => $fallbackUrl,
+                    'srcset' => $this->fallbackImages->srcset(),
+                ];
+            }
         }
 
         return $urls;

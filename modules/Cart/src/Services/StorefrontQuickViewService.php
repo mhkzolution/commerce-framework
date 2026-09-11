@@ -11,6 +11,7 @@ use Commerce\Currency\Support\MoneyDisplay;
 use Commerce\Product\Models\Product;
 use Commerce\Product\Models\ProductMedia;
 use Commerce\Product\Models\ProductVariant;
+use Commerce\Product\Services\ProductFallbackImageQuery;
 use Commerce\Product\Services\ProductQueryService;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -21,6 +22,7 @@ final class StorefrontQuickViewService
     public function __construct(
         private readonly ProductQueryService $products,
         private readonly MediaQueryServiceInterface $media,
+        private readonly ProductFallbackImageQuery $fallbackImages,
         private readonly ?InventoryQueryServiceInterface $inventory = null,
     ) {}
 
@@ -101,6 +103,14 @@ final class StorefrontQuickViewService
             $url = $this->media->getUrl($row->media_uuid, 'medium') ?? $this->media->getUrl($row->media_uuid);
             if (is_string($url) && $url !== '') {
                 $urls[] = $url;
+            }
+        }
+
+        if ($urls === []) {
+            $fallbackUrl = $this->fallbackImages->url('medium') ?? $this->fallbackImages->url();
+
+            if (is_string($fallbackUrl) && $fallbackUrl !== '') {
+                $urls[] = $fallbackUrl;
             }
         }
 

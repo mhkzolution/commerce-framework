@@ -21,6 +21,7 @@ use Commerce\Product\Http\Requests\StoreProductRequest;
 use Commerce\Product\Http\Requests\StoreVariantRequest;
 use Commerce\Product\Http\Requests\UpdateProductRequest;
 use Commerce\Product\Models\Product;
+use Commerce\Product\Services\ProductFallbackImageQuery;
 use Commerce\Product\Services\ProductQueryService;
 use Commerce\Product\Services\ProductWorkspaceSaveService;
 use Commerce\Product\Services\ProductWorkspaceStateBuilder;
@@ -42,6 +43,7 @@ final class ProductController extends Controller
         private readonly MediaQueryServiceInterface $mediaQueryService,
         private readonly SeoServiceInterface $seoService,
         private readonly AuthorizationServiceInterface $authorization,
+        private readonly ProductFallbackImageQuery $fallbackImages,
     ) {}
 
     public function index(Request $request): View
@@ -52,11 +54,14 @@ final class ProductController extends Controller
         );
 
         $imageUrls = [];
+        $fallbackUrl = $this->fallbackImages->url('thumbnail') ?? $this->fallbackImages->url();
         foreach ($products as $product) {
             $primary = $product->media->firstWhere('is_primary', true) ?? $product->media->first();
             if ($primary) {
                 $imageUrls[$product->uuid] = $this->mediaQueryService->getUrl($primary->media_uuid, 'thumbnail')
                     ?? $this->mediaQueryService->getUrl($primary->media_uuid);
+            } elseif ($fallbackUrl !== null) {
+                $imageUrls[$product->uuid] = $fallbackUrl;
             }
         }
 

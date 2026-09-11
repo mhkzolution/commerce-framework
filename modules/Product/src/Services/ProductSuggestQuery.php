@@ -33,6 +33,7 @@ final class ProductSuggestQuery
 
     public function __construct(
         private readonly ?MediaQueryServiceInterface $media = null,
+        private readonly ?ProductFallbackImageQuery $fallbackImages = null,
     ) {}
 
     public function suggest(string $q, iterable $categories = []): SuggestResult
@@ -365,7 +366,7 @@ final class ProductSuggestQuery
             }
         }
 
-        return null;
+        return $this->fallbackImages?->url('card') ?? $this->fallbackImages?->url();
     }
 
     /**
