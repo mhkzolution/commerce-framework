@@ -23,6 +23,20 @@ final class LocaleController extends Controller
         $request->session()->put((string) config('admin.locale.session_key', 'commerce.locale'), $locale);
         app()->setLocale($locale);
 
-        return redirect()->back();
+        $minutes = (int) config('admin.locale.cookie_minutes', 525600);
+
+        return redirect()
+            ->back()
+            ->cookie(
+                (string) config('admin.locale.cookie', 'commerce_locale'),
+                $locale,
+                $minutes,
+                '/',
+                config('session.domain'),
+                (bool) config('session.secure'),
+                true,
+                false,
+                config('session.same_site', 'lax'),
+            );
     }
 }

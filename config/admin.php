@@ -26,6 +26,8 @@ return [
         ],
         'session_key' => 'commerce.locale',
         'storage_key' => 'commerce.admin.locale',
+        'cookie' => 'commerce_locale',
+        'cookie_minutes' => 525600,
     ],
 
     'command_palette' => [

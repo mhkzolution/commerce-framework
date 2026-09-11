@@ -77,6 +77,31 @@ final class AdminLocaleSwitcherTest extends TestCase
         $this->assertSame('en', app()->getLocale());
     }
 
+    public function test_chosen_locale_survives_when_the_session_expires(): void
+    {
+        $admin = User::query()->first();
+        $sessionKey = (string) config('admin.locale.session_key', 'commerce.locale');
+        $cookieName = (string) config('admin.locale.cookie', 'commerce_locale');
+
+        $this->actingAs($admin)
+            ->from(route('admin.dashboard'))
+            ->post(route('locale.update'), ['locale' => 'th'])
+            ->assertPlainCookie($cookieName, 'th')
+            ->assertSessionHas($sessionKey, 'th');
+
+        $this->flushSession();
+
+        $this->actingAs($admin)
+            ->withCookie($cookieName, 'th')
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('หน้าแรก', false)
+            ->assertSee('สินค้า', false)
+            ->assertSessionHas($sessionKey, 'th');
+
+        $this->assertSame('th', app()->getLocale());
+    }
+
     public function test_unsupported_locale_is_rejected(): void
     {
         $this->actingAs(User::query()->first())

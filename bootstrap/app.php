@@ -21,6 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
             return '/admin/login';
         });
         $middleware->redirectUsersTo('/admin');
+        $middleware->encryptCookies(except: [
+            'commerce_locale',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
