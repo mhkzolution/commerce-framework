@@ -2,6 +2,10 @@
 
 @section('title', $customer->name)
 
+@push('head')
+    @vite(['resources/css/storefront/shopper.css', 'resources/js/storefront/address.js'])
+@endpush
+
 @section('page')
     <x-admin.page :title="$customer->name" :description="$customer->email">
         <x-slot:breadcrumb>

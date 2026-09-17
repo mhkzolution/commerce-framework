@@ -13,6 +13,16 @@ final class StoreAddressRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $city = trim((string) $this->input('city', ''));
+        $district = trim((string) $this->input('district', ''));
+
+        if ($city === '' && $district !== '') {
+            $this->merge(['city' => $district]);
+        }
+    }
+
     public function rules(): array
     {
         return [

@@ -150,6 +150,59 @@ final class CustomerAdminFormTest extends TestCase
             ->assertSee(__('documents::admin.tax_profile'), false);
     }
 
+    public function test_edit_add_address_form_uses_thailand_location_fields(): void
+    {
+        $this->actingAs(User::query()->first())
+            ->post(route('admin.customers.store'), $this->customerPayload())
+            ->assertRedirect();
+
+        $customer = Customer::query()->where('email', 'harbor@example.com')->firstOrFail();
+
+        $html = $this->actingAs(User::query()->first())
+            ->get(route('admin.customers.edit', $customer))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('data-thailand-address', $html);
+        $this->assertStringContainsString('name="district"', $html);
+        $this->assertStringContainsString('name="subdistrict"', $html);
+        $this->assertStringContainsString('name="state"', $html);
+        $this->assertStringContainsString('name="country_code"', $html);
+    }
+
+    public function test_admin_can_add_thailand_address_with_district_and_subdistrict(): void
+    {
+        $this->actingAs(User::query()->first())
+            ->post(route('admin.customers.store'), $this->customerPayload())
+            ->assertRedirect();
+
+        $customer = Customer::query()->where('email', 'harbor@example.com')->firstOrFail();
+
+        $this->actingAs(User::query()->first())
+            ->post(route('admin.customers.addresses.store', $customer), [
+                'label' => 'Office',
+                'type' => 'both',
+                'line1' => '1 Silom',
+                'district' => 'Bang Rak',
+                'subdistrict' => 'Si Lom',
+                'state' => 'Bangkok',
+                'postal_code' => '10500',
+                'country_code' => 'TH',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('customer_addresses', [
+            'customer_id' => $customer->id,
+            'line1' => '1 Silom',
+            'city' => 'Bang Rak',
+            'district' => 'Bang Rak',
+            'subdistrict' => 'Si Lom',
+            'state' => 'Bangkok',
+            'postal_code' => '10500',
+            'country_code' => 'TH',
+        ]);
+    }
+
     /**
      * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>

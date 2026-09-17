@@ -29,6 +29,8 @@ final class CustomerAddressController extends Controller
             label: $request->validated('label'),
             line2: $request->validated('line2'),
             state: $request->validated('state'),
+            district: $request->validated('district'),
+            subdistrict: $request->validated('subdistrict'),
             isDefault: (bool) $request->boolean('is_default'),
         ));
 

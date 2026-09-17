@@ -19,6 +19,17 @@
     $labelClass = $labelClass ?? 'storefront-field__label';
     $selectClass = $selectClass ?? 'storefront-select';
     $inputClass = $inputClass ?? 'storefront-input';
+    $stateKey = $stateKey ?? 'state';
+    $fieldAttrs = $fieldAttrs ?? [];
+    $extra = static function (string $field) use ($fieldAttrs): string {
+        $html = '';
+        foreach ($fieldAttrs[$field] ?? [] as $attribute => $attributeValue) {
+            $html .= ' '.$attribute.'="'.e((string) $attributeValue).'"';
+        }
+
+        return $html;
+    };
+    $stateValue = $value($stateKey) !== '' ? $value($stateKey) : $value('state');
 @endphp
 
 <div @class([$wrapperClass]) data-thailand-address data-locations-url="{{ url('/api/v1/storefront/locations/thailand') }}">
@@ -45,12 +56,12 @@
                 id="{{ $id('province') }}"
                 class="{{ $selectClass }}"
                 data-thailand-province
-                data-selected="{{ $value('state') }}"
+                data-selected="{{ $stateValue }}"
                 @disabled(! $isThailand)
             >
                 <option value="">{{ __('storefront::storefront.select_province') }}</option>
             </select>
-            <input type="hidden" name="{{ $name('state') }}" value="{{ $value('state') }}" data-address-field="state" data-address-prefix="{{ $prefix }}" data-thailand-state @disabled(! $isThailand)>
+            <input type="hidden" name="{{ $name($stateKey) }}" value="{{ $stateValue }}" data-address-field="state" data-address-prefix="{{ $prefix }}" data-thailand-state {!! $extra('state') !!} @disabled(! $isThailand)>
         </div>
         <div @class([$fieldClass])>
             <label class="{{ $labelClass }}" for="{{ $id('district') }}">{{ __('storefront::storefront.district') }}</label>
@@ -62,6 +73,7 @@
                 data-address-field="district"
                 data-address-prefix="{{ $prefix }}"
                 data-selected="{{ $value('district') }}"
+                {!! $extra('district') !!}
                 @disabled(! $isThailand)
             >
                 <option value="">{{ __('storefront::storefront.select_district') }}</option>
@@ -77,6 +89,7 @@
                 data-address-field="subdistrict"
                 data-address-prefix="{{ $prefix }}"
                 data-selected="{{ $value('subdistrict') }}"
+                {!! $extra('subdistrict') !!}
                 @disabled(! $isThailand)
             >
                 <option value="">{{ __('storefront::storefront.select_subdistrict') }}</option>
@@ -102,8 +115,8 @@
             <label class="{{ $labelClass }}" for="{{ $id('state_free') }}">{{ __('storefront::storefront.state') }}</label>
             <input
                 id="{{ $id('state_free') }}"
-                name="{{ $name('state') }}"
-                value="{{ $value('state') }}"
+                name="{{ $name($stateKey) }}"
+                value="{{ $stateValue }}"
                 class="{{ $inputClass }}"
                 data-address-field="state"
                 data-address-prefix="{{ $prefix }}"
@@ -125,6 +138,7 @@
             data-address-field="postal_code"
             data-address-prefix="{{ $prefix }}"
             data-thailand-postal
+            {!! $extra('postal_code') !!}
             @required($required)
         >
     </div>
