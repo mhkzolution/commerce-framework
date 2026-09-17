@@ -37,6 +37,7 @@ const fillSelect = (select, items, selected) => {
         option.value = item.name_en || item.name_th || '';
         option.dataset.id = String(item.id);
         option.dataset.th = item.name_th || '';
+        option.dataset.en = item.name_en || '';
 
         if (item.postal_code) {
             option.dataset.postal = String(item.postal_code);
@@ -50,6 +51,150 @@ const fillSelect = (select, items, selected) => {
 
         select.append(option);
     });
+
+    enhanceCombobox(select);
+};
+
+const optionSearchText = (option) =>
+    [option.textContent, option.value, option.dataset.th, option.dataset.en]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+const selectedLabel = (select) => select.selectedOptions[0]?.textContent || '';
+
+const enhanceCombobox = (select) => {
+    if (!select) {
+        return;
+    }
+
+    let wrap = select.closest('[data-thailand-combobox]');
+
+    if (!wrap) {
+        wrap = document.createElement('div');
+        wrap.className = 'storefront-combobox';
+        wrap.dataset.thailandCombobox = '';
+        select.parentNode.insertBefore(wrap, select);
+        wrap.append(select);
+        select.classList.add('storefront-combobox__select');
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.autocomplete = 'off';
+        input.spellcheck = false;
+        input.className = select.className.replace('storefront-combobox__select', '').trim();
+        input.classList.add('storefront-combobox__input');
+        input.setAttribute('role', 'combobox');
+        input.setAttribute('aria-autocomplete', 'list');
+        input.setAttribute('aria-expanded', 'false');
+        input.dataset.thailandComboboxInput = '';
+
+        const list = document.createElement('ul');
+        list.hidden = true;
+        list.setAttribute('role', 'listbox');
+        list.className = 'storefront-combobox__list';
+        list.dataset.thailandComboboxList = '';
+
+        wrap.append(input, list);
+
+        input.addEventListener('focus', () => {
+            input.value = '';
+            renderComboboxList(select, '');
+            openCombobox(select);
+        });
+        input.addEventListener('input', () => {
+            renderComboboxList(select, input.value);
+            openCombobox(select);
+        });
+        input.addEventListener('blur', () => {
+            closeCombobox(select);
+        });
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeCombobox(select);
+                input.blur();
+            }
+        });
+        list.addEventListener('mousedown', (event) => event.preventDefault());
+    }
+
+    syncComboboxInput(select);
+    renderComboboxList(select, '');
+};
+
+const syncComboboxInput = (select) => {
+    const input = select.closest('[data-thailand-combobox]')?.querySelector('[data-thailand-combobox-input]');
+
+    if (!input) {
+        return;
+    }
+
+    input.disabled = select.disabled;
+
+    if (document.activeElement !== input) {
+        input.value = selectedLabel(select);
+        input.placeholder = select.querySelector('option[value=""]')?.textContent || '';
+    }
+};
+
+const renderComboboxList = (select, query) => {
+    const list = select.closest('[data-thailand-combobox]')?.querySelector('[data-thailand-combobox-list]');
+
+    if (!list) {
+        return;
+    }
+
+    const needle = query.trim().toLowerCase();
+    list.replaceChildren();
+
+    [...select.options]
+        .filter((option) => option.value !== '')
+        .filter((option) => !needle || optionSearchText(option).includes(needle))
+        .forEach((option) => {
+            const item = document.createElement('li');
+            item.setAttribute('role', 'option');
+            item.className = 'storefront-combobox__option';
+            item.textContent = option.textContent;
+
+            if (option.selected) {
+                item.setAttribute('aria-selected', 'true');
+            }
+
+            item.addEventListener('click', () => {
+                select.value = option.value;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                closeCombobox(select);
+                syncComboboxInput(select);
+            });
+            list.append(item);
+        });
+};
+
+const openCombobox = (select) => {
+    const wrap = select.closest('[data-thailand-combobox]');
+    const input = wrap?.querySelector('[data-thailand-combobox-input]');
+    const list = wrap?.querySelector('[data-thailand-combobox-list]');
+
+    if (!list || !input) {
+        return;
+    }
+
+    list.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+};
+
+const closeCombobox = (select) => {
+    const wrap = select.closest('[data-thailand-combobox]');
+    const input = wrap?.querySelector('[data-thailand-combobox-input]');
+    const list = wrap?.querySelector('[data-thailand-combobox-list]');
+
+    if (!list || !input) {
+        return;
+    }
+
+    list.hidden = true;
+    input.setAttribute('aria-expanded', 'false');
+    syncComboboxInput(select);
 };
 
 const setDisabled = (element, disabled) => {
@@ -139,6 +284,7 @@ const syncThailandGroup = async (root) => {
     labelScope.querySelectorAll('[data-label-intl]').forEach((el) => el.classList.toggle('storefront-is-hidden', isThailand));
 
     [province, district, subdistrict, stateInput, cityHidden].forEach((el) => setDisabled(el, !isThailand));
+    [province, district, subdistrict].forEach((el) => enhanceCombobox(el));
     [cityFree, stateFree].forEach((el) => setDisabled(el, isThailand));
 
     if (!isThailand || !baseUrl || !province) {
