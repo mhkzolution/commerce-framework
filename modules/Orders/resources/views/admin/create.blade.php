@@ -2,6 +2,10 @@
 
 @section('title', __('orders::admin.title'))
 
+@push('head')
+    @vite(['resources/css/storefront/shopper.css', 'resources/js/storefront/address.js'])
+@endpush
+
 @section('page')
     <x-admin.page
         :title="__('orders::admin.title')"
@@ -102,22 +106,23 @@
                                 <label class="block text-sm font-medium text-text" for="ship-line2">{{ __('orders::admin.address_line2') }}</label>
                                 <input id="ship-line2" name="shipping_address[line2]" value="{{ old('shipping_address.line2') }}" class="cf-input mt-1" data-ship-line2>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-text" for="ship-district">{{ __('orders::admin.district') }}</label>
-                                <input id="ship-district" name="shipping_address[district]" value="{{ old('shipping_address.district') }}" class="cf-input mt-1" data-ship-district>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-text" for="ship-subdistrict">{{ __('orders::admin.subdistrict') }}</label>
-                                <input id="ship-subdistrict" name="shipping_address[subdistrict]" value="{{ old('shipping_address.subdistrict') }}" class="cf-input mt-1" data-ship-subdistrict>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-text" for="ship-province">{{ __('orders::admin.province') }}</label>
-                                <input id="ship-province" name="shipping_address[province]" value="{{ old('shipping_address.province') }}" class="cf-input mt-1" data-ship-province>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-text" for="ship-postal">{{ __('orders::admin.postal_code') }}</label>
-                                <input id="ship-postal" name="shipping_address[postal_code]" value="{{ old('shipping_address.postal_code') }}" class="cf-input mt-1" data-ship-postal>
-                            </div>
+                            @include('customers::storefront._location_fields', [
+                                'prefix' => 'shipping_address',
+                                'required' => false,
+                                'stateKey' => 'province',
+                                'wrapperClass' => 'sm:col-span-2 grid gap-4 sm:grid-cols-2',
+                                'gridClass' => 'contents',
+                                'fieldClass' => '',
+                                'labelClass' => 'block text-sm font-medium text-text',
+                                'selectClass' => 'cf-input mt-1',
+                                'inputClass' => 'cf-input mt-1',
+                                'fieldAttrs' => [
+                                    'district' => ['data-ship-district' => ''],
+                                    'subdistrict' => ['data-ship-subdistrict' => ''],
+                                    'state' => ['data-ship-province' => ''],
+                                    'postal_code' => ['data-ship-postal' => ''],
+                                ],
+                            ])
                         </div>
                     </x-admin.card>
 
@@ -156,22 +161,23 @@
                                     <label class="block text-sm font-medium text-text" for="bill-line2">{{ __('orders::admin.address_line2') }}</label>
                                     <input id="bill-line2" name="billing_address[line2]" value="{{ old('billing_address.line2') }}" class="cf-input mt-1" data-bill-line2>
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-text" for="bill-district">{{ __('orders::admin.district') }}</label>
-                                    <input id="bill-district" name="billing_address[district]" value="{{ old('billing_address.district') }}" class="cf-input mt-1" data-bill-district>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-text" for="bill-subdistrict">{{ __('orders::admin.subdistrict') }}</label>
-                                    <input id="bill-subdistrict" name="billing_address[subdistrict]" value="{{ old('billing_address.subdistrict') }}" class="cf-input mt-1" data-bill-subdistrict>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-text" for="bill-province">{{ __('orders::admin.province') }}</label>
-                                    <input id="bill-province" name="billing_address[province]" value="{{ old('billing_address.province') }}" class="cf-input mt-1" data-bill-province>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-text" for="bill-postal">{{ __('orders::admin.postal_code') }}</label>
-                                    <input id="bill-postal" name="billing_address[postal_code]" value="{{ old('billing_address.postal_code') }}" class="cf-input mt-1" data-bill-postal>
-                                </div>
+                                @include('customers::storefront._location_fields', [
+                                    'prefix' => 'billing_address',
+                                    'required' => false,
+                                    'stateKey' => 'province',
+                                    'wrapperClass' => 'sm:col-span-2 grid gap-4 sm:grid-cols-2',
+                                    'gridClass' => 'contents',
+                                    'fieldClass' => '',
+                                    'labelClass' => 'block text-sm font-medium text-text',
+                                    'selectClass' => 'cf-input mt-1',
+                                    'inputClass' => 'cf-input mt-1',
+                                    'fieldAttrs' => [
+                                        'district' => ['data-bill-district' => ''],
+                                        'subdistrict' => ['data-bill-subdistrict' => ''],
+                                        'state' => ['data-bill-province' => ''],
+                                        'postal_code' => ['data-bill-postal' => ''],
+                                    ],
+                                ])
                             </div>
                         </div>
                     </x-admin.card>

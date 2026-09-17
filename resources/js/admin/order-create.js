@@ -110,15 +110,31 @@ const initOrderCreate = (root) => {
         input.setAttribute('aria-expanded', 'false');
     };
 
+    const fillAttr = (selector, value, asSelected = false) => {
+        const el = root.querySelector(selector);
+
+        if (!el) {
+            return;
+        }
+
+        const next = value || '';
+        el.value = next;
+
+        if (asSelected) {
+            el.dataset.selected = next;
+        }
+    };
+
     const fillShipping = (address = {}, customer = {}) => {
         root.querySelector('[data-ship-name]').value = address.recipient_name || customer.name || '';
         root.querySelector('[data-ship-phone]').value = address.phone || customer.phone || '';
         root.querySelector('[data-ship-line1]').value = address.line1 || '';
         root.querySelector('[data-ship-line2]').value = address.line2 || '';
-        root.querySelector('[data-ship-district]').value = address.district || '';
-        root.querySelector('[data-ship-subdistrict]').value = address.subdistrict || '';
-        root.querySelector('[data-ship-province]').value = address.province || '';
-        root.querySelector('[data-ship-postal]').value = address.postal_code || '';
+        fillAttr('[data-ship-district]', address.district, true);
+        fillAttr('[data-ship-subdistrict]', address.subdistrict, true);
+        fillAttr('[data-ship-province]', address.province);
+        fillAttr('[data-ship-postal]', address.postal_code);
+        document.dispatchEvent(new Event('storefront:address-sync'));
     };
 
     const selectCustomer = (customer) => {
