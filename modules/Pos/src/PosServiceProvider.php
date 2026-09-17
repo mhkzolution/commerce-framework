@@ -6,11 +6,14 @@ namespace Commerce\Pos;
 
 use Commerce\Core\Base\BaseModuleServiceProvider;
 use Commerce\Pos\Services\PosHeldSaleService;
+use Commerce\Pos\Services\PosPrintJobService;
 use Commerce\Pos\Services\PosProductImageService;
 use Commerce\Pos\Services\PosReceiptService;
 use Commerce\Pos\Services\PosRegisterResolver;
 use Commerce\Pos\Services\PosSaleService;
 use Commerce\Pos\Services\PosSessionService;
+use Commerce\Pos\Services\PosSlipNumberGenerator;
+use Commerce\Pos\Services\PosSlipSequenceService;
 use Commerce\Pos\Services\PosStateService;
 use Commerce\Pos\Services\PosSyncService;
 use Commerce\Pos\Support\PosCartStorageFactory;
@@ -35,6 +38,9 @@ final class PosServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(PosHeldSaleService::class);
         $this->app->singleton(PosProductImageService::class);
         $this->app->singleton(PosReceiptService::class);
+        $this->app->singleton(PosSlipNumberGenerator::class);
+        $this->app->singleton(PosSlipSequenceService::class);
+        $this->app->singleton(PosPrintJobService::class);
         $this->app->singleton(PosSyncService::class);
     }
 

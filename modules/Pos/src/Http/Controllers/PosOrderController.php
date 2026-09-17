@@ -23,6 +23,7 @@ final class PosOrderController extends Controller
             ->when($search !== '', static function ($query) use ($search): void {
                 $query->where(function ($inner) use ($search): void {
                     $inner->where('order_number', 'like', "%{$search}%")
+                        ->orWhere('pos_slip_number', 'like', "%{$search}%")
                         ->orWhere('customer_email', 'like', "%{$search}%")
                         ->orWhere('customer_name', 'like', "%{$search}%");
                 });

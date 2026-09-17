@@ -65,7 +65,7 @@ final class PosAdvancedFeaturesTest extends TestCase
                 'payment_method' => 'mixed',
             ]);
 
-        $response->assertOk()->assertJsonStructure(['receipt' => ['order_number', 'print_url', 'payments']]);
+        $response->assertOk()->assertJsonStructure(['receipt' => ['order_number', 'slip_number', 'print_url', 'print_urls', 'payments']]);
 
         $order = Order::query()->where('channel', 'pos')->latest()->first();
         $this->assertNotNull($order);
@@ -74,7 +74,7 @@ final class PosAdvancedFeaturesTest extends TestCase
         $this->assertCount(2, $order->meta['pos_payments']);
     }
 
-    public function test_pos_receipt_page_is_printable(): void
+    public function test_pos_slip_page_is_printable(): void
     {
         $admin = User::query()->first();
         Register::query()->create(['name' => 'Receipt', 'code' => 'POS-RCP', 'is_active' => true]);
@@ -93,7 +93,10 @@ final class PosAdvancedFeaturesTest extends TestCase
         $this->actingAs($admin)
             ->get(route('pos.receipt.show', ['orderUuid' => $orderUuid]))
             ->assertOk()
-            ->assertSee('RECEIPT');
+            ->assertSee('SLIP', false)
+            ->assertDontSee('RECEIPT', false)
+            ->assertSee('data-paper-width="80mm"', false)
+            ->assertSee('data-print-renderer="browser-print"', false);
     }
 
     public function test_pos_sync_endpoint_replays_queued_actions(): void

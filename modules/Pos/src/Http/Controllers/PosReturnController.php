@@ -32,6 +32,10 @@ final class PosReturnController extends Controller
             $order = $this->orderQueryService->findByOrderNumber($search);
 
             if ($order === null) {
+                $order = Order::query()->where('pos_slip_number', $search)->first();
+            }
+
+            if ($order === null) {
                 $order = $this->orderQueryService->findByUuid($search);
             }
 

@@ -73,7 +73,7 @@ final class PosInterfaceTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('cart.item_count', 0)
-            ->assertJsonStructure(['receipt' => ['order_number', 'grand_total']]);
+            ->assertJsonStructure(['receipt' => ['order_number', 'slip_number', 'grand_total']]);
 
         $order = Order::query()->where('channel', 'pos')->latest()->first();
         $this->assertNotNull($order);

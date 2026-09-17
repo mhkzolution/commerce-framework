@@ -22,6 +22,7 @@ final class PosReceiptService
 
         return [
             'order_number' => $order->order_number,
+            'slip_number' => $order->pos_slip_number,
             'order_uuid' => $order->uuid,
             'created_at' => $order->created_at?->format('d M Y H:i'),
             'cashier' => $meta['pos_cashier'] ?? null,
@@ -37,6 +38,7 @@ final class PosReceiptService
             ])->all(),
             'subtotal' => $this->formatMoney($order->subtotal, $order->currency),
             'discount' => $this->formatMoney($order->discount_total, $order->currency),
+            'discount_minor' => $order->discount_total,
             'tax' => $this->formatMoney($order->tax_total, $order->currency),
             'grand_total' => $this->formatMoney($order->grand_total, $order->currency),
             'grand_total_minor' => $order->grand_total,

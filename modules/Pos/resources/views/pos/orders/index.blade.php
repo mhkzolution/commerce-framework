@@ -22,7 +22,7 @@
                         name="search"
                         value="{{ $search }}"
                         class="pos-input pos-page__search"
-                        placeholder="ค้นหาเลขออเดอร์, ชื่อลูกค้า, อีเมล..."
+                        placeholder="ค้นหาเลขสลิป, เลขออเดอร์, ชื่อลูกค้า, อีเมล..."
                         autofocus
                     >
                     <select name="status" class="pos-input pos-page__status">
@@ -57,7 +57,12 @@
                                 <tbody>
                                     @foreach ($orders as $order)
                                         <tr>
-                                            <td class="pos-orders-table__number">{{ $order->order_number }}</td>
+                                            <td class="pos-orders-table__number">
+                                                {{ $order->pos_slip_number ?: $order->order_number }}
+                                                @if ($order->pos_slip_number)
+                                                    <div class="text-muted text-xs">{{ $order->order_number }}</div>
+                                                @endif
+                                            </td>
                                             <td>{{ $order->customer_name ?: 'ลูกค้าทั่วไป' }}</td>
                                             <td>{{ $order->lineItems->sum('quantity') }}</td>
                                             <td class="pos-orders-table__amount">
@@ -70,8 +75,8 @@
                                             </td>
                                             <td class="pos-orders-table__time">{{ $order->created_at?->format('d/m/Y H:i') }}</td>
                                             <td class="pos-orders-table__actions">
-                                                <a href="{{ route('pos.receipt.show', $order->uuid) }}" class="pos-btn pos-btn--secondary" target="_blank" rel="noopener">
-                                                    ใบเสร็จ
+                                                <a href="{{ route('pos.receipt.show', ['orderUuid' => $order->uuid, 'paper_width' => '80mm']) }}" class="pos-btn pos-btn--secondary" target="_blank" rel="noopener">
+                                                    พิมพ์สลิป
                                                 </a>
                                             </td>
                                         </tr>
