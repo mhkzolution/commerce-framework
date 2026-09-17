@@ -12,6 +12,7 @@ use Commerce\Orders\Models\Order;
 use Commerce\Pos\Models\Register;
 use Commerce\Pos\Models\Session;
 use Commerce\Pos\Services\PosHeldSaleService;
+use Commerce\Pos\Services\PosPrintJobService;
 use Commerce\Pos\Services\PosReceiptService;
 use Commerce\Pos\Services\PosRegisterResolver;
 use Commerce\Pos\Services\PosSaleService;
@@ -33,6 +34,7 @@ final class PosApiController extends Controller
         private readonly PosHeldSaleService $heldSaleService,
         private readonly PosSyncService $syncService,
         private readonly PosReceiptService $receiptService,
+        private readonly PosPrintJobService $printJobs,
         private readonly PosSessionStateFactory $sessionStateFactory,
     ) {}
 
@@ -386,7 +388,7 @@ final class PosApiController extends Controller
         $payload = $response->getData(true);
         $payload['receipt'] = array_merge(
             $this->receiptService->build($order),
-            ['print_url' => route('pos.receipt.show', $order->uuid)],
+            $this->printJobs->printUrls($order),
         );
 
         return response()->json($payload);

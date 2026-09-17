@@ -48,7 +48,7 @@ export function initCheckout() {
         }
 
         if (event.target.closest('[data-pos-action="print-receipt"]')) {
-            printReceipt();
+            printReceipt(event);
             return;
         }
 
@@ -176,7 +176,7 @@ async function confirmPayment() {
             renderReceipt(data.receipt);
             showToast('ชำระเงินสำเร็จ', false);
         } else {
-            showToast('ชำระเงินสำเร็จ แต่ไม่พบข้อมูลใบเสร็จ', false);
+            showToast('ชำระเงินสำเร็จ แต่ไม่พบข้อมูลสลิป', false);
         }
 
         focusBarcodeInput();
@@ -211,11 +211,16 @@ function handleQuickAmount(type) {
     input.value = (current + parseInt(type, 10)).toFixed(2);
 }
 
-function printReceipt() {
+function printReceipt(event) {
+    const button = event?.target?.closest('[data-pos-action="print-receipt"]');
+    const width = button?.dataset.paperWidth;
     const receipt = getLastReceipt();
-    const url = receipt?.print_url || document.getElementById('pos-print-receipt-btn')?.dataset.printUrl;
+    const url = (width && receipt?.print_urls?.[width])
+        || button?.dataset.printUrl
+        || receipt?.print_url
+        || document.getElementById('pos-print-receipt-btn')?.dataset.printUrl;
     if (!url) {
-        showToast('ไม่พบใบเสร็จสำหรับพิมพ์');
+        showToast('ไม่พบสลิปสำหรับพิมพ์');
         return;
     }
     window.open(url, '_blank', 'noopener,noreferrer,width=400,height=700');

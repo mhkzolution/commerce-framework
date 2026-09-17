@@ -23,6 +23,7 @@ class Order extends Model
         'uuid',
         'tenant_id',
         'order_number',
+        'pos_slip_number',
         'status',
         'currency',
         'subtotal',

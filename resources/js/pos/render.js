@@ -306,11 +306,13 @@ export function renderReceipt(receipt) {
     lastReceipt = receipt;
     const preview = document.getElementById('pos-receipt-preview');
     const printBtn = document.getElementById('pos-print-receipt-btn');
+    const print58 = document.getElementById('pos-print-receipt-58');
     if (!preview || !receipt) return;
 
     preview.innerHTML = `
         <p class="text-lg font-bold">ขายสำเร็จ</p>
         <p class="mt-2 text-2xl font-extrabold text-primary">${escapeHtml(receipt.grand_total)}</p>
+        ${receipt.slip_number ? `<p class="mt-2 text-sm font-semibold">สลิป ${escapeHtml(receipt.slip_number)}</p>` : ''}
         <p class="mt-2 text-sm text-muted">ออเดอร์ #${escapeHtml(receipt.order_number)}</p>
         ${receipt.change_amount ? `<p class="mt-4 text-lg font-bold">เงินทอน: ${escapeHtml(receipt.change_amount)}</p>` : ''}
         ${(receipt.payments || []).length > 1 ? `
@@ -322,7 +324,11 @@ export function renderReceipt(receipt) {
 
     if (printBtn) {
         printBtn.disabled = false;
-        printBtn.dataset.printUrl = receipt.print_url || '';
+        printBtn.dataset.printUrl = receipt.print_urls?.['80mm'] || receipt.print_url || '';
+    }
+    if (print58) {
+        print58.disabled = false;
+        print58.dataset.printUrl = receipt.print_urls?.['58mm'] || '';
     }
 
     const dialog = document.getElementById('pos-receipt-dialog');

@@ -125,8 +125,8 @@
                                 <p class="pos-page__hint">ไม่พบข้อมูลการชำระเงินสำหรับออเดอร์นี้</p>
                             @endif
 
-                            <a href="{{ route('pos.receipt.show', $order->uuid) }}" class="pos-btn pos-btn--secondary w-full mt-3" target="_blank" rel="noopener">
-                                ดูใบเสร็จ
+                            <a href="{{ route('pos.receipt.show', ['orderUuid' => $order->uuid, 'paper_width' => '80mm']) }}" class="pos-btn pos-btn--secondary w-full mt-3" target="_blank" rel="noopener">
+                                พิมพ์สลิป
                             </a>
                         </section>
                     </div>
@@ -134,7 +134,7 @@
                     <div class="pos-page__panel">
                         <div class="pos-page__empty">
                             <p class="pos-page__empty-title">ค้นหาออเดอร์เพื่อคืนเงิน</p>
-                            <p class="pos-page__empty-text">กรอกเลขออเดอร์จากใบเสร็จหรือรายการขาย</p>
+                            <p class="pos-page__empty-text">กรอกเลขสลิปหรือเลขออเดอร์จากรายการขาย</p>
                         </div>
                     </div>
                 @endif

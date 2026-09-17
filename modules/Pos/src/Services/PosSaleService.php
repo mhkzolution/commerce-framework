@@ -31,6 +31,7 @@ final class PosSaleService
         private readonly PriceResolverInterface $priceResolver,
         private readonly OrderServiceInterface $orderService,
         private readonly StockPolicyEvaluator $stockPolicy,
+        private readonly PosSlipSequenceService $slipSequence,
     ) {}
 
     public function cart(Register $register): PosCartService
@@ -209,6 +210,10 @@ final class PosSaleService
             }
 
             $cartService->clear();
+
+            $order->update([
+                'pos_slip_number' => $this->slipSequence->allocate($order->created_at),
+            ]);
 
             return $order->fresh(['lineItems']);
         });
