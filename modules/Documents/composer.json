@@ -1,0 +1,24 @@
+{
+    "name": "commerce/documents",
+    "description": "Business documents kernel — numbering, storage, and type registry",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "commerce/contracts": "*",
+        "commerce/core": "*",
+        "commerce/customers": "*",
+        "commerce/module-manager": "*",
+        "commerce/support": "*",
+        "dompdf/dompdf": "^3.0",
+        "illuminate/database": "^13.0",
+        "illuminate/support": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Commerce\\Documents\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

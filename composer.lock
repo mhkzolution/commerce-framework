@@ -469,6 +469,39 @@
             }
         },
         {
+            "name": "commerce/documents",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "modules/Documents",
+                "reference": "documents-platform-v1"
+            },
+            "require": {
+                "commerce/contracts": "*",
+                "commerce/core": "*",
+                "commerce/customers": "*",
+                "commerce/module-manager": "*",
+                "commerce/support": "*",
+                "dompdf/dompdf": "^3.0",
+                "illuminate/database": "^13.0",
+                "illuminate/support": "^13.0",
+                "php": "^8.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Commerce\\Documents\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Business documents kernel — numbering, storage, and type registry",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "commerce/iam",
             "version": "dev-feat/pos-warehouse-scanner-v1",
             "dist": {
@@ -9860,6 +9893,7 @@
         "commerce/contracts": 20,
         "commerce/core": 20,
         "commerce/customers": 20,
+        "commerce/documents": 20,
         "commerce/iam": 20,
         "commerce/inventory": 20,
         "commerce/media": 20,

@@ -55,6 +55,7 @@ return [
             'default_open' => false,
             'children' => [
                 ['type' => 'link', 'label' => 'Orders', 'route' => 'admin.orders.index', 'permission' => 'orders.order.view'],
+                ['type' => 'link', 'label' => 'Documents', 'route' => 'admin.documents.index', 'permission' => 'documents.document.view', 'module' => 'documents'],
                 ['type' => 'link', 'label' => 'Payments', 'route' => 'admin.payments.index', 'permission' => 'payment.payment.view'],
             ],
         ],
@@ -193,6 +194,7 @@ return [
             'children' => [
                 ['type' => 'link', 'label' => 'General', 'route' => 'admin.settings.website.show', 'permission' => 'settings.setting.view', 'module' => 'settings'],
                 ['type' => 'link', 'label' => 'Site Identity', 'route' => 'admin.settings.site-identity.show', 'permission' => 'settings.setting.view', 'module' => 'settings'],
+                ['type' => 'link', 'label' => 'Company', 'route' => 'admin.settings.company.show', 'permission' => 'settings.setting.view', 'module' => 'documents'],
                 ['type' => 'link', 'label' => 'Checkout & Experience', 'route' => 'admin.settings.customer-experience.show', 'permission' => 'settings.setting.view', 'module' => 'customer-experience'],
                 ['type' => 'link', 'label' => 'Shipping', 'route' => 'admin.shipping.index', 'permission' => 'shipping.method.view'],
                 ['type' => 'link', 'label' => 'Taxes', 'route' => 'admin.tax.index', 'permission' => 'tax.rate.view'],

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Commerce\Documents\Http\Controllers\Admin\CompanySettingsController;
 use Commerce\Settings\Http\Controllers\Admin\AppearanceController;
 use Commerce\Settings\Http\Controllers\Admin\AuthSettingsController;
 use Commerce\Settings\Http\Controllers\Admin\CustomerExperienceController;
@@ -66,6 +67,14 @@ Route::middleware('web')->group(function (): void {
                 ->name('translations.update');
 
             Route::get('/', [SettingsController::class, 'index'])->name('index');
+
+            Route::middleware('module:documents')->group(function (): void {
+                Route::get('/company', [CompanySettingsController::class, 'show'])->name('company.show');
+                Route::put('/company', [CompanySettingsController::class, 'update'])
+                    ->middleware('permission:settings.setting.update')
+                    ->name('company.update');
+            });
+
             Route::put('/{group}', [SettingsController::class, 'update'])
                 ->middleware('permission:settings.setting.update')
                 ->name('update');
