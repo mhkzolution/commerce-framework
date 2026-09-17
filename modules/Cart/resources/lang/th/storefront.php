@@ -72,6 +72,8 @@ return [
     'my_account' => 'บัญชีของฉัน',
     'sign_in_saved_addresses' => 'เพื่อใช้ที่อยู่ที่บันทึกไว้',
     'contact_information' => 'ข้อมูลติดต่อ',
+    'full_name' => 'ชื่อ-นามสกุล',
+    'delivery_information' => 'ข้อมูลการจัดส่ง',
     'recipient_name' => 'ชื่อผู้รับ',
     'street_address' => 'ที่อยู่',
     'address_apt' => 'ห้อง ชั้น หรืออาคาร',

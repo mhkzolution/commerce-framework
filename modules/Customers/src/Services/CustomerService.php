@@ -29,12 +29,18 @@ final class CustomerService extends BaseService implements CustomerServiceInterf
                 throw new DomainException('A customer with this email already exists.');
             }
 
-            $customer = Customer::query()->create([
+            $payload = [
                 'email' => $data->email,
                 'name' => $data->name,
                 'phone' => $data->phone,
                 'status' => $data->status,
-            ]);
+            ];
+
+            if (is_string($data->password) && $data->password !== '') {
+                $payload['password'] = $data->password;
+            }
+
+            $customer = Customer::query()->create($payload);
 
             $this->eventBus->dispatch(new CustomerCreated(
                 customerUuid: $customer->uuid,
@@ -60,12 +66,18 @@ final class CustomerService extends BaseService implements CustomerServiceInterf
                 throw new DomainException('A customer with this email already exists.');
             }
 
-            $customer->update([
+            $payload = [
                 'email' => $data->email,
                 'name' => $data->name,
                 'phone' => $data->phone,
                 'status' => $data->status,
-            ]);
+            ];
+
+            if (is_string($data->password) && $data->password !== '') {
+                $payload['password'] = $data->password;
+            }
+
+            $customer->update($payload);
 
             $this->eventBus->dispatch(new CustomerUpdated(
                 customerUuid: $customer->uuid,

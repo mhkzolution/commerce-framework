@@ -20,11 +20,16 @@
             </form>
         </x-slot:secondaryActions>
 
-        <x-admin.form.shell action="{{ route('admin.customers.update', $customer) }}" method="POST" class="max-w-2xl">
+        <x-admin.form.shell action="{{ route('admin.customers.update', $customer) }}" method="POST" class="max-w-3xl">
             @csrf
             @method('PUT')
             <x-admin.form.section title="Customer details">
-                @include('customers::admin._form', ['customer' => $customer, 'statuses' => $statuses])
+                @include('customers::admin._form', [
+                    'customer' => $customer,
+                    'statuses' => $statuses,
+                    'passwordRequired' => false,
+                    'showAddress' => false,
+                ])
             </x-admin.form.section>
             <x-slot:actions>
                 <x-admin.button variant="secondary" :href="route('admin.customers.index')">Cancel</x-admin.button>

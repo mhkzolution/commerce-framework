@@ -72,6 +72,8 @@ return [
     'my_account' => 'My account',
     'sign_in_saved_addresses' => 'to use saved addresses.',
     'contact_information' => 'Contact',
+    'full_name' => 'Full Name',
+    'delivery_information' => 'Delivery Information',
     'recipient_name' => 'Recipient name',
     'street_address' => 'Street address',
     'address_apt' => 'Apartment, suite, or floor',

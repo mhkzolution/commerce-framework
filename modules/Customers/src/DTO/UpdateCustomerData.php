@@ -13,5 +13,6 @@ final readonly class UpdateCustomerData extends DataTransferObject
         public string $name,
         public ?string $phone = null,
         public string $status = 'active',
+        public ?string $password = null,
     ) {}
 }

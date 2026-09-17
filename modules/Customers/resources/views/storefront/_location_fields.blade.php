@@ -13,15 +13,21 @@
     };
     $country = strtoupper($value('country_code', 'TH') ?: 'TH');
     $isThailand = $country === 'TH';
+    $wrapperClass = $wrapperClass ?? 'storefront-location';
+    $gridClass = $gridClass ?? 'storefront-form-grid';
+    $fieldClass = $fieldClass ?? 'storefront-field';
+    $labelClass = $labelClass ?? 'storefront-field__label';
+    $selectClass = $selectClass ?? 'storefront-select';
+    $inputClass = $inputClass ?? 'storefront-input';
 @endphp
 
-<div class="storefront-location" data-thailand-address data-locations-url="{{ url('/api/v1/storefront/locations/thailand') }}">
-    <div class="storefront-field">
-        <label class="storefront-field__label" for="{{ $id('country_code') }}">{{ __('storefront::storefront.country') }}</label>
+<div @class([$wrapperClass]) data-thailand-address data-locations-url="{{ url('/api/v1/storefront/locations/thailand') }}">
+    <div @class([$fieldClass])>
+        <label class="{{ $labelClass }}" for="{{ $id('country_code') }}">{{ __('storefront::storefront.country') }}</label>
         <select
             id="{{ $id('country_code') }}"
             name="{{ $name('country_code') }}"
-            class="storefront-select"
+            class="{{ $selectClass }}"
             data-address-country
             data-address-field="country_code"
             data-address-prefix="{{ $prefix }}"
@@ -32,12 +38,12 @@
         </select>
     </div>
 
-    <div class="storefront-form-grid" data-location-thailand @class(['storefront-is-hidden' => ! $isThailand])>
-        <div class="storefront-field">
-            <label class="storefront-field__label" for="{{ $id('province') }}">{{ __('storefront::storefront.province') }}</label>
+    <div data-location-thailand @class([$gridClass, 'storefront-is-hidden' => ! $isThailand])>
+        <div @class([$fieldClass])>
+            <label class="{{ $labelClass }}" for="{{ $id('province') }}">{{ __('storefront::storefront.province') }}</label>
             <select
                 id="{{ $id('province') }}"
-                class="storefront-select"
+                class="{{ $selectClass }}"
                 data-thailand-province
                 data-selected="{{ $value('state') }}"
                 @disabled(! $isThailand)
@@ -46,12 +52,12 @@
             </select>
             <input type="hidden" name="{{ $name('state') }}" value="{{ $value('state') }}" data-address-field="state" data-address-prefix="{{ $prefix }}" data-thailand-state @disabled(! $isThailand)>
         </div>
-        <div class="storefront-field">
-            <label class="storefront-field__label" for="{{ $id('district') }}">{{ __('storefront::storefront.district') }}</label>
+        <div @class([$fieldClass])>
+            <label class="{{ $labelClass }}" for="{{ $id('district') }}">{{ __('storefront::storefront.district') }}</label>
             <select
                 id="{{ $id('district') }}"
                 name="{{ $name('district') }}"
-                class="storefront-select"
+                class="{{ $selectClass }}"
                 data-thailand-district
                 data-address-field="district"
                 data-address-prefix="{{ $prefix }}"
@@ -61,12 +67,12 @@
                 <option value="">{{ __('storefront::storefront.select_district') }}</option>
             </select>
         </div>
-        <div class="storefront-field">
-            <label class="storefront-field__label" for="{{ $id('subdistrict') }}">{{ __('storefront::storefront.subdistrict') }}</label>
+        <div @class([$fieldClass])>
+            <label class="{{ $labelClass }}" for="{{ $id('subdistrict') }}">{{ __('storefront::storefront.subdistrict') }}</label>
             <select
                 id="{{ $id('subdistrict') }}"
                 name="{{ $name('subdistrict') }}"
-                class="storefront-select"
+                class="{{ $selectClass }}"
                 data-thailand-subdistrict
                 data-address-field="subdistrict"
                 data-address-prefix="{{ $prefix }}"
@@ -78,27 +84,27 @@
         </div>
     </div>
 
-    <div class="storefront-form-grid" data-location-international @class(['storefront-is-hidden' => $isThailand])>
-        <div class="storefront-field">
-            <label class="storefront-field__label" for="{{ $id('city') }}">{{ __('storefront::storefront.city') }}</label>
+    <div data-location-international @class([$gridClass, 'storefront-is-hidden' => $isThailand])>
+        <div @class([$fieldClass])>
+            <label class="{{ $labelClass }}" for="{{ $id('city') }}">{{ __('storefront::storefront.city') }}</label>
             <input
                 id="{{ $id('city') }}"
                 name="{{ $name('city') }}"
                 value="{{ $value('city') }}"
-                class="storefront-input"
+                class="{{ $inputClass }}"
                 data-address-field="city"
                 data-address-prefix="{{ $prefix }}"
                 @required($required)
                 @disabled($isThailand)
             >
         </div>
-        <div class="storefront-field">
-            <label class="storefront-field__label" for="{{ $id('state_free') }}">{{ __('storefront::storefront.state') }}</label>
+        <div @class([$fieldClass])>
+            <label class="{{ $labelClass }}" for="{{ $id('state_free') }}">{{ __('storefront::storefront.state') }}</label>
             <input
                 id="{{ $id('state_free') }}"
                 name="{{ $name('state') }}"
                 value="{{ $value('state') }}"
-                class="storefront-input"
+                class="{{ $inputClass }}"
                 data-address-field="state"
                 data-address-prefix="{{ $prefix }}"
                 data-location-state-free
@@ -109,13 +115,13 @@
 
     <input type="hidden" name="{{ $name('city') }}" value="{{ $value('city') ?: $value('district') }}" data-thailand-city data-address-field="city" data-address-prefix="{{ $prefix }}" @disabled(! $isThailand)>
 
-    <div class="storefront-field">
-        <label class="storefront-field__label" for="{{ $id('postal_code') }}">{{ __('storefront::storefront.postal_code') }}</label>
+    <div @class([$fieldClass])>
+        <label class="{{ $labelClass }}" for="{{ $id('postal_code') }}">{{ __('storefront::storefront.postal_code') }}</label>
         <input
             id="{{ $id('postal_code') }}"
             name="{{ $name('postal_code') }}"
             value="{{ $value('postal_code') }}"
-            class="storefront-input"
+            class="{{ $inputClass }}"
             data-address-field="postal_code"
             data-address-prefix="{{ $prefix }}"
             data-thailand-postal
