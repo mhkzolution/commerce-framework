@@ -32,6 +32,10 @@
             </x-slot:actions>
         </x-admin.form.shell>
 
+        @if (View::exists('documents::admin.customers.tax-profile'))
+            @include('documents::admin.customers.tax-profile', ['customer' => $customer, 'taxProfile' => $taxProfile ?? null])
+        @endif
+
         <x-admin.card title="Addresses" class="mt-6 max-w-2xl">
             @if ($addresses->isNotEmpty())
                 <ul class="space-y-3">

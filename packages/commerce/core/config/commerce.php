@@ -15,6 +15,7 @@ return [
         'product' => true,
         'inventory' => true,
         'customers' => true,
+        'documents' => true,
         'orders' => true,
         'payment' => true,
         'shipping' => true,

@@ -1,0 +1,82 @@
+{
+    "name": "Documents",
+    "alias": "documents",
+    "description": "Business documents kernel for tax invoices, receipts, quotations, delivery notes, and credit notes",
+    "version": "1.0.0",
+    "priority": 33,
+    "providers": [
+        "Commerce\\Documents\\DocumentsServiceProvider"
+    ],
+    "dependencies": {
+        "hard": [
+            "customers",
+            "settings"
+        ],
+        "soft": [
+            "iam",
+            "orders"
+        ]
+    },
+    "permissions": [
+        "documents.document.view",
+        "documents.document.create"
+    ],
+    "settings": [
+        {
+            "key": "company.name",
+            "type": "string",
+            "label": "Company name",
+            "group": "company",
+            "default": "",
+            "validation": ["required", "string", "max:255"]
+        },
+        {
+            "key": "company.tax_id",
+            "type": "string",
+            "label": "Tax ID",
+            "group": "company",
+            "default": "",
+            "validation": ["required", "digits:13"]
+        },
+        {
+            "key": "company.branch_no",
+            "type": "string",
+            "label": "Branch number",
+            "group": "company",
+            "default": "00000",
+            "validation": ["nullable", "digits:5"]
+        },
+        {
+            "key": "company.address",
+            "type": "string",
+            "label": "Address",
+            "group": "company",
+            "default": "",
+            "validation": ["nullable", "string", "max:1000"]
+        },
+        {
+            "key": "company.phone",
+            "type": "string",
+            "label": "Phone",
+            "group": "company",
+            "default": "",
+            "validation": ["nullable", "string", "max:50"]
+        },
+        {
+            "key": "company.email",
+            "type": "string",
+            "label": "Email",
+            "group": "company",
+            "default": "",
+            "validation": ["nullable", "email", "max:255"]
+        },
+        {
+            "key": "company.logo",
+            "type": "string",
+            "label": "Logo",
+            "group": "company",
+            "default": null,
+            "validation": ["nullable", "uuid"]
+        }
+    ]
+}

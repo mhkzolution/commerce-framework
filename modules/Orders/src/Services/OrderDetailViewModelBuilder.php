@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Commerce\Orders\Services;
 
+use Commerce\Contracts\Authorization\AuthorizationServiceInterface;
+use Commerce\Documents\Services\TaxInvoiceIssueService;
 use Commerce\Iam\Contracts\User\UserServiceInterface;
 use Commerce\Inventory\Models\StockMovement;
 use Commerce\Orders\Contracts\OrderFulfillmentServiceInterface;
@@ -28,6 +30,7 @@ final class OrderDetailViewModelBuilder
         $payments = $this->payments($order);
         $shippedByLineId = $this->fulfillment->shippedQuantityByLineId($order);
         $fulfillmentStatus = OrderFulfillmentStatus::fromOrder($order, $shippedByLineId);
+        [$canGenerateTaxInvoice, $existingTaxInvoiceNumber, $existingTaxInvoiceUuid, $taxInvoicePrefill] = $this->taxInvoice($order);
 
         return new OrderDetailView(
             order: $order,
@@ -47,7 +50,36 @@ final class OrderDetailViewModelBuilder
             canCancel: $order->isPending() || $order->isConfirmed(),
             canFulfill: ($order->isConfirmed() || $order->isCompleted()) && $fulfillmentStatus !== OrderFulfillmentStatus::FULFILLED,
             canEditNotes: ! $order->isCancelled(),
+            canGenerateTaxInvoice: $canGenerateTaxInvoice,
+            existingTaxInvoiceNumber: $existingTaxInvoiceNumber,
+            existingTaxInvoiceUuid: $existingTaxInvoiceUuid,
+            taxInvoicePrefill: $taxInvoicePrefill,
         );
+    }
+
+    /**
+     * @return array{0: bool, 1: ?string, 2: ?string, 3: array<string, mixed>}
+     */
+    private function taxInvoice(Order $order): array
+    {
+        if (! class_exists(TaxInvoiceIssueService::class) || ! app()->bound(TaxInvoiceIssueService::class)) {
+            return [false, null, null, []];
+        }
+
+        $issuer = app(TaxInvoiceIssueService::class);
+        $existing = $issuer->findIssued($order);
+        $canCreate = true;
+
+        if (app()->bound(AuthorizationServiceInterface::class)) {
+            $canCreate = app(AuthorizationServiceInterface::class)->can(auth()->user(), 'documents.document.create');
+        }
+
+        return [
+            $canCreate && $issuer->isEligible($order),
+            $existing?->number,
+            $existing?->uuid,
+            $issuer->prefill($order)->toFormArray(),
+        ];
     }
 
     /**

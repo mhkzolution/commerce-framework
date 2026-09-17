@@ -321,7 +321,27 @@
                                     <x-admin.button variant="danger" type="submit" class="w-full">{{ __('orders::admin.cancel_order') }}</x-admin.button>
                                 </form>
                             @endif
-                            @if (! $detail->canConfirm && ! $detail->canComplete && ! $detail->canCancel && ! $detail->canFulfill)
+                            @if ($detail->canGenerateTaxInvoice)
+                                <x-admin.button variant="secondary" type="button" class="w-full" onclick="document.getElementById('tax-invoice-dialog')?.showModal()">
+                                    {{ __('documents::admin.generate_tax_invoice') }}
+                                </x-admin.button>
+                            @elseif ($detail->existingTaxInvoiceNumber)
+                                @if ($detail->existingTaxInvoiceUuid && Route::has('admin.documents.show'))
+                                    <x-admin.button
+                                        variant="link"
+                                        :href="route('admin.documents.show', $detail->existingTaxInvoiceUuid)"
+                                        class="w-full"
+                                        data-tax-invoice-number="{{ $detail->existingTaxInvoiceNumber }}"
+                                    >
+                                        {{ __('documents::admin.tax_invoice_exists', ['number' => $detail->existingTaxInvoiceNumber]) }}
+                                    </x-admin.button>
+                                @else
+                                    <p class="text-sm text-text" data-tax-invoice-number="{{ $detail->existingTaxInvoiceNumber }}">
+                                        {{ __('documents::admin.tax_invoice_exists', ['number' => $detail->existingTaxInvoiceNumber]) }}
+                                    </p>
+                                @endif
+                            @endif
+                            @if (! $detail->canConfirm && ! $detail->canComplete && ! $detail->canCancel && ! $detail->canFulfill && ! $detail->canGenerateTaxInvoice)
                                 <p class="text-sm text-muted">{{ __('orders::admin.no_actions') }}</p>
                             @endif
                         </div>
@@ -401,5 +421,12 @@
                 </aside>
             </div>
         </div>
+
+        @if ($detail->canGenerateTaxInvoice)
+            @include('documents::admin.orders.tax-invoice-dialog', ['order' => $order, 'detail' => $detail])
+            @if ($errors->isNotEmpty())
+                <script>document.addEventListener('DOMContentLoaded', () => document.getElementById('tax-invoice-dialog')?.showModal());</script>
+            @endif
+        @endif
     </x-admin.page>
 @endsection

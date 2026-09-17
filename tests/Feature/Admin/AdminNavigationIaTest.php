@@ -24,6 +24,7 @@ final class AdminNavigationIaTest extends TestCase
     private const REQUIRED_ROUTES = [
         'admin.dashboard',
         'admin.orders.index',
+        'admin.documents.index',
         'admin.payments.index',
         'admin.products.index',
         'admin.catalog.index',
@@ -59,6 +60,7 @@ final class AdminNavigationIaTest extends TestCase
         'admin.system.features.index',
         'admin.settings.website.show',
         'admin.settings.site-identity.show',
+        'admin.settings.company.show',
         'admin.settings.customer-experience.show',
         'admin.shipping.index',
         'admin.tax.index',
@@ -123,7 +125,7 @@ final class AdminNavigationIaTest extends TestCase
             $this->assertFalse($byId[$id]['default_open']);
         }
 
-        $this->assertSame(['Orders', 'Payments'], array_column($byId['orders']['children'], 'label'));
+        $this->assertSame(['Orders', 'Documents', 'Payments'], array_column($byId['orders']['children'], 'label'));
         $this->assertSame(['Products', 'Collections', 'Inventory'], array_column($byId['products']['children'], 'label'));
         $this->assertSame(['Customers', 'Leads'], array_column($byId['customers']['children'], 'label'));
         $this->assertSame(
@@ -143,6 +145,7 @@ final class AdminNavigationIaTest extends TestCase
             [
                 'General',
                 'Site Identity',
+                'Company',
                 'Checkout & Experience',
                 'Shipping',
                 'Taxes',

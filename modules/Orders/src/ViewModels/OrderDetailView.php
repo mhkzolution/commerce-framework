@@ -36,6 +36,11 @@ final readonly class OrderDetailView
         public bool $canCancel,
         public bool $canFulfill,
         public bool $canEditNotes,
+        public bool $canGenerateTaxInvoice = false,
+        public ?string $existingTaxInvoiceNumber = null,
+        public ?string $existingTaxInvoiceUuid = null,
+        /** @var array<string, mixed> */
+        public array $taxInvoicePrefill = [],
     ) {}
 
     public function remainingForLine(int $lineId, int $ordered): int
