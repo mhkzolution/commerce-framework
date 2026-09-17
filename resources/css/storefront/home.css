@@ -648,3 +648,211 @@
         transition: none;
     }
 }
+
+body.is-home-popup-open {
+    overflow: hidden;
+}
+
+.storefront-home-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    padding: 1.25rem;
+    overflow: auto;
+}
+
+.storefront-home-popup[hidden] {
+    display: none !important;
+}
+
+.storefront-home-popup__scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.62);
+}
+
+.storefront-home-popup__dialog {
+    position: relative;
+    z-index: 1;
+    width: min(36rem, 100%);
+    max-width: calc(100vw - 2.5rem);
+    max-height: calc(100dvh - 2.5rem);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.storefront-home-popup__frame {
+    overflow: hidden;
+    min-height: 0;
+    border-radius: 1.25rem;
+    background: #fff;
+    box-shadow: 0 24px 64px rgba(15, 23, 42, 0.28);
+}
+
+.storefront-home-popup__track {
+    display: flex;
+    transition: transform 420ms ease;
+}
+
+.storefront-home-popup__slide {
+    flex: 0 0 100%;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+}
+
+.storefront-home-popup__slide.is-type-promotion {
+    background: #16235a;
+    color: #fff;
+}
+
+.storefront-home-popup__media {
+    display: grid;
+    place-items: center;
+    min-height: 0;
+    background: #f8fafc;
+}
+
+.storefront-home-popup__media img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: min(70vh, 28rem);
+    object-fit: contain;
+    object-position: center;
+}
+
+.storefront-home-popup__slide.is-image-only .storefront-home-popup__media {
+    background: #fff;
+}
+
+.storefront-home-popup__slide.is-image-only .storefront-home-popup__media img {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: min(68vh, 32rem);
+    object-fit: contain;
+    object-position: center;
+    margin-inline: auto;
+}
+
+.storefront-home-popup__copy {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem 1.5rem;
+    text-align: center;
+}
+
+.storefront-home-popup__headline {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: inherit;
+}
+
+.storefront-home-popup__subheadline {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: inherit;
+    opacity: 0.86;
+}
+
+.storefront-home-popup__cta {
+    justify-self: center;
+    margin-top: 0.25rem;
+    padding: 0.7rem 1.4rem;
+    border-radius: 999px;
+    background: #d4af37;
+    color: #16235a;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.storefront-home-popup__cta:hover {
+    background: #b8860b;
+}
+
+.storefront-home-popup__close {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.65rem;
+    z-index: 2;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    color: #16235a;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.storefront-home-popup__nav {
+    position: absolute;
+    top: 46%;
+    z-index: 2;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    color: #16235a;
+    font-size: 1.35rem;
+    cursor: pointer;
+    transform: translateY(-50%);
+}
+
+.storefront-home-popup__nav--prev {
+    left: 0.5rem;
+}
+
+.storefront-home-popup__nav--next {
+    right: 0.5rem;
+}
+
+.storefront-home-popup__dots {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: 0.85rem;
+}
+
+.storefront-home-popup__dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.45);
+    cursor: pointer;
+}
+
+.storefront-home-popup__dot.is-active {
+    background: #d4af37;
+}
+
+.storefront-home-popup__optout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+    color: #fff;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .storefront-home-popup__track {
+        transition: none;
+    }
+}

@@ -44,6 +44,7 @@ final class StorefrontHomePageService
             'heroBanners' => $heroBanners,
             'promotionBanners' => module_disabled('cms') ? [] : $this->homeContent->promotionBanners(),
             'faqEntries' => module_disabled('cms') ? [] : $this->homeContent->faqEntries(),
+            'homePopups' => module_disabled('cms') ? [] : $this->homeContent->popups(),
             'homepageSections' => $this->visibleHomepageSections(),
             'arrivalCategories' => $this->navigation->arrivalTabs(),
             'featuredCategories' => $this->navigation->featured(),

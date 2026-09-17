@@ -1,3 +1,5 @@
+import { initHomePopups } from './home-popup.js';
+
 function prefersReducedMotion() {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
@@ -255,6 +257,7 @@ function initHome() {
     document.querySelectorAll('[data-storefront-slider]').forEach(initSlider);
     document.querySelectorAll('[data-storefront-accordion]').forEach(initAccordion);
     document.querySelectorAll('[data-storefront-home]').forEach(initArrivals);
+    initHomePopups();
 }
 
 if (document.readyState === 'loading') {

@@ -16,6 +16,7 @@
             @includeIf('cart::storefront.partials.home-section-'.$section['key'], ['section' => $section])
         @endforeach
     </div>
+    @include('cart::storefront.partials.home-popup')
 @endsection
 
 @push('scripts')

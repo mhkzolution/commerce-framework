@@ -33,6 +33,7 @@ final class CmsServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(Services\HeroBannerService::class);
         $this->app->singleton(Services\PromotionBannerService::class);
         $this->app->singleton(Services\FaqEntryService::class);
+        $this->app->singleton(Services\PopupService::class);
         $this->app->singleton(Support\CmsMediaThumbnails::class);
     }
 

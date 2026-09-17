@@ -7,6 +7,7 @@ use Commerce\Cms\Http\Controllers\Admin\FaqEntryController;
 use Commerce\Cms\Http\Controllers\Admin\HeroBannerController;
 use Commerce\Cms\Http\Controllers\Admin\HomepageSectionController;
 use Commerce\Cms\Http\Controllers\Admin\PageController;
+use Commerce\Cms\Http\Controllers\Admin\PopupController;
 use Commerce\Cms\Http\Controllers\Admin\PostController;
 use Commerce\Cms\Http\Controllers\Admin\PromotionBannerController;
 use Commerce\Cms\Http\Controllers\Admin\TagController;
@@ -49,6 +50,9 @@ Route::middleware('web')->group(function (): void {
                 Route::get('/faq-entries', [FaqEntryController::class, 'index'])->name('faq-entries.index');
                 Route::get('/faq-entries/create', [FaqEntryController::class, 'create'])->name('faq-entries.create');
                 Route::get('/faq-entries/{faqEntry}/edit', [FaqEntryController::class, 'edit'])->name('faq-entries.edit');
+                Route::get('/popups', [PopupController::class, 'index'])->name('popups.index');
+                Route::get('/popups/create', [PopupController::class, 'create'])->name('popups.create');
+                Route::get('/popups/{popup}/edit', [PopupController::class, 'edit'])->name('popups.edit');
 
                 Route::middleware('permission:cms.page.manage')->group(function (): void {
                     Route::get('/pages/create', [PageController::class, 'create'])->name('pages.create');
@@ -66,6 +70,9 @@ Route::middleware('web')->group(function (): void {
                     Route::post('/faq-entries', [FaqEntryController::class, 'store'])->name('faq-entries.store');
                     Route::put('/faq-entries/{faqEntry}', [FaqEntryController::class, 'update'])->name('faq-entries.update');
                     Route::delete('/faq-entries/{faqEntry}', [FaqEntryController::class, 'destroy'])->name('faq-entries.destroy');
+                    Route::post('/popups', [PopupController::class, 'store'])->name('popups.store');
+                    Route::put('/popups/{popup}', [PopupController::class, 'update'])->name('popups.update');
+                    Route::delete('/popups/{popup}', [PopupController::class, 'destroy'])->name('popups.destroy');
                 });
             });
 

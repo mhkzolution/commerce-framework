@@ -105,6 +105,7 @@ return [
                 ['type' => 'link', 'label' => 'Hero banners', 'route' => 'admin.cms.hero-banners.index', 'permission' => 'cms.page.view', 'module' => 'cms'],
                 ['type' => 'link', 'label' => 'Promo banners', 'route' => 'admin.cms.promotion-banners.index', 'permission' => 'cms.page.view', 'module' => 'cms'],
                 ['type' => 'link', 'label' => 'FAQ', 'route' => 'admin.cms.faq-entries.index', 'permission' => 'cms.page.view', 'module' => 'cms'],
+                ['type' => 'link', 'label' => 'Popups', 'route' => 'admin.cms.popups.index', 'permission' => 'cms.page.view', 'module' => 'cms'],
             ],
         ],
         [

@@ -8,6 +8,7 @@ use Commerce\Catalog\Models\Category;
 use Commerce\Cms\Models\FaqEntry;
 use Commerce\Cms\Models\HeroBanner;
 use Commerce\Cms\Models\HomepageSection;
+use Commerce\Cms\Models\Popup;
 use Commerce\Cms\Models\Post;
 use Commerce\Cms\Models\PromotionBanner;
 use Commerce\Core\Tenant\TenantContext;
@@ -61,7 +62,7 @@ final class HomeContentCache
 
     public static function flushContent(): void
     {
-        foreach (['hero', 'promotions', 'faq', 'articles', 'sections'] as $segment) {
+        foreach (['hero', 'promotions', 'faq', 'articles', 'sections', 'popups'] as $segment) {
             self::forget($segment);
         }
     }
@@ -85,6 +86,8 @@ final class HomeContentCache
         HomepageSection::deleted($flush);
         Post::saved($flush);
         Post::deleted($flush);
+        Popup::saved($flush);
+        Popup::deleted($flush);
     }
 
     public static function registerCatalogInvalidation(): void

@@ -7,6 +7,7 @@ namespace Commerce\Cms\Services;
 use Commerce\Cms\Models\FaqEntry;
 use Commerce\Cms\Models\HeroBanner;
 use Commerce\Cms\Models\HomepageSection;
+use Commerce\Cms\Models\Popup;
 use Commerce\Cms\Models\PromotionBanner;
 use Commerce\Cms\Support\HomeContentCache;
 use Commerce\Contracts\Media\MediaQueryServiceInterface;
@@ -39,6 +40,14 @@ final class HomeContentQueryService
                 ->values()
                 ->all();
         });
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function popups(): array
+    {
+        return HomeContentCache::remember('popups', fn (): array => $this->resolvePopups());
     }
 
     /**
@@ -148,6 +157,41 @@ final class HomeContentQueryService
                 'imageSrcset' => $this->mediaSrcset($banner->image_media_uuid),
                 'url' => $url,
                 'openInNewTab' => $banner->open_in_new_tab,
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function resolvePopups(): array
+    {
+        $popups = Popup::query()->currentlyVisible()->get();
+        $this->preloadMedia($popups->pluck('image_media_uuid'));
+
+        $items = [];
+        foreach ($popups as $popup) {
+            $imageUrl = $this->mediaUrl($popup->image_media_uuid, 'large');
+            if ($popup->popup_type === Popup::TYPE_IMAGE && $imageUrl === null) {
+                continue;
+            }
+
+            $items[] = [
+                'uuid' => $popup->uuid,
+                'slug' => $popup->slug,
+                'type' => $popup->popup_type,
+                'headline' => is_string($popup->headline) && trim($popup->headline) !== '' ? $popup->headline : null,
+                'subheadline' => is_string($popup->subheadline) && trim($popup->subheadline) !== '' ? $popup->subheadline : null,
+                'imageUrl' => $imageUrl,
+                'imageSrcset' => $this->mediaSrcset($popup->image_media_uuid),
+                'buttonText' => is_string($popup->button_text) && trim($popup->button_text) !== '' ? $popup->button_text : null,
+                'buttonUrl' => is_string($popup->button_url) && trim($popup->button_url) !== '' ? $popup->button_url : null,
+                'buttonTarget' => $popup->button_target === Popup::TARGET_BLANK ? '_blank' : '_self',
+                'showDelay' => max(0, (int) $popup->show_delay),
+                'autoClose' => $popup->auto_close !== null ? max(0, (int) $popup->auto_close) : 0,
+                'closable' => (bool) $popup->closable,
             ];
         }
 
