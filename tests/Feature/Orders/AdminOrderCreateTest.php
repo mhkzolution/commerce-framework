@@ -58,6 +58,9 @@ final class AdminOrderCreateTest extends TestCase
         $this->assertStringContainsString('name="shipping_address[district]"', $html);
         $this->assertStringContainsString('name="shipping_address[subdistrict]"', $html);
         $this->assertStringContainsString('data-ship-province', $html);
+        $this->assertStringContainsString('name="billing_address[province]"', $html);
+        $this->assertStringContainsString('name="billing_address[district]"', $html);
+        $this->assertStringContainsString('data-bill-province', $html);
         $this->assertStringNotContainsString('id="ship-province"', $html);
         $this->assertSame($variant->sku, 'HIDDEN-SKU-9999');
     }

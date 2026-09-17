@@ -17,6 +17,10 @@ final class ThailandAddressComboboxTest extends TestCase
         $this->assertNotFalse($js);
         $this->assertNotFalse($css);
         $this->assertStringContainsString("setAttribute('role', 'combobox')", $js);
+        $this->assertStringContainsString("setAttribute('aria-controls'", $js);
+        $this->assertStringContainsString("setAttribute('aria-activedescendant'", $js);
+        $this->assertStringContainsString('select.tabIndex = -1', $js);
+        $this->assertStringContainsString('ArrowDown', $js);
         $this->assertStringContainsString('enhanceCombobox', $js);
         $this->assertStringContainsString('.storefront-combobox', $css);
         $this->assertStringNotContainsString('tom-select', $js);

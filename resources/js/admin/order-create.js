@@ -133,6 +133,16 @@ const initOrderCreate = (root) => {
         fillAttr('[data-ship-district]', address.district, true);
         fillAttr('[data-ship-subdistrict]', address.subdistrict, true);
         fillAttr('[data-ship-province]', address.province);
+
+        const shippingWidget = root.querySelector('[data-ship-province]')?.closest('[data-thailand-address]');
+        const provinceSelect = shippingWidget?.querySelector('[data-thailand-province]');
+        const nextProvince = address.province || '';
+
+        if (provinceSelect) {
+            provinceSelect.dataset.selected = nextProvince;
+            provinceSelect.value = nextProvince;
+        }
+
         fillAttr('[data-ship-postal]', address.postal_code);
         document.dispatchEvent(new Event('storefront:address-sync'));
     };

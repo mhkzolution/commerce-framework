@@ -121,6 +121,7 @@
                 data-address-field="state"
                 data-address-prefix="{{ $prefix }}"
                 data-location-state-free
+                {!! $extra('state') !!}
                 @disabled($isThailand)
             >
         </div>
