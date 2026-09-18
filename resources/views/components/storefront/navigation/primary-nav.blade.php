@@ -11,8 +11,8 @@
                     @if ($item['type'] === 'mega') data-mega-menu-item="{{ $item['id'] }}" @endif
                 >
                     @if ($item['type'] === 'mega')
-                        <button
-                            type="button"
+                        <a
+                            href="{{ $item['url'] ?? route('storefront.shop.index') }}"
                             class="storefront-primary-nav__trigger {{ ($item['active'] ?? false) ? 'storefront-primary-nav__trigger--active' : '' }}"
                             data-mega-menu-trigger="{{ $item['id'] }}"
                             aria-expanded="false"
@@ -22,7 +22,7 @@
                             <svg class="storefront-primary-nav__chevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
                                 <path d="m6 9 6 6 6-6" />
                             </svg>
-                        </button>
+                        </a>
                     @else
                         <a
                             href="{{ $item['url'] }}"

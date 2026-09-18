@@ -59,16 +59,24 @@
                         @foreach ($items as $item)
                             <li>
                                 @if ($item['type'] === 'mega' && count($item['columns'] ?? []) > 0)
-                                    <button
-                                        type="button"
-                                        class="storefront-mobile-nav__row"
-                                        data-mobile-nav-open="{{ $item['id'] }}"
-                                    >
-                                        <span>{{ $item['label'] }}</span>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                                            <path d="m9 18 6-6-6-6" />
-                                        </svg>
-                                    </button>
+                                    <div class="storefront-mobile-nav__row storefront-mobile-nav__row--split">
+                                        <a
+                                            href="{{ $item['url'] ?? route('storefront.shop.index') }}"
+                                            class="storefront-mobile-nav__label {{ ($item['active'] ?? false) ? 'storefront-mobile-nav__row--active' : '' }}"
+                                        >
+                                            <span>{{ $item['label'] }}</span>
+                                        </a>
+                                        <button
+                                            type="button"
+                                            class="storefront-mobile-nav__chevron-btn"
+                                            data-mobile-nav-open="{{ $item['id'] }}"
+                                            aria-label="{{ $item['label'] }}"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                                                <path d="m9 18 6-6-6-6" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 @else
                                     <a href="{{ $item['url'] }}" class="storefront-mobile-nav__row storefront-mobile-nav__row--link">
                                         <span>{{ $item['label'] }}</span>
@@ -116,16 +124,30 @@
                                         @endforeach
                                     </ul>
                                 @endforeach
-                            @else
-                            <ul class="storefront-mobile-nav__list">
-                                @foreach ($column['links'] ?? [] as $link)
-                                    <li>
-                                        <a href="{{ $link['url'] }}" class="storefront-mobile-nav__row storefront-mobile-nav__row--link">
-                                            <span>{{ $link['label'] }}</span>
+                            @elseif (($column['variant'] ?? '') === 'pills')
+                                <nav
+                                    class="storefront-shop-category-strip storefront-mobile-nav__letters"
+                                    aria-label="{{ $column['aria_label'] ?? __('storefront::storefront.brands_az_label') }}"
+                                >
+                                    @foreach ($column['links'] ?? [] as $link)
+                                        <a
+                                            href="{{ $link['url'] }}"
+                                            class="storefront-shop-category-strip__link {{ ($link['active'] ?? false) ? 'storefront-shop-category-strip__link--active' : '' }}"
+                                        >
+                                            {{ $link['label'] }}
                                         </a>
-                                    </li>
-                                @endforeach
-                            </ul>
+                                    @endforeach
+                                </nav>
+                            @elseif (($column['links'] ?? []) !== [])
+                                <ul class="storefront-mobile-nav__list">
+                                    @foreach ($column['links'] as $link)
+                                        <li>
+                                            <a href="{{ $link['url'] }}" class="storefront-mobile-nav__row storefront-mobile-nav__row--link">
+                                                <span>{{ $link['label'] }}</span>
+                                            </a>
+                                        </li>
+                                    @endforeach
+                                </ul>
                             @endif
 
                             @if (! empty($column['view_all']))

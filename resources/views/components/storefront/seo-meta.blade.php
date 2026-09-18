@@ -2,7 +2,14 @@
     'meta' => null,
 ])
 
-@if ($meta)
+@php
+    $meta = is_array($meta) ? $meta : [];
+    if (app()->bound(\Commerce\Contracts\Storefront\StorefrontAccessContext::class)) {
+        $meta['robots'] = app(\Commerce\Contracts\Storefront\StorefrontAccessContext::class)->robots($meta['robots'] ?? null);
+    }
+@endphp
+
+@if ($meta !== [])
     @if (! empty($meta['robots']))
         <meta name="robots" content="{{ $meta['robots'] }}">
     @endif

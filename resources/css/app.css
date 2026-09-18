@@ -5,6 +5,7 @@
 @import './admin/components.css';
 @import './storefront/tokens.css';
 @import './storefront/product-card.css';
+@import './storefront/access.css';
 @import './storefront/shell.css';
 @import './storefront/header.css';
 @import './storefront/blog.css';

@@ -15,6 +15,7 @@ final class StorefrontPrimaryNavigation
     public function __construct(
         private readonly StorefrontNavigationCatalog $navigationCatalog,
         private readonly StorefrontNavigationConfig $navigationConfig,
+        private readonly StorefrontBrandDirectory $brandDirectory,
         private readonly ?HomepageNavigationQuery $categoryNavigation = null,
     ) {}
 
@@ -78,10 +79,14 @@ final class StorefrontPrimaryNavigation
 
             if ($type === 'mega') {
                 $navItem['columns'] = $this->resolveColumns($item['columns'] ?? []);
+                $navItem['url'] = $this->resolveUrl($item);
                 if ($navItem['columns'] === []) {
-                    continue;
+                    $navItem['type'] = 'link';
+                    $navItem['active'] = $this->isLinkActive($item, $navItem['url']);
+                } else {
+                    $navItem['active'] = $this->isMegaActive($navItem['columns'])
+                        || $this->isLinkActive($item, $navItem['url']);
                 }
-                $navItem['active'] = $this->isMegaActive($navItem['columns']);
             } else {
                 $navItem['url'] = $this->resolveUrl($item);
                 $navItem['active'] = $this->isLinkActive($item, $navItem['url']);
@@ -153,6 +158,43 @@ final class StorefrontPrimaryNavigation
                     'links' => [],
                     'groups' => $groups,
                     'view_all' => $viewAll,
+                ];
+
+                continue;
+            }
+
+            if ($source === 'brand-letters') {
+                $links = $this->mapBrandLetters();
+                if ($links === []) {
+                    continue;
+                }
+
+                $resolved[] = [
+                    'title' => $title,
+                    'links' => $links,
+                    'groups' => [],
+                    'view_all' => null,
+                    'variant' => 'pills',
+                    'aria_label' => (string) __('storefront::storefront.brands_az_label'),
+                ];
+
+                continue;
+            }
+
+            if ($source === 'brands-explore') {
+                if (! Route::has('storefront.brands.index')) {
+                    continue;
+                }
+
+                $resolved[] = [
+                    'title' => $title,
+                    'links' => [],
+                    'groups' => [],
+                    'view_all' => [
+                        'label' => (string) __('storefront::storefront.nav_view_all_brands'),
+                        'url' => route('storefront.brands.index'),
+                    ],
+                    'variant' => 'cta',
                 ];
 
                 continue;
@@ -257,10 +299,7 @@ final class StorefrontPrimaryNavigation
                 $this->navigationCatalog->categories()->take($limit),
                 'category',
             ),
-            'brands' => $this->mapCatalogLinks(
-                $this->navigationCatalog->brands()->take($limit),
-                'brand',
-            ),
+            'brands' => $this->mapBrandLinks($limit),
             default => [],
         };
     }
@@ -281,6 +320,48 @@ final class StorefrontPrimaryNavigation
                 'slug' => (string) $item->slug,
                 'active' => $activeSlug !== '' && $activeSlug === $item->slug,
             ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{label: string, url: string, slug: ?string, active: bool}>
+     */
+    private function mapBrandLinks(int $limit): array
+    {
+        $activeSlug = request()->routeIs('storefront.brands.show')
+            ? (string) request()->route('slug')
+            : (string) request()->query('brand', '');
+
+        return $this->brandDirectory
+            ->popular($limit)
+            ->map(static fn ($brand): array => [
+                'label' => $brand->name,
+                'url' => $brand->url,
+                'slug' => $brand->slug,
+                'active' => $activeSlug !== '' && $activeSlug === $brand->slug,
+            ])
+            ->all();
+    }
+
+    /**
+     * @return list<array{label: string, url: string, slug: ?string, active: bool}>
+     */
+    private function mapBrandLetters(): array
+    {
+        $brands = $this->brandDirectory->forArchive();
+
+        return collect($this->brandDirectory->letters($brands))
+            ->map(static function (string $letter): array {
+                $anchor = StorefrontBrandDirectory::letterAnchor($letter);
+
+                return [
+                    'label' => $letter,
+                    'url' => route('storefront.brands.index').'#brand-letter-'.$anchor,
+                    'slug' => $anchor,
+                    'active' => false,
+                ];
+            })
             ->values()
             ->all();
     }
@@ -333,8 +414,12 @@ final class StorefrontPrimaryNavigation
         }
 
         return [
-            'label' => (string) __('storefront::storefront.nav_view_all'),
-            'url' => route('storefront.shop.index'),
+            'label' => $source === 'brands'
+                ? (string) __('storefront::storefront.nav_view_all_brands')
+                : (string) __('storefront::storefront.nav_view_all'),
+            'url' => $source === 'brands' && Route::has('storefront.brands.index')
+                ? route('storefront.brands.index')
+                : route('storefront.shop.index'),
         ];
     }
 
@@ -386,6 +471,10 @@ final class StorefrontPrimaryNavigation
             }
 
             return true;
+        }
+
+        if ($route === 'storefront.brands.index') {
+            return request()->routeIs('storefront.brands.index', 'storefront.brands.show');
         }
 
         if ($route !== '' && Route::has($route) && request()->routeIs($route)) {

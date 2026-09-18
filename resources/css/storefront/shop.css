@@ -716,6 +716,27 @@ body.storefront-filters-sheet-open {
     color: var(--color-muted);
 }
 
+.storefront-empty__actions {
+    margin-top: 1rem;
+}
+
+.storefront-empty__actions a,
+.storefront-empty__actions .storefront-filters__apply {
+    text-decoration: none;
+}
+
+.storefront-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .storefront-pagination {
     display: flex;
     justify-content: center;
@@ -770,5 +791,204 @@ body.storefront-filters-sheet-open {
 
     .storefront-shop__infinite-sentinel {
         display: block;
+    }
+}
+
+.storefront-brands .storefront-shop__context {
+    margin-bottom: 0.25rem;
+}
+
+.storefront-brands__chrome {
+    position: sticky;
+    top: var(--store-header-height);
+    z-index: 20;
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    background: var(--color-background);
+    border-bottom: 1px solid var(--color-divider);
+}
+
+.storefront-brands__toolbar {
+    padding-block: 0.75rem 0.25rem;
+    border-bottom: none;
+}
+
+.storefront-brands-search {
+    width: 100%;
+}
+
+@media (min-width: 1024px) {
+    .storefront-brands-search {
+        width: 18rem;
+        flex-shrink: 0;
+    }
+}
+
+.storefront-brands-search__input {
+    width: 100%;
+    min-height: 2.5rem;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-store);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 0.875rem;
+}
+
+.storefront-brands-search__input:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.storefront-brands-alpha.storefront-shop-category-strip {
+    margin: 0;
+    padding-block: 0.125rem;
+}
+
+.storefront-brands-alpha__letter {
+    min-width: 2.25rem;
+    justify-content: center;
+    padding-inline: 0.75rem;
+}
+
+.storefront-brands-alpha__letter[aria-current="true"] {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-on-primary);
+}
+
+@media (min-width: 1024px) {
+    .storefront-brands-alpha.storefront-shop-category-strip {
+        flex-wrap: wrap;
+        overflow: visible;
+    }
+}
+
+.storefront-brands__section {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 8rem;
+    scroll-margin-top: calc(var(--store-header-height) + 5.5rem);
+}
+
+.storefront-brands__letter {
+    margin: 0;
+    padding: 0.75rem 0 0.5rem;
+    border-top: 1px solid var(--color-divider);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-muted);
+}
+
+.storefront-brands__section:first-child .storefront-brands__letter {
+    border-top: none;
+    padding-top: 0.25rem;
+}
+
+.storefront-brands__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin: 0 0 0.75rem;
+    padding: 0;
+    list-style: none;
+}
+
+@media (min-width: 640px) {
+    .storefront-brands__grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 768px) {
+    .storefront-brands__grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .storefront-brands__grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+}
+
+@media (min-width: 1280px) {
+    .storefront-brands__grid {
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+}
+
+.storefront-brand-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 2.75rem;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--color-divider);
+    border-radius: var(--radius-store);
+    background: var(--color-surface);
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.storefront-brand-card:hover {
+    border-color: var(--color-text);
+}
+
+.storefront-brand-card:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.storefront-brand-card__logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: calc(var(--radius-store) - 4px);
+    background: var(--color-surface-muted, var(--color-background));
+    overflow: hidden;
+}
+
+.storefront-brand-card__image {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.storefront-brand-card__monogram {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.storefront-brand-card__copy {
+    display: grid;
+    gap: 0.125rem;
+    min-width: 0;
+}
+
+.storefront-brand-card__name {
+    font-size: 0.875rem;
+    font-weight: 550;
+    line-height: 1.25;
+}
+
+.storefront-brand-card__count {
+    color: var(--color-muted);
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .storefront-brands-alpha__letter,
+    .storefront-brand-card {
+        transition: none;
     }
 }

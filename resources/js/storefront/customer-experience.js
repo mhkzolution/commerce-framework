@@ -48,12 +48,25 @@ function renderQuickView(product, config, i18n) {
         ? `<span class="cx-store-qv__badge">${escapeHtml(product.promotion_badge)}</span>`
         : '';
     const name = show('showName', config) ? `<h2 id="cx-quick-view-title" class="cx-store-qv__name">${escapeHtml(product.name)}</h2>` : '<h2 id="cx-quick-view-title" class="sr-only">Quick view</h2>';
-    const priceHtml = show('showPrice', config)
-        ? `<div class="cx-store-qv__price">
-                <strong>${escapeHtml(product.formatted_sale_price || product.formatted_price)}</strong>
-                ${show('showSalePrice', config) && product.formatted_sale_price ? `<s>${escapeHtml(product.formatted_price)}</s>` : ''}
+    const pricesHidden = Boolean(product.prices_hidden);
+    const priceHtml = pricesHidden
+        ? `<div class="storefront-price-login">
+                <p class="storefront-price-login__copy">${escapeHtml(i18n.loginToSeePrice)}</p>
+                <a class="storefront-price-login__cta" href="${escapeHtml(i18n.loginUrl)}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                        <polyline points="10 17 15 12 10 7" />
+                        <line x1="15" x2="3" y1="12" y2="12" />
+                    </svg>
+                    ${escapeHtml(i18n.loginCta)}
+                </a>
            </div>`
-        : '';
+        : (show('showPrice', config)
+            ? `<div class="cx-store-qv__price">
+                    <strong>${escapeHtml(product.formatted_sale_price || product.formatted_price)}</strong>
+                    ${show('showSalePrice', config) && product.formatted_sale_price ? `<s>${escapeHtml(product.formatted_price)}</s>` : ''}
+               </div>`
+            : '');
     const shortDesc = show('showShortDescription', config) && product.short_description
         ? `<p class="cx-store-qv__desc">${escapeHtml(product.short_description)}</p>`
         : '';
@@ -104,7 +117,7 @@ function renderQuickView(product, config, i18n) {
            </div>`
         : `<input type="hidden" value="1" data-qv-qty-input>`;
 
-    const actions = `
+    const actions = pricesHidden ? '' : `
         <form method="POST" action="" data-qv-form>
             <input type="hidden" name="_token" value="${escapeHtml(csrfToken())}">
             <input type="hidden" name="purchasable_uuid" value="${escapeHtml(selectedVariantUuid)}" data-qv-variant-input>

@@ -12,6 +12,7 @@ use Commerce\Product\Models\Product;
 use Commerce\Product\Models\ProductMedia;
 use Commerce\Product\Support\SearchNormalizer;
 use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\Facades\Route;
 use Normalizer;
 
 final class ProductSuggestQuery
@@ -183,7 +184,9 @@ final class ProductSuggestQuery
 
             $candidates[] = [
                 'label' => $name,
-                'url' => route('storefront.shop.index', ['brand' => $slug]),
+                'url' => Route::has('storefront.brands.show')
+                    ? route('storefront.brands.show', $slug)
+                    : route('storefront.shop.index', ['brand' => $slug]),
             ];
         }
 
