@@ -145,7 +145,9 @@ final class TaxInvoiceIssueTest extends TestCase
             ->get(route('admin.orders.show', $order))
             ->assertOk()
             ->assertSee(__('documents::admin.generate_tax_invoice'), false)
-            ->assertSee('id="tax-invoice-dialog"', false);
+            ->assertSee('id="tax-invoice-dialog"', false)
+            ->assertSee('data-thailand-address', false)
+            ->assertSee('name="billing_address[province]"', false);
 
         $this->actingAs($admin)
             ->post(route('admin.orders.tax-invoice.store', $order), $this->buyerPayload())

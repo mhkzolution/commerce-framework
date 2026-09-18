@@ -43,6 +43,10 @@
 
 @section('title', $order->order_number)
 
+@push('head')
+    @vite(['resources/css/storefront/shopper.css', 'resources/js/storefront/address.js'])
+@endpush
+
 @section('page')
     <x-admin.page
         :title="$order->order_number"
@@ -322,7 +326,7 @@
                                 </form>
                             @endif
                             @if ($detail->canGenerateTaxInvoice)
-                                <x-admin.button variant="secondary" type="button" class="w-full" onclick="document.getElementById('tax-invoice-dialog')?.showModal()">
+                                <x-admin.button variant="secondary" type="button" class="w-full" onclick="document.getElementById('tax-invoice-dialog')?.showModal(); document.dispatchEvent(new Event('storefront:address-sync'));">
                                     {{ __('documents::admin.generate_tax_invoice') }}
                                 </x-admin.button>
                             @elseif ($detail->existingTaxInvoiceNumber)
@@ -425,7 +429,7 @@
         @if ($detail->canGenerateTaxInvoice)
             @include('documents::admin.orders.tax-invoice-dialog', ['order' => $order, 'detail' => $detail])
             @if ($errors->isNotEmpty())
-                <script>document.addEventListener('DOMContentLoaded', () => document.getElementById('tax-invoice-dialog')?.showModal());</script>
+                <script>document.addEventListener('DOMContentLoaded', () => { document.getElementById('tax-invoice-dialog')?.showModal(); document.dispatchEvent(new Event('storefront:address-sync')); });</script>
             @endif
         @endif
     </x-admin.page>

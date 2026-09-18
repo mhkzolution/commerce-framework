@@ -23,6 +23,9 @@ final class ThailandAddressComboboxTest extends TestCase
         $this->assertStringContainsString('ArrowDown', $js);
         $this->assertStringContainsString('enhanceCombobox', $js);
         $this->assertStringContainsString('.storefront-combobox', $css);
+        $this->assertStringContainsString('--space-8: 0.5rem', $css);
+        $this->assertStringContainsString('padding: var(--space-8)', $css);
+        $this->assertStringContainsString('padding: var(--space-12) var(--space-16)', $css);
         $this->assertStringNotContainsString('tom-select', $js);
         $this->assertStringNotContainsString('choices.js', $js);
     }

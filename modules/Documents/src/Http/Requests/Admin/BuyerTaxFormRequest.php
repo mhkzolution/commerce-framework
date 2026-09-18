@@ -19,13 +19,35 @@ abstract class BuyerTaxFormRequest extends FormRequest
     {
         $taxId = $this->input('tax_id');
         $branchNo = $this->input('branch_no');
+        $address = $this->input('billing_address');
 
-        $this->merge([
+        if (is_array($address)) {
+            $city = trim((string) ($address['city'] ?? ''));
+            $district = trim((string) ($address['district'] ?? ''));
+            $province = trim((string) ($address['province'] ?? ''));
+            $state = trim((string) ($address['state'] ?? ''));
+
+            if ($city === '' && $district !== '') {
+                $address['city'] = $district;
+            }
+
+            if ($state === '' && $province !== '') {
+                $address['state'] = $province;
+            }
+        }
+
+        $payload = [
             'tax_id' => is_string($taxId) ? BuyerTaxData::digits($taxId) : $taxId,
             'branch_no' => is_string($branchNo) && trim($branchNo) !== ''
                 ? BuyerTaxData::branchNo($branchNo)
                 : CustomerTaxProfile::HEAD_OFFICE_BRANCH,
-        ]);
+        ];
+
+        if (is_array($address)) {
+            $payload['billing_address'] = $address;
+        }
+
+        $this->merge($payload);
     }
 
     /**

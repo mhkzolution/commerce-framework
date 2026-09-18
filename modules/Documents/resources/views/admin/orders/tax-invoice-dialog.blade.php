@@ -10,7 +10,7 @@
     $address = is_array($prefill['billing_address'] ?? null) ? $prefill['billing_address'] : [];
 @endphp
 
-<dialog id="tax-invoice-dialog" class="cf-dialog w-full max-w-lg rounded-lg border border-border bg-surface p-6 text-text shadow-lg">
+<dialog id="tax-invoice-dialog" class="cf-dialog w-full max-w-lg overflow-visible rounded-lg border border-border bg-surface p-6 text-text shadow-lg">
     <form method="POST" action="{{ route('admin.orders.tax-invoice.store', $order) }}" class="space-y-4">
         @csrf
         <h2 class="text-lg font-semibold">{{ __('documents::admin.generate_tax_invoice') }}</h2>
@@ -39,25 +39,18 @@
             <label class="block text-sm font-medium text-text" for="inv-line2">{{ __('documents::admin.line2') }}</label>
             <input id="inv-line2" type="text" name="billing_address[line2]" value="{{ $address['line2'] ?? '' }}" class="cf-input mt-1">
         </div>
-        <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-                <label class="block text-sm font-medium text-text" for="inv-city">{{ __('documents::admin.city') }}</label>
-                <input id="inv-city" type="text" name="billing_address[city]" value="{{ $address['city'] ?? '' }}" class="cf-input mt-1">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-text" for="inv-district">{{ __('documents::admin.district') }}</label>
-                <input id="inv-district" type="text" name="billing_address[district]" value="{{ $address['district'] ?? '' }}" class="cf-input mt-1">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-text" for="inv-province">{{ __('documents::admin.province') }}</label>
-                <input id="inv-province" type="text" name="billing_address[province]" value="{{ $address['province'] ?? ($address['state'] ?? '') }}" class="cf-input mt-1">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-text" for="inv-postal">{{ __('documents::admin.postal_code') }}</label>
-                <input id="inv-postal" type="text" name="billing_address[postal_code]" value="{{ $address['postal_code'] ?? '' }}" class="cf-input mt-1">
-            </div>
-        </div>
-        <input type="hidden" name="billing_address[country_code]" value="{{ $address['country_code'] ?? 'TH' }}">
+        @include('customers::storefront._location_fields', [
+            'prefix' => 'billing_address',
+            'prefill' => $address,
+            'required' => false,
+            'stateKey' => 'province',
+            'wrapperClass' => 'grid gap-4 sm:grid-cols-2',
+            'gridClass' => 'contents',
+            'fieldClass' => '',
+            'labelClass' => 'block text-sm font-medium text-text',
+            'selectClass' => 'cf-input mt-1',
+            'inputClass' => 'cf-input mt-1',
+        ])
 
         <div class="flex justify-end gap-3 pt-2">
             <x-admin.button variant="secondary" type="button" onclick="this.closest('dialog').close()">{{ __('documents::admin.cancel') }}</x-admin.button>
