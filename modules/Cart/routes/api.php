@@ -33,7 +33,7 @@ Route::prefix('api/v1')->middleware(['api', 'web'])->group(function (): void {
         } catch (DomainException|EntityNotFoundException $exception) {
             return ApiResponse::error('cart.invalid_line', $exception->getMessage(), status: 422);
         }
-    })->name('api.v1.cart.items.store');
+    })->middleware('storefront.purchase')->name('api.v1.cart.items.store');
 
     Route::patch('/cart/items/{purchasableUuid}', function (UpdateCartLineRequest $request, CartServiceInterface $cart, string $purchasableUuid) {
         try {
@@ -83,7 +83,7 @@ Route::prefix('api/v1')->middleware(['api', 'web'])->group(function (): void {
         } catch (DomainException|EntityNotFoundException $exception) {
             return ApiResponse::error('checkout.failed', $exception->getMessage(), status: 422);
         }
-    })->name('api.v1.cart.checkout');
+    })->middleware('storefront.purchase')->name('api.v1.cart.checkout');
 });
 
 Route::prefix('api/v1/storefront')->middleware(['api', 'web'])->name('api.v1.storefront.')->group(function (): void {

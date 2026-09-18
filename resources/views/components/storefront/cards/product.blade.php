@@ -29,6 +29,12 @@
             ['product' => $product],
         );
     }
+
+    $storeAccess = $storeAccess ?? (app()->bound(\Commerce\Contracts\Storefront\StorefrontAccessContext::class)
+        ? app(\Commerce\Contracts\Storefront\StorefrontAccessContext::class)
+        : null);
+    $canViewPrices = $storeAccess?->canViewPrices ?? true;
+    $canPurchase = $storeAccess?->canPurchase ?? true;
 @endphp
 
 <article
@@ -86,7 +92,7 @@
                 :variant-uuid="$product->variantUuid"
             />
 
-            @if ($quickAdd && $product->inStock)
+            @if ($quickAdd && $product->inStock && $canPurchase)
                 <form method="POST" action="{{ route('storefront.cart.items.store') }}" class="storefront-product-card__quick-add">
                     @csrf
                     <input type="hidden" name="purchasable_uuid" value="{{ $product->variantUuid }}">
@@ -107,13 +113,17 @@
         <a href="{{ $product->url }}" class="storefront-product-card__name">{{ $product->name }}</a>
 
         <div class="storefront-product-card__meta">
-            <span class="storefront-product-card__price">
-                {{ \Commerce\Currency\Support\MoneyDisplay::format((int) $displayPrice, $displayCurrency !== '' ? $displayCurrency : 'THB') }}
-            </span>
-            @if ($displayCompare !== null && $displayCompare > $displayPrice)
-                <span class="storefront-product-card__compare">
-                    {{ \Commerce\Currency\Support\MoneyDisplay::format((int) $displayCompare, $displayCurrency !== '' ? $displayCurrency : 'THB') }}
+            @if ($canViewPrices)
+                <span class="storefront-product-card__price">
+                    {{ \Commerce\Currency\Support\MoneyDisplay::format((int) $displayPrice, $displayCurrency !== '' ? $displayCurrency : 'THB') }}
                 </span>
+                @if ($displayCompare !== null && $displayCompare > $displayPrice)
+                    <span class="storefront-product-card__compare">
+                        {{ \Commerce\Currency\Support\MoneyDisplay::format((int) $displayCompare, $displayCurrency !== '' ? $displayCurrency : 'THB') }}
+                    </span>
+                @endif
+            @else
+                <x-storefront.commerce.price-login-cta :redirect="$product->url" class="storefront-price-login--card" />
             @endif
         </div>
     </div>

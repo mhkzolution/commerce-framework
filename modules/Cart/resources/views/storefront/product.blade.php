@@ -14,6 +14,14 @@
 
     $formatMoney = static fn (int $amount): string => \Commerce\Currency\Support\MoneyDisplay::format($amount, $product->displayCurrency);
     $galleryImage = $product->gallery[0]['thumbnail'] ?? $product->gallery[0]['url'] ?? $product->imageUrl ?? '';
+    $storeAccess = $storeAccess ?? (app()->bound(\Commerce\Contracts\Storefront\StorefrontAccessContext::class)
+        ? app(\Commerce\Contracts\Storefront\StorefrontAccessContext::class)
+        : null);
+    $canViewPrices = $storeAccess?->canViewPrices ?? true;
+    $canPurchase = $storeAccess?->canPurchase ?? true;
+    $variantsForPage = $canViewPrices || $storeAccess === null
+        ? $product->variants
+        : array_map(static fn (array $variant): array => $storeAccess->withoutPrices($variant), $product->variants);
 @endphp
 
 @section('content')
@@ -25,9 +33,9 @@
             data-product-slug="{{ $product->slug }}"
             data-product-name="{{ $product->name }}"
             data-product-image="{{ $galleryImage }}"
-            data-product-price="{{ $product->price }}"
+            @if ($canViewPrices) data-product-price="{{ $product->price }}" @endif
             data-product-currency="{{ $product->displayCurrency }}"
-            data-variants='@json($product->variants)'
+            data-variants='@json($variantsForPage)'
             data-variant-axes='@json($product->variantAxes)'
         >
             <x-storefront.breadcrumb
@@ -66,15 +74,19 @@
                         @endif
 
                         <div class="storefront-buy-box__price-panel" data-buy-price-panel>
-                            <div class="storefront-buy-box__price" data-buy-price>
-                                <span class="storefront-buy-box__amount" data-buy-amount>{{ $formatMoney($product->price) }}</span>
-                                @if ($product->compareAtPrice && $product->compareAtPrice > $product->price)
-                                    <span class="storefront-buy-box__compare" data-buy-compare>{{ $formatMoney($product->compareAtPrice) }}</span>
-                                @endif
-                                @if ($product->discountPercent)
-                                    <span class="storefront-buy-box__discount" data-buy-discount>-{{ $product->discountPercent }}%</span>
-                                @endif
-                            </div>
+                            @if ($canViewPrices)
+                                <div class="storefront-buy-box__price" data-buy-price>
+                                    <span class="storefront-buy-box__amount" data-buy-amount>{{ $formatMoney($product->price) }}</span>
+                                    @if ($product->compareAtPrice && $product->compareAtPrice > $product->price)
+                                        <span class="storefront-buy-box__compare" data-buy-compare>{{ $formatMoney($product->compareAtPrice) }}</span>
+                                    @endif
+                                    @if ($product->discountPercent)
+                                        <span class="storefront-buy-box__discount" data-buy-discount>-{{ $product->discountPercent }}%</span>
+                                    @endif
+                                </div>
+                            @else
+                                <x-storefront.commerce.price-login-cta />
+                            @endif
                         </div>
 
                         <x-storefront.forms.variant-axis-selector
@@ -84,7 +96,7 @@
                             class="storefront-buy-box__variants"
                         />
 
-                        @if ($product->variants !== [])
+                        @if ($product->variants !== [] && $canPurchase)
                             <form method="POST" action="{{ route('storefront.cart.items.store') }}" class="storefront-buy-box__form" data-buy-form @if (! $product->inStock) hidden @endif>
                                 @csrf
                                 <input type="hidden" name="purchasable_uuid" value="{{ $product->variantUuid }}" data-buy-variant-input>
@@ -268,7 +280,7 @@
                 </section>
             @endif
 
-            @if ($product->variants !== [])
+            @if ($product->variants !== [] && $canPurchase)
                 <div class="storefront-mobile-buy-bar storefront-mobile-buy-bar--market" data-mobile-buy-bar @if (! $product->inStock) hidden @endif>
                     <div class="storefront-mobile-buy-bar__price" data-mobile-buy-price>{{ $formatMoney($product->price) }}</div>
                     <button type="button" class="storefront-mobile-buy-bar__button storefront-mobile-buy-bar__button--cart" data-mobile-buy-trigger="cart">

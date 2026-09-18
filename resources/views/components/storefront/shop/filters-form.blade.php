@@ -3,30 +3,39 @@
     'filterCatalog',
     'formId' => 'shop-filters',
     'variant' => null,
+    'listing' => null,
 ])
 
 @php
     use Commerce\Cart\DTO\ShopFilterCatalog;
+    use Commerce\Cart\DTO\ShopListingContext;
     use Commerce\Cart\DTO\ShopListingFilters;
 
     $filters = $filters instanceof ShopListingFilters ? $filters : new ShopListingFilters();
     $filterCatalog = $filterCatalog instanceof ShopFilterCatalog ? $filterCatalog : new ShopFilterCatalog();
+    $listing = $listing instanceof ShopListingContext ? $listing : ShopListingContext::shop();
 
     $brandOptions = [];
-    foreach ($filterCatalog->brands as $brand) {
-        $brandOptions[$brand['slug']] = $brand['name'];
+    if (! $listing->lockBrand) {
+        foreach ($filterCatalog->brands as $brand) {
+            $brandOptions[$brand['slug']] = $brand['name'];
+        }
     }
 
     $availabilityOptions = [
         'all' => __('storefront::storefront.availability_all'),
         'in_stock' => __('storefront::storefront.availability_in_stock'),
     ];
+    $storeAccess = $storeAccess ?? (app()->bound(\Commerce\Contracts\Storefront\StorefrontAccessContext::class)
+        ? app(\Commerce\Contracts\Storefront\StorefrontAccessContext::class)
+        : null);
+    $canViewPrices = $storeAccess?->canViewPrices ?? true;
 @endphp
 
 <form
     id="{{ $formId }}"
     method="GET"
-    action="{{ route('storefront.shop.index') }}"
+    action="{{ $listing->url() }}"
     class="storefront-filters {{ $variant === 'panel' ? 'storefront-filters--panel' : '' }} {{ isset($actions) ? 'storefront-filters--sticky-actions' : '' }}"
     {{ $attributes }}
 >
@@ -60,6 +69,7 @@
         />
     @endif
 
+    @if ($canViewPrices)
     <fieldset class="storefront-filters__group" data-price-filter>
         <legend class="storefront-filters__legend">{{ __('storefront::storefront.filter_price') }}</legend>
         <div class="storefront-filters__price-row">
@@ -107,6 +117,7 @@
             </div>
         @endif
     </fieldset>
+    @endif
 
     @foreach ($filterCatalog->facets as $facet)
         @php

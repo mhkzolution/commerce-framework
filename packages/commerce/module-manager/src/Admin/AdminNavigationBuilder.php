@@ -337,12 +337,18 @@ final class AdminNavigationBuilder implements AdminNavigationBuilderInterface
 
     /**
      * @param  list<array<string, mixed>>  $entries
+     * @param  list<string>  $keywordParts
      */
-    private function collectSearchable(array $item, ?string $group, array &$entries): void
+    private function collectSearchable(array $item, ?string $group, array &$entries, array $keywordParts = []): void
     {
         if (($item['type'] ?? 'link') === 'group') {
+            $nextGroup = $group ?? (string) $item['label'];
+            $nextKeywordParts = $group === null
+                ? $keywordParts
+                : [...$keywordParts, (string) $item['label']];
+
             foreach ($item['children'] ?? [] as $child) {
-                $this->collectSearchable($child, (string) $item['label'], $entries);
+                $this->collectSearchable($child, $nextGroup, $entries, $nextKeywordParts);
             }
 
             return;
@@ -374,6 +380,7 @@ final class AdminNavigationBuilder implements AdminNavigationBuilderInterface
                 $item['label'] ?? '',
                 $group,
                 $item['module'] ?? '',
+                ...$keywordParts,
                 ...$aliases,
             ])))),
         ];

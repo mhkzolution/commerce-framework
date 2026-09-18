@@ -1,7 +1,14 @@
 @props([
     'filters',
     'filterCatalog',
+    'listing' => null,
 ])
+
+@php
+    use Commerce\Cart\DTO\ShopListingContext;
+
+    $listing = $listing instanceof ShopListingContext ? $listing : ShopListingContext::shop();
+@endphp
 
 <div class="storefront-filters-sheet" data-filters-sheet hidden>
     <div class="storefront-filters-sheet__backdrop" data-filters-sheet-close></div>
@@ -18,11 +25,12 @@
             <x-storefront.shop.filters-form
                 :filters="$filters"
                 :filter-catalog="$filterCatalog"
+                :listing="$listing"
                 form-id="shop-filters-mobile"
                 data-shop-filters
             >
                 <x-slot:actions>
-                    <a href="{{ route('storefront.shop.index') }}" class="storefront-filters__clear">{{ __('storefront::storefront.clear_filters') }}</a>
+                    <a href="{{ $listing->url() }}" class="storefront-filters__clear">{{ __('storefront::storefront.clear_filters') }}</a>
                     <button type="submit" class="storefront-filters__apply">{{ __('storefront::storefront.apply_filters') }}</button>
                 </x-slot:actions>
             </x-storefront.shop.filters-form>

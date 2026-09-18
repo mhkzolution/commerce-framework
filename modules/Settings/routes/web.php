@@ -10,6 +10,7 @@ use Commerce\Settings\Http\Controllers\Admin\FooterController;
 use Commerce\Settings\Http\Controllers\Admin\MailSettingsController;
 use Commerce\Settings\Http\Controllers\Admin\SettingsController;
 use Commerce\Settings\Http\Controllers\Admin\SiteIdentityController;
+use Commerce\Settings\Http\Controllers\Admin\StoreVisibilityController;
 use Commerce\Settings\Http\Controllers\Admin\TranslationController;
 use Commerce\Settings\Http\Controllers\Admin\WebsiteSettingsController;
 use Illuminate\Support\Facades\Route;
@@ -54,6 +55,11 @@ Route::middleware('web')->group(function (): void {
             Route::put('/mail', [MailSettingsController::class, 'update'])
                 ->middleware('permission:settings.setting.update')
                 ->name('mail.update');
+
+            Route::get('/store-visibility', [StoreVisibilityController::class, 'show'])->name('store-visibility.show');
+            Route::put('/store-visibility', [StoreVisibilityController::class, 'update'])
+                ->middleware('permission:settings.setting.update')
+                ->name('store-visibility.update');
 
             Route::get('/auth', [AuthSettingsController::class, 'show'])->name('auth.show');
             Route::put('/auth', [AuthSettingsController::class, 'update'])

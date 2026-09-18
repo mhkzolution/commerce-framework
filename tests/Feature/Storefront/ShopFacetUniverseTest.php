@@ -78,7 +78,7 @@ final class ShopFacetUniverseTest extends TestCase
             ->assertOk();
 
         $this->get(route('storefront.shop.index', ['brand' => 'red']))
-            ->assertOk();
+            ->assertRedirect(route('storefront.brands.show', 'red'));
     }
 
     public function test_empty_filterable_attribute_is_not_rendered_in_sidebar(): void

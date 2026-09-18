@@ -315,6 +315,26 @@
     background: var(--color-surface-muted);
 }
 
+.storefront-buy-box__price-panel .storefront-price-login {
+    padding-block: 0.25rem;
+}
+
+.storefront-buy-box__price-panel .storefront-price-login__copy {
+    font-size: 0.875rem;
+}
+
+.storefront-buy-box__price-panel .storefront-price-login__cta {
+    min-height: 2.75rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+}
+
+.storefront-buy-box__price-panel .storefront-price-login__cta svg {
+    width: 1.125rem;
+    height: 1.125rem;
+}
+
 .storefront-buy-box__price {
     display: flex;
     flex-wrap: wrap;
