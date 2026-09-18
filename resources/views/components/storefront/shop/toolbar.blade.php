@@ -2,10 +2,26 @@
     'count' => 0,
     'sort' => 'latest',
     'query' => [],
+    'listing' => null,
 ])
 
 @php
+    use Commerce\Cart\DTO\ShopListingContext;
+
+    $listing = $listing instanceof ShopListingContext ? $listing : ShopListingContext::shop();
     $query = is_array($query) ? $query : [];
+    $storeAccess = $storeAccess ?? (app()->bound(\Commerce\Contracts\Storefront\StorefrontAccessContext::class)
+        ? app(\Commerce\Contracts\Storefront\StorefrontAccessContext::class)
+        : null);
+    $canViewPrices = $storeAccess?->canViewPrices ?? true;
+
+    $sortOptions = [
+        'latest' => __('storefront::storefront.sort_latest'),
+    ];
+    if ($canViewPrices) {
+        $sortOptions['price_asc'] = __('storefront::storefront.sort_price_asc');
+        $sortOptions['price_desc'] = __('storefront::storefront.sort_price_desc');
+    }
 @endphp
 
 <div {{ $attributes->merge(['class' => 'storefront-shop-toolbar']) }}>
@@ -23,14 +39,10 @@
         </button>
 
         <x-storefront.forms.sort-dropdown
-            :action="route('storefront.shop.index')"
+            :action="$listing->url()"
             name="sort"
             :value="$sort"
-            :options="[
-                'latest' => __('storefront::storefront.sort_latest'),
-                'price_asc' => __('storefront::storefront.sort_price_asc'),
-                'price_desc' => __('storefront::storefront.sort_price_desc'),
-            ]"
+            :options="$sortOptions"
             class="storefront-shop-toolbar__sort"
         >
             @foreach (collect($query)->except('sort') as $name => $value)

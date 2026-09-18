@@ -25,6 +25,7 @@ return [
                     'id' => 'shop',
                     'label_key' => 'nav_shop',
                     'type' => 'mega',
+                    'route' => 'storefront.shop.index',
                     'columns' => [
                         [
                             'title_key' => 'nav_categories',
@@ -53,12 +54,20 @@ return [
                     'id' => 'brands',
                     'label_key' => 'nav_brands',
                     'type' => 'mega',
+                    'route' => 'storefront.brands.index',
                     'columns' => [
                         [
-                            'title_key' => 'nav_brands',
+                            'title_key' => 'nav_popular_brands',
                             'source' => 'brands',
-                            'limit' => 10,
-                            'view_all' => true,
+                            'limit' => 12,
+                        ],
+                        [
+                            'title_key' => 'nav_browse_az',
+                            'source' => 'brand-letters',
+                        ],
+                        [
+                            'title_key' => 'nav_explore',
+                            'source' => 'brands-explore',
                         ],
                     ],
                 ],

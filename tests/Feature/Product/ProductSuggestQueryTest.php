@@ -414,7 +414,7 @@ final class ProductSuggestQueryTest extends TestCase
         $result = app(ProductSuggestQuery::class)->suggest('ac');
 
         $this->assertSame(
-            [['Acme', route('storefront.shop.index', ['brand' => 'acme'])]],
+            [['Acme', route('storefront.brands.show', 'acme')]],
             array_map(static fn (SuggestHit $hit): array => [$hit->label, $hit->url], $result->brands),
         );
     }
@@ -435,7 +435,7 @@ final class ProductSuggestQueryTest extends TestCase
         $result = app(ProductSuggestQuery::class)->suggest('per');
 
         $this->assertSame(
-            [['Peak Performance', route('storefront.shop.index', ['brand' => 'peak-performance'])]],
+            [['Peak Performance', route('storefront.brands.show', 'peak-performance')]],
             array_map(static fn (SuggestHit $hit): array => [$hit->label, $hit->url], $result->brands),
         );
     }

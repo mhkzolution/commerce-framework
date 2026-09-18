@@ -80,8 +80,9 @@ html.admin-shell body {
     box-shadow: inset 2px 0 0 0 var(--color-primary);
 }
 
-.admin-nav-item.is-child {
-    padding-left: 2.25rem;
+.admin-nav-item.is-child,
+.admin-nav-item.is-nested {
+    padding-left: calc(0.75rem + (var(--nav-depth, 1) * 1.25rem));
 }
 
 .admin-sidebar.is-collapsed .admin-nav-label,

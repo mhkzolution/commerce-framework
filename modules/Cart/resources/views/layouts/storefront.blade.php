@@ -9,6 +9,7 @@
     <x-app-fonts />
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/css/storefront/footer.css'])
     <x-admin.design-tokens />
+    <x-storefront.seo-meta :meta="$pageSeo ?? null" />
     <script>
         window.__storefrontMoney = @json($storefrontMoney ?? ['currency' => 'THB', 'symbol' => '฿', 'decimals' => 2]);
     </script>

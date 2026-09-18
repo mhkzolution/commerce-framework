@@ -12,6 +12,9 @@
         'decrease' => __('storefront::storefront.decrease_quantity'),
         'increase' => __('storefront::storefront.increase_quantity'),
         'unavailable' => __('storefront::storefront.unavailable'),
+        'loginToSeePrice' => __('storefront::storefront.login_to_see_price'),
+        'loginCta' => __('storefront::storefront.login_to_see_price_cta'),
+        'loginUrl' => route('storefront.account.login', ['redirect' => url()->current()]),
     ];
 @endphp
 

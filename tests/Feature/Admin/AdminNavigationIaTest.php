@@ -44,6 +44,7 @@ final class AdminNavigationIaTest extends TestCase
         'admin.cms.hero-banners.index',
         'admin.cms.promotion-banners.index',
         'admin.cms.faq-entries.index',
+        'admin.cms.popups.index',
         'admin.promotions.index',
         'admin.reports.index',
         'admin.reports.sales.index',
@@ -62,6 +63,7 @@ final class AdminNavigationIaTest extends TestCase
         'admin.settings.site-identity.show',
         'admin.settings.company.show',
         'admin.settings.customer-experience.show',
+        'admin.settings.store-visibility.show',
         'admin.shipping.index',
         'admin.tax.index',
         'admin.settings.translations.index',
@@ -129,7 +131,7 @@ final class AdminNavigationIaTest extends TestCase
         $this->assertSame(['Products', 'Collections', 'Inventory'], array_column($byId['products']['children'], 'label'));
         $this->assertSame(['Customers', 'Leads'], array_column($byId['customers']['children'], 'label'));
         $this->assertSame(
-            ['Home', 'Pages', 'Blog', 'Navigation', 'Theme', 'Files', 'Header menu', 'Footer', 'Blog categories', 'Tags', 'Hero banners', 'Promo banners', 'FAQ'],
+            ['Website pages', 'Website components', 'Website content', 'Shop display', 'Appearance', 'SEO & Marketing'],
             array_column($byId['online-store']['children'], 'label'),
         );
         $this->assertSame(['Discounts'], array_column($byId['marketing']['children'], 'label'));
@@ -146,7 +148,6 @@ final class AdminNavigationIaTest extends TestCase
                 'General',
                 'Site Identity',
                 'Company',
-                'Checkout & Experience',
                 'Shipping',
                 'Taxes',
                 'Languages',
@@ -173,8 +174,17 @@ final class AdminNavigationIaTest extends TestCase
         $this->assertSame('barcode', $byId['warehouse']['children'][1]['module']);
         $this->assertSame('admin.catalog.index', $byId['products']['children'][1]['route']);
         $this->assertSame('catalog.category.view', $byId['products']['children'][1]['permission']);
-        $this->assertSame('admin.navigation.show', $byId['online-store']['children'][3]['route']);
-        $this->assertSame('admin.storefront.navigation.show', $byId['online-store']['children'][6]['route']);
+        $this->assertSame(['Home', 'Pages', 'FAQ'], array_column($this->childById($byId['online-store'], 'website-pages')['children'], 'label'));
+        $this->assertSame(
+            ['Navigation', 'Header menu', 'Footer', 'Hero banners', 'Promo banners', 'Popups'],
+            array_column($this->childById($byId['online-store'], 'website-components')['children'], 'label'),
+        );
+        $this->assertSame('admin.navigation.show', collect($this->childById($byId['online-store'], 'website-components')['children'])->firstWhere('label', 'Navigation')['route']);
+        $this->assertSame('admin.storefront.navigation.show', collect($this->childById($byId['online-store'], 'website-components')['children'])->firstWhere('label', 'Header menu')['route']);
+        $this->assertSame(
+            ['Blog categories', 'Blog', 'Tags'],
+            array_column($this->childById($this->childById($byId['online-store'], 'website-content'), 'blog-articles')['children'], 'label'),
+        );
         $this->assertSame('admin.marketplace.commissions.index', $byId['marketplace']['children'][1]['route']);
         $this->assertSame('marketplace.commission.view', $byId['marketplace']['children'][1]['permission']);
         $this->assertSame('admin.tax.index', collect($byId['settings']['children'])->firstWhere('label', 'Taxes')['route']);
@@ -226,7 +236,10 @@ final class AdminNavigationIaTest extends TestCase
         ));
         $this->assertSame(['Customers', 'Leads'], array_column($byId['customers']['children'], 'label'));
         $this->assertSame(['Discounts'], array_column($byId['marketing']['children'], 'label'));
-        $this->assertSame('Theme', collect($byId['online-store']['children'])->firstWhere('route', 'admin.settings.appearance.show')['label']);
+        $this->assertSame('Theme', $this->findByRoute($byId['online-store']['children'], 'admin.settings.appearance.show')['label']);
+        $this->assertSame('Checkout & Experience', $this->findByRoute($byId['online-store']['children'], 'admin.settings.customer-experience.show')['label']);
+        $this->assertSame('Store access', $this->findByRoute($byId['online-store']['children'], 'admin.settings.store-visibility.show')['label']);
+        $this->assertSame('SEO', $this->findByRoute($byId['online-store']['children'], 'admin.settings.website.show')['label']);
         $this->assertFalse($byId['orders']['default_open']);
         $this->assertFalse($byId['settings']['default_open']);
     }
@@ -240,13 +253,47 @@ final class AdminNavigationIaTest extends TestCase
 
         $this->assertSame('หน้าแรก', $byId['home']['label']);
         $this->assertSame('สินค้า', $byId['products']['label']);
-        $this->assertSame('ร้านค้าออนไลน์', $byId['online-store']['label']);
+        $this->assertSame('หน้าร้านออนไลน์', $byId['online-store']['label']);
+        $this->assertSame('หน้าเว็บไซต์', $this->childById($byId['online-store'], 'website-pages')['label']);
+        $this->assertSame('ส่วนประกอบเว็บไซต์', $this->childById($byId['online-store'], 'website-components')['label']);
+        $this->assertSame('เนื้อหาเว็บไซต์', $this->childById($byId['online-store'], 'website-content')['label']);
+        $this->assertSame('การแสดงผลร้านค้า', $this->childById($byId['online-store'], 'shop-display')['label']);
+        $this->assertSame('รูปลักษณ์', $this->childById($byId['online-store'], 'store-appearance')['label']);
+        $this->assertSame('SEO & Marketing', $this->childById($byId['online-store'], 'seo-marketing')['label']);
         $this->assertSame('การวิเคราะห์', $byId['analytics']['label']);
         $this->assertSame('ตั้งค่า', $byId['settings']['label']);
         $this->assertSame('โมดูล', collect($byId['platform']['children'])->firstWhere('route', 'admin.system.modules.index')['label']);
         $this->assertSame('ฟีเจอร์', collect($byId['platform']['children'])->firstWhere('route', 'admin.system.features.index')['label']);
         $this->assertNotContains('แคตตาล็อก', $this->collectLabels($nav));
         $this->assertNotContains('แดชบอร์ด', $this->collectLabels($nav));
+    }
+
+    public function test_sidebar_html_renders_nested_online_store_groups(): void
+    {
+        app()->setLocale('th');
+
+        $html = $this->actingAs(User::query()->first())
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->getContent();
+
+        foreach ([
+            'หน้าร้านออนไลน์',
+            'หน้าเว็บไซต์',
+            'ส่วนประกอบเว็บไซต์',
+            'เนื้อหาเว็บไซต์',
+            'บล็อก &amp; บทความ',
+            'การแสดงผลร้านค้า',
+            'รูปลักษณ์',
+            'SEO &amp; Marketing',
+            'หน้าแรกของร้าน',
+            'จัดการบทความ',
+            'ป๊อปอัป',
+            'SEO เว็บไซต์',
+            'แกลเลอรี่',
+        ] as $label) {
+            $this->assertStringContainsString('data-nav-label="'.$label.'"', $html, $label.' should render in the sidebar');
+        }
     }
 
     public function test_command_palette_keeps_legacy_search_aliases(): void
@@ -268,6 +315,9 @@ final class AdminNavigationIaTest extends TestCase
         $this->assertContains('CRM', $byRoute['admin.crm.leads.index']['aliases']);
         $this->assertContains('Promotions', $byRoute['admin.promotions.index']['aliases']);
         $this->assertContains('Storefront', $byRoute['admin.settings.appearance.show']['aliases']);
+        $this->assertSame('Online Store', $byRoute['admin.cms.homepage.edit']['group']);
+        $this->assertStringContainsString('website pages', $byRoute['admin.cms.homepage.edit']['keywords']);
+        $this->assertStringContainsString('gallery', $byRoute['admin.media.index']['keywords']);
     }
 
     public function test_module_menus_do_not_leak_duplicate_destinations(): void
@@ -336,6 +386,41 @@ final class AdminNavigationIaTest extends TestCase
 
         $this->assertArrayHasKey('warehouse', $byId);
         $this->assertSame(['Barcode Center'], array_column($byId['warehouse']['children'], 'label'));
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function childById(array $item, string $id): array
+    {
+        foreach ($item['children'] ?? [] as $child) {
+            if (($child['id'] ?? null) === $id) {
+                return $child;
+            }
+        }
+
+        $this->fail('Missing nav child '.$id);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $items
+     * @return array<string, mixed>
+     */
+    private function findByRoute(array $items, string $route): array
+    {
+        foreach ($items as $item) {
+            if (($item['route'] ?? null) === $route) {
+                return $item;
+            }
+
+            $found = $this->findByRoute($item['children'] ?? [], $route);
+            if ($found !== []) {
+                return $found;
+            }
+        }
+
+        return [];
     }
 
     /**

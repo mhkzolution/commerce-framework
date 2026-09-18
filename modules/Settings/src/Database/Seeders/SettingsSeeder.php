@@ -22,6 +22,7 @@ final class SettingsSeeder extends Seeder
             'store.currency' => ['type' => 'string', 'label' => 'Currency', 'group' => 'store', 'default' => 'THB', 'is_public' => true],
             'store.timezone' => ['type' => 'string', 'label' => 'Timezone', 'group' => 'store', 'default' => 'Asia/Bangkok'],
             'store.locale' => ['type' => 'string', 'label' => 'Locale', 'group' => 'store', 'default' => 'en', 'is_public' => true],
+            'store.visibility' => ['type' => 'string', 'label' => 'Store visibility', 'group' => 'store', 'default' => 'public', 'is_public' => true],
             'store.email' => ['type' => 'string', 'label' => 'Store Email', 'group' => 'store', 'default' => 'superadmin@example.com'],
             'store.phone' => ['type' => 'string', 'label' => 'Store Phone', 'group' => 'store', 'default' => null, 'is_public' => true],
             'store.logo_media_uuid' => ['type' => 'string', 'label' => 'Store Logo', 'group' => 'store', 'default' => null, 'is_public' => true],

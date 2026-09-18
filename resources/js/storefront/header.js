@@ -243,6 +243,10 @@ function bindMegaMenu() {
         const panel = document.querySelector(`[data-mega-menu-panel="${id}"]`);
 
         trigger.addEventListener('click', (event) => {
+            if (trigger instanceof HTMLAnchorElement && trigger.getAttribute('href')) {
+                return;
+            }
+
             event.preventDefault();
             const isOpen = item?.classList.contains('storefront-primary-nav__item--open');
 

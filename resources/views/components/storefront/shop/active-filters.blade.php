@@ -2,23 +2,24 @@
     'filters',
     'categories' => [],
     'filterCatalog' => null,
+    'listing' => null,
 ])
 
 @php
     use Commerce\Cart\DTO\ShopCategoryStripData;
     use Commerce\Cart\DTO\ShopFilterCatalog;
+    use Commerce\Cart\DTO\ShopListingContext;
     use Commerce\Cart\DTO\ShopListingFilters;
-    use Illuminate\Support\Arr;
 
     $filters = $filters instanceof ShopListingFilters ? $filters : null;
     $filterCatalog = $filterCatalog instanceof ShopFilterCatalog ? $filterCatalog : new ShopFilterCatalog();
-    $query = $filters?->toQueryArray() ?? [];
+    $listing = $listing instanceof ShopListingContext ? $listing : ShopListingContext::shop();
     $chips = [];
 
     if ($filters?->search) {
         $chips[] = [
             'label' => $filters->search,
-            'url' => route('storefront.shop.index', Arr::except($query, ['search'])),
+            'url' => $listing->urlWith($filters, ['q' => null]),
         ];
     }
 
@@ -27,11 +28,11 @@
             ?? $filters->category;
         $chips[] = [
             'label' => $categoryName,
-            'url' => route('storefront.shop.index', Arr::except($query, ['category'])),
+            'url' => $listing->urlWith($filters, ['category' => null]),
         ];
     }
 
-    if ($filters?->brand) {
+    if ($filters?->brand && ! $listing->lockBrand) {
         $brandName = $filters->brand;
         foreach ($filterCatalog->brands as $brand) {
             if ($brand['slug'] === $filters->brand) {
@@ -41,7 +42,7 @@
         }
         $chips[] = [
             'label' => $brandName,
-            'url' => route('storefront.shop.index', Arr::except($query, ['brand'])),
+            'url' => $listing->urlWith($filters, ['brand' => null]),
         ];
     }
 
@@ -51,21 +52,21 @@
 
         $chips[] = [
             'label' => $matchedPreset['label'] ?? __('storefront::storefront.filter_price'),
-            'url' => route('storefront.shop.index', Arr::except($query, ['price_min', 'price_max'])),
+            'url' => $listing->urlWith($filters, ['price_min' => null, 'price_max' => null]),
         ];
     }
 
     if ($filters?->size) {
         $chips[] = [
             'label' => $filters->size,
-            'url' => route('storefront.shop.index', Arr::except($query, ['size'])),
+            'url' => $listing->urlWith($filters, ['size' => null]),
         ];
     }
 
     if ($filters?->color) {
         $chips[] = [
             'label' => $filters->color,
-            'url' => route('storefront.shop.index', Arr::except($query, ['color'])),
+            'url' => $listing->urlWith($filters, ['color' => null]),
         ];
     }
 
@@ -89,14 +90,14 @@
 
         $chips[] = [
             'label' => $label,
-            'url' => route('storefront.shop.index', Arr::except($query, [$code])),
+            'url' => $listing->urlWith($filters, [$code => null]),
         ];
     }
 
     if ($filters?->availability === 'in_stock') {
         $chips[] = [
             'label' => __('storefront::storefront.availability_in_stock'),
-            'url' => route('storefront.shop.index', Arr::except($query, ['availability'])),
+            'url' => $listing->urlWith($filters, ['availability' => null]),
         ];
     }
 @endphp
@@ -111,7 +112,7 @@
                 </a>
             @endforeach
         </div>
-        <a href="{{ route('storefront.shop.index') }}" class="storefront-active-filters__clear">
+        <a href="{{ $listing->url() }}" class="storefront-active-filters__clear">
             {{ __('storefront::storefront.clear_filters') }}
         </a>
     </div>

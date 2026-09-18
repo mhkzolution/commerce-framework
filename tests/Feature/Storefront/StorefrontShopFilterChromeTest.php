@@ -246,7 +246,7 @@ final class StorefrontShopFilterChromeTest extends TestCase
         app(InventoryServiceInterface::class)->receive($acmeVariant->uuid, 2);
         app(InventoryServiceInterface::class)->receive($otherVariant->uuid, 2);
 
-        $this->get(route('storefront.shop.index', ['brand' => 'acme-brand']))
+        $this->get(route('storefront.brands.show', 'acme-brand'))
             ->assertOk()
             ->assertSee('Acme Mug')
             ->assertDontSee('Other Mug');

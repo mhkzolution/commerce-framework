@@ -18,6 +18,7 @@ use Commerce\Cart\Services\ProductCardMapper;
 use Commerce\Cart\Services\ProductDetailBuilder;
 use Commerce\Cart\Services\ShopFilterCatalogService;
 use Commerce\Cart\Services\ShopProductQuery;
+use Commerce\Cart\Services\StorefrontBrandDirectory;
 use Commerce\Cart\Services\StorefrontHomePageService;
 use Commerce\Cart\Services\StorefrontNavigationCatalog;
 use Commerce\Cart\Services\StorefrontNavigationConfig;
@@ -25,9 +26,17 @@ use Commerce\Cart\Services\StorefrontNotificationFeedService;
 use Commerce\Cart\Services\StorefrontPrimaryNavigation;
 use Commerce\Cart\Services\StorefrontQuickViewService;
 use Commerce\Cart\Services\StorefrontReorderService;
+use Commerce\Cart\Http\Middleware\EnsureStorefrontAccess;
+use Commerce\Cart\Http\Middleware\EnsureStorefrontCanPurchase;
+use Commerce\Cart\Services\AuthenticatedCustomerStoreAccessPolicy;
+use Commerce\Cart\Services\StorefrontAccessResolver;
 use Commerce\Cart\Support\SessionCartStorage;
 use Commerce\Contracts\Storefront\HeaderViewData;
+use Commerce\Contracts\Storefront\StoreAccessPolicyInterface;
+use Commerce\Contracts\Storefront\StorefrontAccessContext;
 use Commerce\Core\Base\BaseModuleServiceProvider;
+use Illuminate\Contracts\Http\Kernel as HttpKernel;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\View;
 
 final class CartServiceProvider extends BaseModuleServiceProvider
@@ -56,6 +65,7 @@ final class CartServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(ShopFilterCatalogService::class);
         $this->app->singleton(HomepageProductQuery::class);
         $this->app->singleton(HomepageBrandingQuery::class);
+        $this->app->singleton(StorefrontBrandDirectory::class);
         $this->app->singleton(StorefrontHomePageService::class);
         $this->app->singleton(HeaderViewModelBuilder::class);
         $this->app->singleton(StorefrontNavigationCatalog::class);
@@ -63,15 +73,41 @@ final class CartServiceProvider extends BaseModuleServiceProvider
         $this->app->singleton(StorefrontPrimaryNavigation::class);
         $this->app->singleton(StorefrontQuickViewService::class);
         $this->app->singleton(StorefrontNotificationFeedService::class);
+        $this->app->bind(StoreAccessPolicyInterface::class, AuthenticatedCustomerStoreAccessPolicy::class);
+        $this->app->bind(StorefrontAccessResolver::class);
+        $this->app->scoped(StorefrontAccessContext::class, function ($app): StorefrontAccessContext {
+            return $app->make(StorefrontAccessResolver::class)->resolve();
+        });
     }
 
     public function boot(): void
     {
+        /** @var Router $router */
+        $router = $this->app->make(Router::class);
+        $router->aliasMiddleware('storefront.access', EnsureStorefrontAccess::class);
+        $router->aliasMiddleware('storefront.purchase', EnsureStorefrontCanPurchase::class);
+
+        /** @var HttpKernel $kernel */
+        $kernel = $this->app->make(HttpKernel::class);
+        $kernel->appendMiddlewareToGroup('web', EnsureStorefrontAccess::class);
+
         $this->loadRoutesFrom($this->modulePath('routes/web.php'));
         $this->loadRoutesFrom($this->modulePath('routes/api.php'));
         $this->loadRoutesFrom($this->modulePath('routes/admin.php'));
         $this->loadViewsFrom($this->modulePath('resources/views'), 'cart');
         $this->loadTranslationsFrom($this->modulePath('resources/lang'), 'storefront');
+
+        View::composer(['cart::layouts.storefront', 'cart::layouts.auth'], function ($view): void {
+            if (array_key_exists('storeAccess', $view->getData())) {
+                return;
+            }
+
+            if (! $this->app->bound(StorefrontAccessContext::class)) {
+                return;
+            }
+
+            $view->with('storeAccess', $this->app->make(StorefrontAccessContext::class));
+        });
 
         View::composer('components.storefront.layout.partials.site-header', function ($view): void {
             $data = $view->getData();

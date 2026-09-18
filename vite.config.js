@@ -15,6 +15,7 @@ export default defineConfig({
                 'resources/css/storefront/home.css',
                 'resources/css/storefront/shop.css',
                 'resources/js/storefront/shop.js',
+                'resources/js/storefront/brands.js',
                 'resources/css/storefront/pdp.css',
                 'resources/js/storefront/product.js',
                 'resources/css/storefront/shopper.css',

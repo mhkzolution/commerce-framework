@@ -52,7 +52,7 @@ final class ShopCategoryStripTest extends TestCase
 
         $html = $this->get(route('storefront.shop.index', [
             'category' => $parent->slug,
-            'brand' => 'acme-brand',
+            'availability' => 'in_stock',
         ]))
             ->assertOk()
             ->getContent();
@@ -62,13 +62,13 @@ final class ShopCategoryStripTest extends TestCase
         $this->assertStringContainsString(__('storefront::storefront.shop_all_categories'), $strip);
         $this->assertStringContainsString('Tops', $strip);
         $this->assertStringContainsString(
-            'href="'.e(route('storefront.shop.index', ['brand' => 'acme-brand'])).'"',
+            'href="'.e(route('storefront.shop.index', ['availability' => 'in_stock'])).'"',
             $strip,
         );
         $this->assertStringContainsString(
             'href="'.e(route('storefront.shop.index', [
                 'category' => $child->slug,
-                'brand' => 'acme-brand',
+                'availability' => 'in_stock',
             ])).'"',
             $strip,
         );

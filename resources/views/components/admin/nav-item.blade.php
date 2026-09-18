@@ -21,7 +21,11 @@
     <div data-nav-item data-nav-label="{{ $item['label'] }}">
         <button
             type="button"
-            class="admin-nav-item w-full"
+            @class([
+                'admin-nav-item w-full',
+                'is-nested' => $depth > 0,
+            ])
+            @if ($depth > 0) style="--nav-depth: {{ $depth }}" @endif
             data-nav-group-trigger="{{ $groupId }}"
             data-default-open="{{ $isOpen ? 'true' : 'false' }}"
             aria-expanded="{{ $isOpen ? 'true' : 'false' }}"
@@ -50,7 +54,9 @@
             'admin-nav-item',
             'is-active' => $isActive,
             'is-child' => $depth > 0,
+            'is-nested' => $depth > 0,
         ])
+        @if ($depth > 0) style="--nav-depth: {{ $depth }}" @endif
     >
         @if (!empty($item['icon']))
             <x-admin.icon :name="$item['icon']" class="h-5 w-5 shrink-0" />
