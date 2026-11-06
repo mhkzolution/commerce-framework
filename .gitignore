@@ -34,3 +34,4 @@ Thumbs.db
 
 # Local store SQL dumps. Keep on disk, not in git.
 /doc/*.sql
+Archive.zip
